@@ -1,2 +1,6 @@
 node_modules
-dist
+dist/
+.solid/
+src/components
+src/routes
+src/services
