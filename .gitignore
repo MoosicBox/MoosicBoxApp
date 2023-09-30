@@ -4,3 +4,4 @@ dist/
 src/components
 src/routes
 src/services
+/public/
