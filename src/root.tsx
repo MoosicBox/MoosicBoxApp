@@ -70,6 +70,15 @@ const apiOverride: ApiType = {
         }
         return "/img/album.svg";
     },
+    async getArtists(request, signal): Promise<Api.Artist[]> {
+        const query = new URLSearchParams();
+        if (request?.sources) query.set("sources", request.sources.join(","));
+        if (request?.sort) query.set("sort", request.sort);
+        if (request?.filters?.search)
+            query.set("search", request.filters.search);
+
+        return apiFetch("artists", query, signal);
+    },
 };
 
 Object.entries(apiOverride).forEach(([key, value]) => {
