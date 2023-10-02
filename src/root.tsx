@@ -15,17 +15,38 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { onStartup } from "./services/app";
 import { Api, ApiType, api } from "./services/api";
 
+function apiFetch<T>(
+    url: string,
+    query?: URLSearchParams,
+    signal?: AbortSignal,
+): Promise<T> {
+    return new Promise((resolve, reject) => {
+        let cancelled = false;
+
+        signal?.addEventListener("abort", () => {
+            cancelled = true;
+            reject();
+        });
+
+        invoke<T>("api_proxy", {
+            url: `${Api.apiUrl()}/${url}${query ? `?${query}` : ""}`,
+        }).then((data) => {
+            if (!cancelled) {
+                resolve(data);
+            }
+        });
+    });
+}
+
 const apiOverride: ApiType = {
-    async getAlbum(albumId) {
+    async getAlbum(albumId, signal) {
         const query = new URLSearchParams({
             albumId: `${albumId}`,
         });
 
-        return invoke("api_proxy", {
-            url: `${Api.apiUrl()}/album?${query}`,
-        });
+        return apiFetch("album", query, signal);
     },
-    async getAlbums(request): Promise<Api.Album[]> {
+    async getAlbums(request, signal): Promise<Api.Album[]> {
         const query = new URLSearchParams({
             playerId: "none",
         });
@@ -34,18 +55,14 @@ const apiOverride: ApiType = {
         if (request?.filters?.search)
             query.set("search", request.filters.search);
 
-        return invoke("api_proxy", {
-            url: `${Api.apiUrl()}/albums?${query}`,
-        });
+        return apiFetch("albums", query, signal);
     },
-    async getAlbumTracks(albumId): Promise<Api.Track[]> {
+    async getAlbumTracks(albumId, signal): Promise<Api.Track[]> {
         const query = new URLSearchParams({
             albumId: `${albumId}`,
         });
 
-        return invoke("api_proxy", {
-            url: `${Api.apiUrl()}/album/tracks?${query}`,
-        });
+        return apiFetch("album/tracks", query, signal);
     },
     getAlbumArtwork(album): string {
         if (album?.containsArtwork) {
