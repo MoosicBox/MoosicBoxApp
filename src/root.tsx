@@ -20,7 +20,7 @@ function apiFetch<T>(
     query?: URLSearchParams,
     signal?: AbortSignal,
 ): Promise<T> {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         let cancelled = false;
 
         signal?.addEventListener("abort", () => {
@@ -28,17 +28,37 @@ function apiFetch<T>(
             reject();
         });
 
-        invoke<T>("api_proxy", {
+        const data = await invoke<T>("api_proxy", {
             url: `${Api.apiUrl()}/${url}${query ? `?${query}` : ""}`,
-        }).then((data) => {
-            if (!cancelled) {
-                resolve(data);
-            }
         });
+
+        if (!cancelled) {
+            resolve(data);
+        }
     });
 }
 
 const apiOverride: ApiType = {
+    async getArtist(artistId, signal) {
+        const query = new URLSearchParams({
+            artistId: `${artistId}`,
+        });
+
+        return apiFetch("artist", query, signal);
+    },
+    async getArtistAlbums(artistId, signal) {
+        const query = new URLSearchParams({
+            artistId: `${artistId}`,
+        });
+
+        return apiFetch("artist/albums", query, signal);
+    },
+    getArtistCover(artist) {
+        if (artist?.containsCover) {
+            return `${Api.apiUrl()}/artists/${artist.artistId}/750x750`;
+        }
+        return "/img/album.svg";
+    },
     async getAlbum(albumId, signal) {
         const query = new URLSearchParams({
             albumId: `${albumId}`,
@@ -46,7 +66,7 @@ const apiOverride: ApiType = {
 
         return apiFetch("album", query, signal);
     },
-    async getAlbums(request, signal): Promise<Api.Album[]> {
+    async getAlbums(request, signal) {
         const query = new URLSearchParams({
             playerId: "none",
         });
@@ -57,20 +77,20 @@ const apiOverride: ApiType = {
 
         return apiFetch("albums", query, signal);
     },
-    async getAlbumTracks(albumId, signal): Promise<Api.Track[]> {
+    async getAlbumTracks(albumId, signal) {
         const query = new URLSearchParams({
             albumId: `${albumId}`,
         });
 
         return apiFetch("album/tracks", query, signal);
     },
-    getAlbumArtwork(album): string {
+    getAlbumArtwork(album) {
         if (album?.containsArtwork) {
             return `${Api.apiUrl()}/albums/${album.albumId}/300x300`;
         }
         return "/img/album.svg";
     },
-    async getArtists(request, signal): Promise<Api.Artist[]> {
+    async getArtists(request, signal) {
         const query = new URLSearchParams();
         if (request?.sources) query.set("sources", request.sources.join(","));
         if (request?.sort) query.set("sort", request.sort);
