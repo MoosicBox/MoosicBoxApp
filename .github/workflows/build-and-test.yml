@@ -37,7 +37,7 @@ jobs:
                   path: MoosicBoxApp
 
             - name: ⚡ Cache cargo
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                   path: |
                       ~/.cargo/registry
@@ -91,7 +91,7 @@ jobs:
                   echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
             - name: ⚡ Cache pnpm
-              uses: actions/cache@v2
+              uses: actions/cache@v3
               with:
                   path: ${{ env.STORE_PATH }}
                   key: ${{ matrix.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
