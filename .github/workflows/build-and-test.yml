@@ -124,14 +124,14 @@ jobs:
               uses: actions/upload-artifact@v3
               if: ${{ matrix.os == 'macos-latest' }}
               with:
-                  name: MoosicBox_x64.app
+                  name: MoosicBox-x86_64.app
                   path: MoosicBoxApp/src-tauri/target/release/bundle/macos/*.app
 
             - name: Upload dmg
               uses: actions/upload-artifact@v3
               if: ${{ matrix.os == 'macos-latest' }}
               with:
-                  name: MoosicBox_x64.dmg
+                  name: MoosicBox-x86_64.dmg
                   path: MoosicBoxApp/src-tauri/target/release/bundle/dmg/*.dmg
 
             - name: Upload exe
@@ -147,17 +147,3 @@ jobs:
               with:
                   name: MoosicBox.msi
                   path: MoosicBoxApp/src-tauri/target/release/bundle/msi/*.msi
-
-            - name: Upload app
-              uses: actions/upload-artifact@v3
-              if: ${{ matrix.os == 'macos-13-large' }}
-              with:
-                  name: MoosicBox.app
-                  path: MoosicBoxApp/src-tauri/target/release/bundle/macos/*.app
-
-            - name: Upload dmg
-              uses: actions/upload-artifact@v3
-              if: ${{ matrix.os == 'macos-13-large' }}
-              with:
-                  name: MoosicBox.dmg
-                  path: MoosicBoxApp/src-tauri/target/release/bundle/dmg/*.dmg
