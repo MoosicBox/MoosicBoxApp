@@ -109,49 +109,24 @@ jobs:
               working-directory: MoosicBoxApp
               run: pnpm tauri build
 
-            - name: Delete MoosicBox_amd64.deb Asset
-              uses: mknejp/delete-release-assets@v1
-              if: ${{ matrix.os == 'ubuntu-latest' }}
-              with:
-                  fail-if-no-assets: false
-                  token: ${{ github.token }}
-                  tag: ${{ github.event.release.tag_name }}
-                  repository: ${{ github.repository }}
-                  assets: MoosicBox_amd64.deb
+            - name: Make assets directory
+              shell: bash
+              run: mkdir ~/assets/
 
-            - name: Upload MoosicBox_amd64.deb Asset
-              uses: actions/upload-release-asset@v1
+            - name: Add MoosicBox_amd64.deb Asset
               if: ${{ matrix.os == 'ubuntu-latest' }}
-              env:
-                  GITHUB_TOKEN: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
-              with:
-                  upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ./MoosicBoxApp/src-tauri/target/release/bundle/deb/moosic-box_${{ steps.package_version.outputs.version }}_amd64.deb
-                  asset_name: MoosicBox_amd64.deb
-                  asset_content_type: application/octet-stream
+              run: |
+                  mv deb/moosic-box_${{ steps.package_version.outputs.version }}_amd64.deb \
+                      ~/assets/MoosicBox_amd64.deb
 
-            - name: Delete MoosicBox_amd64.AppImage Asset
-              uses: mknejp/delete-release-assets@v1
+            - name: Add MoosicBox-amd64.AppImage Asset
               if: ${{ matrix.os == 'ubuntu-latest' }}
-              with:
-                  fail-if-no-assets: false
-                  token: ${{ github.token }}
-                  tag: ${{ github.event.release.tag_name }}
-                  repository: ${{ github.repository }}
-                  assets: MoosicBox_amd64.AppImage
+              working-directory: MoosicBoxApp/src-tauri/target/release/bundle
+              run: |
+                  mv appimage/moosic-box_${{ steps.package_version.outputs.version }}_amd64.AppImage \
+                      ~/assets/MoosicBox-amd64.AppImage
 
-            - name: Upload MoosicBox_amd64.AppImage Asset
-              uses: actions/upload-release-asset@v1
-              if: ${{ matrix.os == 'ubuntu-latest' }}
-              env:
-                  GITHUB_TOKEN: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
-              with:
-                  upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ./MoosicBoxApp/src-tauri/target/release/bundle/appimage/moosic-box_${{ steps.package_version.outputs.version }}_amd64.AppImage
-                  asset_name: MoosicBox_amd64.AppImage
-                  asset_content_type: application/octet-stream
-
-            - name: Compress MoosicBox-x64.app
+            - name: Add MoosicBox_x64.app Asset
               if: ${{ matrix.os == 'macos-latest' }}
               shell: bash
               run: |
@@ -159,10 +134,43 @@ jobs:
                       a \
                       -mx=9 \
                       -tzip \
-                      MoosicBox-x64.app.zip \
+                      ~/assets/MoosicBox_x64.app.zip \
                       MoosicBoxApp/src-tauri/target/release/bundle/macos/MoosicBox.app
 
-            - name: Delete MoosicBox-x64.app.zip Asset
+            - name: Add MoosicBox_x64.dmg Asset
+              if: ${{ matrix.os == 'macos-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/release/bundle
+              run: |
+                  mv dmg/MoosicBox_${{ steps.package_version.outputs.version }}_x64.dmg \
+                      ~/assets/MoosicBox_x64.dmg
+
+            - name: Add MoosicBox_x64-setup.exe Asset
+              if: ${{ matrix.os == 'windows-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/release/bundle
+              run: |
+                  mv nsis/MoosicBox_${{ steps.package_version.outputs.version }}_x64-setup.exe \
+                      ~/assets/MoosicBox_x64-setup.exe
+
+            - name: Add MoosicBox_x64.exe Asset
+              if: ${{ matrix.os == 'windows-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/release/bundle
+              run: |
+                  mv nsis/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi \
+                      ~/assets/MoosicBox_x64_en-US.msi
+
+            - name: Delete Linux Assets
+              uses: mknejp/delete-release-assets@v1
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+              with:
+                  fail-if-no-assets: false
+                  token: ${{ github.token }}
+                  tag: ${{ github.event.release.tag_name }}
+                  repository: ${{ github.repository }}
+                  assets: |
+                      MoosicBox_amd64.deb
+                      MoosicBox-amd64.AppImage
+
+            - name: Delete Mac Assets
               uses: mknejp/delete-release-assets@v1
               if: ${{ matrix.os == 'macos-latest' }}
               with:
@@ -170,41 +178,11 @@ jobs:
                   token: ${{ github.token }}
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
-                  assets: MoosicBox-x64.app.zip
+                  assets: |
+                      MoosicBox_x64.app.zip
+                      MoosicBox_x64.dmg
 
-            - name: Upload MoosicBox-x64.app.zip Asset
-              uses: actions/upload-release-asset@v1
-              if: ${{ matrix.os == 'macos-latest' }}
-              env:
-                  GITHUB_TOKEN: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
-              with:
-                  upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ./MoosicBox-x64.app.zip
-                  asset_name: MoosicBox-x64.app.zip
-                  asset_content_type: application/zip
-
-            - name: Delete MoosicBox-x64.dmg Asset
-              uses: mknejp/delete-release-assets@v1
-              if: ${{ matrix.os == 'macos-latest' }}
-              with:
-                  fail-if-no-assets: false
-                  token: ${{ github.token }}
-                  tag: ${{ github.event.release.tag_name }}
-                  repository: ${{ github.repository }}
-                  assets: MoosicBox-x64.dmg
-
-            - name: Upload MoosicBox-x64.dmg Asset
-              uses: actions/upload-release-asset@v1
-              if: ${{ matrix.os == 'macos-latest' }}
-              env:
-                  GITHUB_TOKEN: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
-              with:
-                  upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ./MoosicBoxApp/src-tauri/target/release/bundle/dmg/MoosicBox_${{ steps.package_version.outputs.version }}_x64.dmg
-                  asset_name: MoosicBox-x64.dmg
-                  asset_content_type: application/octet-stream
-
-            - name: Delete MoosicBox_x64-setup.exe Asset
+            - name: Delete Windows Assets
               uses: mknejp/delete-release-assets@v1
               if: ${{ matrix.os == 'windows-latest' }}
               with:
@@ -212,39 +190,15 @@ jobs:
                   token: ${{ github.token }}
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
-                  assets: MoosicBox_x64-setup.exe
+                  assets: |
+                      MoosicBox_x64-setup.exe
+                      MoosicBox_x64.msi
 
-            - name: Upload MoosicBox_x64-setup.exe Asset
-              uses: actions/upload-release-asset@v1
-              if: ${{ matrix.os == 'windows-latest' }}
-              env:
-                  GITHUB_TOKEN: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
+            - name: Upload Assets
+              uses: softprops/action-gh-release@v1
               with:
-                  upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ./MoosicBoxApp/src-tauri/target/release/bundle/nsis/MoosicBox_${{ steps.package_version.outputs.version }}_x64-setup.exe
-                  asset_name: MoosicBox_x64-setup.exe
-                  asset_content_type: application/octet-stream
-
-            - name: Delete MoosicBox_x64.msi Asset
-              uses: mknejp/delete-release-assets@v1
-              if: ${{ matrix.os == 'windows-latest' }}
-              with:
-                  fail-if-no-assets: false
-                  token: ${{ github.token }}
-                  tag: ${{ github.event.release.tag_name }}
-                  repository: ${{ github.repository }}
-                  assets: MoosicBox_x64.msi
-
-            - name: Upload MoosicBox_x64.msi Asset
-              uses: actions/upload-release-asset@v1
-              if: ${{ matrix.os == 'windows-latest' }}
-              env:
-                  GITHUB_TOKEN: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
-              with:
-                  upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ./MoosicBoxApp/src-tauri/target/release/bundle/msi/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi
-                  asset_name: MoosicBox_x64.msi
-                  asset_content_type: application/octet-stream
+                  token: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
+                  files: ~/assets/*
 
     compress:
         runs-on: ubuntu-latest
@@ -285,12 +239,12 @@ jobs:
                     - name: MoosicBox_amd64
                       extension: AppImage
                       decompress: false
-                    - name: MoosicBox-x64
+                    - name: MoosicBox_x64
                       extension: app
                       decompress: true
-                      decompress_file: MoosicBox-x64.app.7z
-                      decompress_algorithm: MoosicBox-x64.app
-                    - name: MoosicBox-x64
+                      decompress_file: MoosicBox_x64.app.7z
+                      decompress_algorithm: MoosicBox_x64.app
+                    - name: MoosicBox_x64
                       extension: dmg
                       decompress: false
                     - name: MoosicBox_x64-setup
