@@ -268,7 +268,7 @@ jobs:
               run: |
                   7z \
                       x \
-                      -t${{ matrix.asset.decompress_algorithm.algorithm }} \
+                      -t${{ matrix.asset.decompress_algorithm }} \
                       ${{ matrix.asset.decompress_file }} \
                       -o${{ matrix.asset.name }}.${{ matrix.asset.extension }}
 
