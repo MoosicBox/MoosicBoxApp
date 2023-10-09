@@ -242,8 +242,8 @@ jobs:
                     - name: MoosicBox_x64
                       extension: app
                       decompress: true
-                      decompress_file: MoosicBox_x64.app.7z
-                      decompress_algorithm: MoosicBox_x64.app
+                      decompress_file: MoosicBox_x64.app.zip
+                      decompress_algorithm: zip
                     - name: MoosicBox_x64
                       extension: dmg
                       decompress: false
