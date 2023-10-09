@@ -111,21 +111,25 @@ jobs:
 
             - name: Make assets directory
               shell: bash
-              run: mkdir ~/assets/
+              id: assets_dir
+              run: |
+                  mkdir assets
+                  cd assets
+                  echo "path=$(pwd)" >> $GITHUB_OUTPUT
 
             - name: Add MoosicBox_amd64.deb Asset
               if: ${{ matrix.os == 'ubuntu-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/release/bundle
               run: |
                   mv deb/moosic-box_${{ steps.package_version.outputs.version }}_amd64.deb \
-                      ~/assets/MoosicBox_amd64.deb
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_amd64.deb
 
             - name: Add MoosicBox-amd64.AppImage Asset
               if: ${{ matrix.os == 'ubuntu-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/release/bundle
               run: |
                   mv appimage/moosic-box_${{ steps.package_version.outputs.version }}_amd64.AppImage \
-                      ~/assets/MoosicBox-amd64.AppImage
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox-amd64.AppImage
 
             - name: Add MoosicBox_x64.app Asset
               if: ${{ matrix.os == 'macos-latest' }}
@@ -135,7 +139,7 @@ jobs:
                       a \
                       -mx=9 \
                       -tzip \
-                      ~/assets/MoosicBox_x64.app.zip \
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64.app.zip \
                       MoosicBoxApp/src-tauri/target/release/bundle/macos/MoosicBox.app
 
             - name: Add MoosicBox_x64.dmg Asset
@@ -143,21 +147,23 @@ jobs:
               working-directory: MoosicBoxApp/src-tauri/target/release/bundle
               run: |
                   mv dmg/MoosicBox_${{ steps.package_version.outputs.version }}_x64.dmg \
-                      ~/assets/MoosicBox_x64.dmg
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64.dmg
 
             - name: Add MoosicBox_x64-setup.exe Asset
               if: ${{ matrix.os == 'windows-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/release/bundle
+              shell: bash
               run: |
                   mv nsis/MoosicBox_${{ steps.package_version.outputs.version }}_x64-setup.exe \
-                      ~/assets/MoosicBox_x64-setup.exe
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64-setup.exe
 
             - name: Add MoosicBox_x64.exe Asset
               if: ${{ matrix.os == 'windows-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/release/bundle
+              shell: bash
               run: |
                   mv nsis/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi \
-                      ~/assets/MoosicBox_x64_en-US.msi
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64_en-US.msi
 
             - name: Delete Linux Assets
               uses: mknejp/delete-release-assets@v1
@@ -199,7 +205,7 @@ jobs:
               uses: softprops/action-gh-release@v1
               with:
                   token: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
-                  files: ~/assets/*
+                  files: assets/*
 
     compress:
         runs-on: ubuntu-latest
