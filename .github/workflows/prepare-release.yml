@@ -1,0 +1,313 @@
+name: Prepare MoosicBoxApp Release
+
+on:
+  release:
+    types: [published, edited]
+
+env:
+    CARGO_TERM_COLOR: always
+
+jobs:
+    build:
+        runs-on: ${{ matrix.os }}
+
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest, windows-latest, macos-latest]
+
+        steps:
+            - name: Checkout audiotags
+              uses: actions/checkout@master
+              with:
+                  repository: BSteffaniak/audiotags
+                  ref: feat/add-full-date-capabilities
+                  path: audiotags
+
+            - name: Checkout MoosicBoxServer
+              uses: actions/checkout@master
+              with:
+                  repository: MoosicBox/MoosicBoxServer
+                  path: MoosicBoxServer
+
+            - uses: actions/checkout@v3
+              with:
+                  path: MoosicBoxApp
+
+            - name: ⚡ Cache cargo
+              uses: actions/cache@v3
+              with:
+                  path: |
+                      ~/.cargo/registry
+                      ~/.cargo/git
+                      target
+                  key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+            - name: Install Dependencies
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+              run: |
+                  sudo apt update
+                  sudo apt install libwebkit2gtk-4.0-dev \
+                      build-essential \
+                      curl \
+                      wget \
+                      file \
+                      libssl-dev \
+                      libgtk-3-dev \
+                      libayatana-appindicator3-dev \
+                      librsvg2-dev
+
+            - name: Build
+              working-directory: MoosicBoxApp/src-tauri
+              run: cargo build --verbose
+
+            - name: Checkout MoosicBoxUI
+              uses: actions/checkout@master
+              with:
+                  repository: MoosicBox/MoosicBoxUI
+                  path: MoosicBoxUI
+
+            - name: Copy Files
+              working-directory: MoosicBoxApp
+              shell: bash
+              run: |
+                  ./copy-files.sh
+
+            - uses: pnpm/action-setup@v2
+              name: Install pnpm
+              with:
+                  version: 8
+                  run_install: false
+
+            - name: Get pnpm store directory
+              shell: bash
+              run: |
+                  echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+            - name: ⚡ Cache pnpm
+              uses: actions/cache@v3
+              with:
+                  path: ${{ env.STORE_PATH }}
+                  key: ${{ matrix.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  restore-keys: |
+                      ${{ matrix.os }}-pnpm-store-
+
+            - name: pnpm install
+              working-directory: MoosicBoxApp
+              run: pnpm install
+
+            - name: Build Tauri App
+              working-directory: MoosicBoxApp
+              run: pnpm tauri build
+
+            - name: Delete MoosicBox.deb Asset
+              uses: mknejp/delete-release-assets@v1
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+              with:
+                  fail-if-no-assets: false
+                  token: ${{ github.token }}
+                  tag: ${{ github.event.release.tag_name }}
+                  repository: ${{ github.repository }}
+                  assets: MoosicBox.deb
+
+            - name: Upload MoosicBox.deb Asset
+              uses: actions/upload-release-asset@v1
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ github.event.release.upload_url }}
+                  asset_path: MoosicBoxApp/src-tauri/target/release/bundle/deb/*.deb
+                  asset_name: MoosicBox.deb
+                  asset_content_type: application/octet-stream
+
+            - name: Delete MoosicBox.AppImage Asset
+              uses: mknejp/delete-release-assets@v1
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+              with:
+                  fail-if-no-assets: false
+                  token: ${{ github.token }}
+                  tag: ${{ github.event.release.tag_name }}
+                  repository: ${{ github.repository }}
+                  assets: MoosicBox.AppImage
+
+            - name: Upload MoosicBox.AppImage Asset
+              uses: actions/upload-release-asset@v1
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ github.event.release.upload_url }}
+                  asset_path: MoosicBoxApp/src-tauri/target/release/bundle/appimage/*.AppImage
+                  asset_name: MoosicBox.AppImage
+                  asset_content_type: application/octet-stream
+
+            - name: Delete MoosicBox-x86_64.app Asset
+              uses: mknejp/delete-release-assets@v1
+              if: ${{ matrix.os == 'macos-latest' }}
+              with:
+                  fail-if-no-assets: false
+                  token: ${{ github.token }}
+                  tag: ${{ github.event.release.tag_name }}
+                  repository: ${{ github.repository }}
+                  assets: MoosicBox-x86_64.app
+
+            - name: Upload MoosicBox-x86_64.app Asset
+              uses: actions/upload-release-asset@v1
+              if: ${{ matrix.os == 'macos-latest' }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ github.event.release.upload_url }}
+                  asset_path: MoosicBoxApp/src-tauri/target/release/bundle/macos/*.app
+                  asset_name: MoosicBox-x86_64.app
+                  asset_content_type: application/octet-stream
+
+            - name: Delete MoosicBox-x86_64.dmg Asset
+              uses: mknejp/delete-release-assets@v1
+              if: ${{ matrix.os == 'macos-latest' }}
+              with:
+                  fail-if-no-assets: false
+                  token: ${{ github.token }}
+                  tag: ${{ github.event.release.tag_name }}
+                  repository: ${{ github.repository }}
+                  assets: MoosicBox-x86_64.dmg
+
+            - name: Upload MoosicBox-x86_64.dmg Asset
+              uses: actions/upload-release-asset@v1
+              if: ${{ matrix.os == 'macos-latest' }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ github.event.release.upload_url }}
+                  asset_path: MoosicBoxApp/src-tauri/target/release/bundle/dmg/*.dmg
+                  asset_name: MoosicBox-x86_64.dmg
+                  asset_content_type: application/octet-stream
+
+            - name: Delete MoosicBox.exe Asset
+              uses: mknejp/delete-release-assets@v1
+              if: ${{ matrix.os == 'windows-latest' }}
+              with:
+                  fail-if-no-assets: false
+                  token: ${{ github.token }}
+                  tag: ${{ github.event.release.tag_name }}
+                  repository: ${{ github.repository }}
+                  assets: MoosicBox.exe
+
+            - name: Upload MoosicBox.exe Asset
+              uses: actions/upload-release-asset@v1
+              if: ${{ matrix.os == 'windows-latest' }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ github.event.release.upload_url }}
+                  asset_path: MoosicBoxApp/src-tauri/target/release/bundle/nsis/*.exe
+                  asset_name: MoosicBox.exe
+                  asset_content_type: application/octet-stream
+
+            - name: Delete MoosicBox.msi Asset
+              uses: mknejp/delete-release-assets@v1
+              if: ${{ matrix.os == 'windows-latest' }}
+              with:
+                  fail-if-no-assets: false
+                  token: ${{ github.token }}
+                  tag: ${{ github.event.release.tag_name }}
+                  repository: ${{ github.repository }}
+                  assets: MoosicBox.msi, 'MoosicBox.deb'
+
+            - name: Upload MoosicBox.msi Asset
+              uses: actions/upload-release-asset@v1
+              if: ${{ matrix.os == 'windows-latest' }}
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ github.event.release.upload_url }}
+                  asset_path: MoosicBoxApp/src-tauri/target/release/bundle/msi/*.msi
+                  asset_name: MoosicBox.msi
+                  asset_content_type: application/octet-stream
+
+    compress:
+        runs-on: ubuntu-latest
+        needs: package
+
+        strategy:
+            matrix:
+                compression:
+                    - algorithm: xz
+                      extension: xz
+                      replace_extension: false
+                      compression_level: 9
+                      content_type: application/octet-stream
+                    - algorithm: 7z
+                      extension: 7z
+                      replace_extension: true
+                      compression_level: 9
+                      content_type: application/octet-stream
+                    - algorithm: bzip2
+                      extension: bz2
+                      replace_extension: false
+                      compression_level: 9
+                      content_type: application/octet-stream
+                    - algorithm: gzip
+                      extension: gz
+                      replace_extension: false
+                      compression_level: 9
+                      content_type: application/x-gzip
+                    - algorithm: zip
+                      extension: zip
+                      replace_extension: true
+                      compression_level: 9
+                      content_type: application/x-zip-compressed
+                asset:
+                    - name: MoosicBox
+                      extension: deb
+                    - name: MoosicBox
+                      extension: AppImage
+                    - name: MoosicBox-x86_64
+                      extension: app
+                    - name: MoosicBox-x86_64
+                      extension: dmg
+                    - name: MoosicBox
+                      extension: exe
+                    - name: MoosicBox
+                      extension: msi
+
+        steps:
+            - name: Download ${{ matrix.asset }} Asset
+              uses: dsaltares/fetch-gh-release-asset@master
+              with:
+                  repo: ${{ github.repository }}
+                  file: ${{ matrix.asset }}
+                  version: ${{ github.event.release.id }}
+
+            - name: Install 7zip
+              run: |
+                  sudo apt install p7zip-full p7zip-rar
+
+            - name: Compress ${{ matrix.asset }}
+              run: |
+                  7z \
+                    a \
+                    -mx=${{ matrix.compression.compression_level }} \
+                    -t${{ matrix.compression.algorithm }} \
+                    ${{ matrix.compression.replace_extension && "${{ matrix.asset.name }}" || "${{ matrix.asset.name }}${{ matrix.asset.extension }}" }}.${{ matrix.compression.extension }} \
+                    ${{ matrix.asset.name }}.${{ matrix.asset.extension }}
+
+            - name: Delete ${{ matrix.compression.replace_extension && "${{ matrix.asset.name }}" || "${{ matrix.asset.name }}${{ matrix.asset.extension }}" }}.${{ matrix.compression.extension }} Asset
+              uses: mknejp/delete-release-assets@v1
+              with:
+                  fail-if-no-assets: false
+                  token: ${{ github.token }}
+                  tag: ${{ github.event.release.tag_name }}
+                  repository: ${{ github.repository }}
+                  assets: ${{ matrix.compression.replace_extension && "${{ matrix.asset.name }}" || "${{ matrix.asset.name }}${{ matrix.asset.extension }}" }}.${{ matrix.compression.extension }}
+
+            - name: Upload Asset
+              uses: actions/upload-release-asset@v1
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  upload_url: ${{ github.event.release.upload_url }}
+                  asset_path: ./${{ matrix.compression.replace_extension && "${{ matrix.asset.name }}" || "${{ matrix.asset.name }}${{ matrix.asset.extension }}" }}.${{ matrix.compression.extension }}
+                  asset_name: ${{ matrix.compression.replace_extension && "${{ matrix.asset.name }}" || "${{ matrix.asset.name }}${{ matrix.asset.extension }}" }}.${{ matrix.compression.extension }}
+                  asset_content_type: ${{ matrix.compression.content_type }}
