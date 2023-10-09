@@ -293,17 +293,17 @@ jobs:
                       a \
                       -mx=${{ matrix.compression.compression_level }} \
                       -t${{ matrix.compression.algorithm }} \
-                      ${{ matrix.compression.replace_extension && '${{ matrix.asset.name }}' || '${{ matrix.asset.name }}${{ matrix.asset.extension }}' }}.${{ matrix.compression.extension }} \
-                      ${{ matrix.asset.name }}.${{ matrix.asset.extension }}
+                      ${{ matrix.compression.replace_extension && '${{ matrix.asset.name }}' || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }} \
+                      ${{ format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}
 
-            - name: Delete ${{ matrix.compression.replace_extension && '${{ matrix.asset.name }}' || '${{ matrix.asset.name }}${{ matrix.asset.extension }}' }}.${{ matrix.compression.extension }} Asset
+            - name: Delete ${{ matrix.compression.replace_extension && '${{ matrix.asset.name }}' || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }} Asset
               uses: mknejp/delete-release-assets@v1
               with:
                   fail-if-no-assets: false
                   token: ${{ github.token }}
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
-                  assets: ${{ matrix.compression.replace_extension && '${{ matrix.asset.name }}' || '${{ matrix.asset.name }}${{ matrix.asset.extension }}' }}.${{ matrix.compression.extension }}
+                  assets: ${{ matrix.compression.replace_extension && '${{ matrix.asset.name }}' || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }}
 
             - name: Upload Asset
               uses: actions/upload-release-asset@v1
@@ -311,6 +311,6 @@ jobs:
                   GITHUB_TOKEN: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
               with:
                   upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ./${{ matrix.compression.replace_extension && '${{ matrix.asset.name }}' || '${{ matrix.asset.name }}${{ matrix.asset.extension }}' }}.${{ matrix.compression.extension }}
-                  asset_name: ${{ matrix.compression.replace_extension && '${{ matrix.asset.name }}' || '${{ matrix.asset.name }}${{ matrix.asset.extension }}' }}.${{ matrix.compression.extension }}
+                  asset_path: ./${{ matrix.compression.replace_extension && '${{ matrix.asset.name }}' || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }}
+                  asset_name: ${{ matrix.compression.replace_extension && '${{ matrix.asset.name }}' || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }}
                   asset_content_type: ${{ matrix.compression.content_type }}
