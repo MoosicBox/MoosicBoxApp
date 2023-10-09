@@ -157,13 +157,13 @@ jobs:
                   mv nsis/MoosicBox_${{ steps.package_version.outputs.version }}_x64-setup.exe \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64-setup.exe
 
-            - name: Add MoosicBox_x64.exe Asset
+            - name: Add MoosicBox_x64.msi Asset
               if: ${{ matrix.os == 'windows-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/release/bundle
               shell: bash
               run: |
-                  mv nsis/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64_en-US.msi
+                  mv msi/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi \
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64.msi
 
             - name: Delete Linux Assets
               uses: mknejp/delete-release-assets@v1
