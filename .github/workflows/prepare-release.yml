@@ -43,6 +43,17 @@ jobs:
                   echo "version: $VERSION"
                   echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+            - name: Make assets directory test
+              shell: bash
+              run: |
+                pwd
+                echo "${{ github.workspace }}"
+                mkdir assets2/
+
+            - name: Make assets directory test2
+              shell: bash
+              run: cp MoosicBoxApp/src/root.tsx "${{ github.workspace }}/assets2/root.tsx"
+
             - name: ⚡ Cache cargo
               uses: actions/cache@v3
               with:
