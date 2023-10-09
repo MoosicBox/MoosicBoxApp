@@ -95,8 +95,6 @@ jobs:
               with:
                   path: ${{ env.STORE_PATH }}
                   key: ${{ matrix.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-                  restore-keys: |
-                      ${{ matrix.os }}-pnpm-store-
 
             - name: pnpm install
               working-directory: MoosicBoxApp
@@ -105,45 +103,3 @@ jobs:
             - name: Build Tauri App
               working-directory: MoosicBoxApp
               run: pnpm tauri build
-
-            - name: Upload deb
-              uses: actions/upload-artifact@v3
-              if: ${{ matrix.os == 'ubuntu-latest' }}
-              with:
-                  name: MoosicBox.deb
-                  path: MoosicBoxApp/src-tauri/target/release/bundle/deb/*.deb
-
-            - name: Upload AppImage
-              uses: actions/upload-artifact@v3
-              if: ${{ matrix.os == 'ubuntu-latest' }}
-              with:
-                  name: MoosicBox.AppImage
-                  path: MoosicBoxApp/src-tauri/target/release/bundle/appimage/*.AppImage
-
-            - name: Upload app
-              uses: actions/upload-artifact@v3
-              if: ${{ matrix.os == 'macos-latest' }}
-              with:
-                  name: MoosicBox-x86_64.app
-                  path: MoosicBoxApp/src-tauri/target/release/bundle/macos/*.app
-
-            - name: Upload dmg
-              uses: actions/upload-artifact@v3
-              if: ${{ matrix.os == 'macos-latest' }}
-              with:
-                  name: MoosicBox-x86_64.dmg
-                  path: MoosicBoxApp/src-tauri/target/release/bundle/dmg/*.dmg
-
-            - name: Upload exe
-              uses: actions/upload-artifact@v3
-              if: ${{ matrix.os == 'windows-latest' }}
-              with:
-                  name: MoosicBox.exe
-                  path: MoosicBoxApp/src-tauri/target/release/bundle/nsis/*.exe
-
-            - name: Upload msi
-              uses: actions/upload-artifact@v3
-              if: ${{ matrix.os == 'windows-latest' }}
-              with:
-                  name: MoosicBox.msi
-                  path: MoosicBoxApp/src-tauri/target/release/bundle/msi/*.msi
