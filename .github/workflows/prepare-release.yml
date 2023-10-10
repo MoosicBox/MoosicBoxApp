@@ -255,9 +255,11 @@ jobs:
             - name: Set asset names
               id: asset_names
               run: |
+                  RAW_NAME="${{ format('{0}{1}{2}', matrix.asset.name, matrix.compression.replace_extension && '_' || '.', matrix.asset.extension) }}"
+                  echo "raw_name=$RAW_NAME" >> $GITHUB_OUTPUT
                   echo "existing=${{ matrix.asset.decompress && matrix.asset.decompress_file || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}" >> $GITHUB_OUTPUT
                   echo "input=${{ format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}${{ matrix.asset.decompress && matrix.compression.tar && '.tar' || '' }}" >> $GITHUB_OUTPUT
-                  echo "output=${{ format('{0}{1}{2}', matrix.asset.name, matrix.compression.replace_extension && '_' || '.', matrix.asset.extension) }}${{ matrix.asset.decompress && matrix.compression.tar && '.tar' || '' }}.${{ matrix.compression.extension }}" >> $GITHUB_OUTPUT
+                  echo "output=$RAW_NAME${{ matrix.asset.decompress && matrix.compression.tar && '.tar' || '' }}.${{ matrix.compression.extension }}" >> $GITHUB_OUTPUT
 
             - name: Download ${{ matrix.asset }} Asset
               uses: dsaltares/fetch-gh-release-asset@master
@@ -273,15 +275,15 @@ jobs:
                       x \
                       -t${{ matrix.asset.decompress_algorithm }} \
                       ${{ matrix.asset.decompress_file }} \
-                      -o${{ matrix.asset.name }}.${{ matrix.asset.extension }}
+                      -ooutput_file
 
             - name: Tar
               if: ${{ matrix.asset.decompress && matrix.compression.tar }}
               run: |
                   tar \
                       -cvf \
-                      ${{ matrix.asset.name }}.${{ matrix.asset.extension }}.tar \
-                      ${{ matrix.asset.name }}.${{ matrix.asset.extension }}
+                      ${{ steps.asset_names.outputs.raw_name }}.tar \
+                      output_file
 
             - name: Compress ${{ matrix.asset }}
               run: |
