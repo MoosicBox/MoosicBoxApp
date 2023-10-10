@@ -9,6 +9,8 @@ env:
 
 jobs:
     package:
+        permissions: write-all
+
         runs-on: ${{ matrix.os }}
 
         strategy:
@@ -208,6 +210,8 @@ jobs:
                   files: assets/*
 
     compress:
+        permissions: write-all
+
         runs-on: ubuntu-latest
         needs: package
 
@@ -297,12 +301,8 @@ jobs:
                   repository: ${{ github.repository }}
                   assets: ${{ matrix.compression.replace_extension && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }}
 
-            - name: Upload Asset
-              uses: actions/upload-release-asset@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
+            - name: Upload Assets
+              uses: softprops/action-gh-release@v1
               with:
-                  upload_url: ${{ github.event.release.upload_url }}
-                  asset_path: ./${{ matrix.compression.replace_extension && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }}
-                  asset_name: ${{ matrix.compression.replace_extension && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }}
-                  asset_content_type: ${{ matrix.compression.content_type }}
+                  token: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
+                  files: ${{ matrix.compression.replace_extension && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }}
