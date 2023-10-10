@@ -133,7 +133,7 @@ jobs:
                   mv appimage/moosic-box_${{ steps.package_version.outputs.version }}_amd64.AppImage \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox_amd64.AppImage
 
-            - name: Add MoosicBox_x64.app Asset
+            - name: Add MoosicBox_x64_macos_app Asset
               if: ${{ matrix.os == 'macos-latest' }}
               shell: bash
               run: |
@@ -141,7 +141,7 @@ jobs:
                       a \
                       -mx=9 \
                       -tzip \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64.app.zip \
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64_macos_app.zip \
                       MoosicBoxApp/src-tauri/target/release/bundle/macos/MoosicBox.app
 
             - name: Add MoosicBox_x64.dmg Asset
@@ -188,7 +188,7 @@ jobs:
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
                   assets: |
-                      MoosicBox_x64.app.zip
+                      MoosicBox_x64_macos_app.zip
                       MoosicBox_x64.dmg
 
             - name: Delete Windows Assets
@@ -245,26 +245,11 @@ jobs:
                       compression_level: 9
                       tar: false
                 asset:
-                    - name: MoosicBox_amd64
-                      extension: deb
-                      decompress: false
-                    - name: MoosicBox_amd64
-                      extension: AppImage
-                      decompress: false
-                    - name: MoosicBox_x64
+                    - name: MoosicBox_x64_macos
                       extension: app
                       decompress: true
-                      decompress_file: MoosicBox_x64.app.zip
+                      decompress_file: MoosicBox_x64_macos_app.zip
                       decompress_algorithm: zip
-                    - name: MoosicBox_x64
-                      extension: dmg
-                      decompress: false
-                    - name: MoosicBox_x64-setup
-                      extension: exe
-                      decompress: false
-                    - name: MoosicBox_x64
-                      extension: msi
-                      decompress: false
 
         steps:
             - name: Set asset names
