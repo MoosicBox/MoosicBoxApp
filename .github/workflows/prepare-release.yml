@@ -223,27 +223,27 @@ jobs:
                       extension: xz
                       replace_extension: false
                       compression_level: 9
-                      content_type: application/octet-stream
+                      tar: true
                     - algorithm: 7z
                       extension: 7z
                       replace_extension: true
                       compression_level: 9
-                      content_type: application/octet-stream
+                      tar: false
                     - algorithm: bzip2
                       extension: bz2
                       replace_extension: false
                       compression_level: 9
-                      content_type: application/octet-stream
+                      tar: true
                     - algorithm: gzip
                       extension: gz
                       replace_extension: false
                       compression_level: 9
-                      content_type: application/x-gzip
+                      tar: true
                     - algorithm: zip
                       extension: zip
                       replace_extension: true
                       compression_level: 9
-                      content_type: application/x-zip-compressed
+                      tar: false
                 asset:
                     - name: MoosicBox_amd64
                       extension: deb
@@ -283,26 +283,34 @@ jobs:
                       ${{ matrix.asset.decompress_file }} \
                       -o${{ matrix.asset.name }}.${{ matrix.asset.extension }}
 
+            - name: Tar
+              if: ${{ matrix.asset.decompress && matrix.compression.tar }}
+              run: |
+                  tar \
+                      -cvf \
+                      ${{ matrix.asset.name }}.${{ matrix.asset.extension }}.tar \
+                      ${{ matrix.asset.name }}.${{ matrix.asset.extension }}
+
             - name: Compress ${{ matrix.asset }}
               run: |
                   7z \
                       a \
                       -mx=${{ matrix.compression.compression_level }} \
                       -t${{ matrix.compression.algorithm }} \
-                      ${{ (matrix.compression.replace_extension && !matrix.asset.decompress) && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }} \
-                      ${{ format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}
+                      ${{ (matrix.compression.replace_extension && !matrix.asset.decompress) && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}${{ matrix.asset.decompress && matrix.compression.tar && '.tar' || '' }}.${{ matrix.compression.extension }} \
+                      ${{ format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}${{ matrix.asset.decompress && matrix.compression.tar && '.tar' || '' }}
 
-            - name: Delete ${{ (matrix.compression.replace_extension && !matrix.asset.decompress) && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }} Asset
+            - name: Delete ${{ (matrix.compression.replace_extension && !matrix.asset.decompress) && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}${{ matrix.asset.decompress && matrix.compression.tar && '.tar' || '' }}.${{ matrix.compression.extension }} Asset
               uses: mknejp/delete-release-assets@v1
               with:
                   fail-if-no-assets: false
                   token: ${{ github.token }}
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
-                  assets: ${{ (matrix.compression.replace_extension && !matrix.asset.decompress) && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }}
+                  assets: ${{ (matrix.compression.replace_extension && !matrix.asset.decompress) && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}${{ matrix.asset.decompress && matrix.compression.tar && '.tar' || '' }}.${{ matrix.compression.extension }}
 
             - name: Upload Assets
               uses: softprops/action-gh-release@v1
               with:
                   token: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
-                  files: ${{ (matrix.compression.replace_extension && !matrix.asset.decompress) && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}.${{ matrix.compression.extension }}
+                  files: ${{ (matrix.compression.replace_extension && !matrix.asset.decompress) && matrix.asset.name || format('{0}.{1}', matrix.asset.name, matrix.asset.extension) }}${{ matrix.asset.decompress && matrix.compression.tar && '.tar' || '' }}.${{ matrix.compression.extension }}
