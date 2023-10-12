@@ -26,7 +26,8 @@
         "@solid-primitives/storage": "^2.1.1",
         "@tauri-apps/api": "^1.5.0",
         "date-fns": "^2.30.0",
-        "howler": "^2.2.4"
+        "howler": "^2.2.4",
+        "tauri-plugin-log-api": "github:tauri-apps/tauri-plugin-log#v1"
     },
     "devDependencies": {
         "@solidjs/meta": "^0.28.6",

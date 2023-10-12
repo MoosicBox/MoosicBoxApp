@@ -3,6 +3,7 @@
 
 use moosicbox_core::slim::menu::Album;
 use tauri::Manager;
+use tauri_plugin_log::LogTarget;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -30,6 +31,15 @@ async fn api_proxy(url: String) -> serde_json::Value {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .targets([
+                    LogTarget::Stdout,
+                    // LogTarget::Webview,
+                    LogTarget::LogDir,
+                ])
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![
             show_main_window,
             get_albums,
