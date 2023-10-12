@@ -14,7 +14,7 @@ import { ErrorBoundary } from "solid-start/error-boundary";
 import { invoke } from "@tauri-apps/api/tauri";
 import { onStartup } from "./services/app";
 import { Api, ApiType, api } from "./services/api";
-import { attachConsole, debug, info } from "tauri-plugin-log-api";
+import { attachConsole, debug, error, info, warn } from "tauri-plugin-log-api";
 
 function apiFetch<T>(
     url: string,
@@ -78,6 +78,14 @@ console.debug = (...args) => {
 
 console.log = (...args) => {
     info(args.map(objToStr).join(" "));
+};
+
+console.warn = (...args) => {
+    warn(args.map(objToStr).join(" "));
+};
+
+console.error = (...args) => {
+    error(args.map(objToStr).join(" "));
 };
 
 const apiOverride: ApiType = {
