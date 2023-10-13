@@ -21,6 +21,8 @@ portpicker = "0.1"
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core" }
 log = "0.4.20"
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+tauri-plugin-aptabase = "0.4"
+debounce = "0.2.2"
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem

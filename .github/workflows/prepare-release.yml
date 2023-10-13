@@ -70,6 +70,8 @@ jobs:
 
             - name: Build
               working-directory: MoosicBoxApp/src-tauri
+              env:
+                  APTABASE_APP_KEY: ${{ secrets.APTABASE_APP_KEY }}
               run: cargo build --verbose
 
             - name: Checkout MoosicBoxUI
@@ -109,6 +111,8 @@ jobs:
 
             - name: Build Tauri App
               working-directory: MoosicBoxApp
+              env:
+                  APTABASE_APP_KEY: ${{ secrets.APTABASE_APP_KEY }}
               run: pnpm tauri build
 
             - name: Make assets directory

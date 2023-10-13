@@ -21,6 +21,7 @@
     "type": "module",
     "license": "MIT",
     "dependencies": {
+        "@aptabase/tauri": "^0.4.1",
         "@aws-sdk/client-ssm": "^3.410.0",
         "@solid-primitives/scheduled": "^1.4.1",
         "@solid-primitives/storage": "^2.1.1",

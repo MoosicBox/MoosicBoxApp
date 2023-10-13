@@ -975,6 +975,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "debounce"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7f2e5bc95e82bd8e9b333f4c5ff6dceab54e2e99f4d8cef2a680d417206ead34"
+
+[[package]]
 name = "deranged"
 version = "0.3.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2317,6 +2323,7 @@ dependencies = [
 name = "moosicbox_app"
 version = "0.1.0"
 dependencies = [
+ "debounce",
  "log",
  "moosicbox_core",
  "portpicker",
@@ -2325,6 +2332,7 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
+ "tauri-plugin-aptabase",
  "tauri-plugin-log",
 ]
 
@@ -3998,6 +4006,25 @@ dependencies = [
  "syn 1.0.109",
  "tauri-codegen",
  "tauri-utils",
+]
+
+[[package]]
+name = "tauri-plugin-aptabase"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a15ea259aecca447ff1ae6de28c9c1e756fc83735840803a9ec766b6c577006"
+dependencies = [
+ "futures",
+ "log",
+ "os_info",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "tauri",
+ "thiserror",
+ "time",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]

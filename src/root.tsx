@@ -15,6 +15,7 @@ import { invoke } from "@tauri-apps/api/tauri";
 import { onStartup } from "./services/app";
 import { Api, ApiType, api } from "./services/api";
 import { attachConsole, debug, error, info, warn } from "tauri-plugin-log-api";
+import { trackEvent } from "@aptabase/tauri";
 
 function apiFetch<T>(
     url: string,
@@ -81,12 +82,18 @@ console.log = (...args) => {
 };
 
 console.warn = (...args) => {
+    trackEvent("warn", { args: args.map(circularStringify).join(", ") });
     warn(args.map(objToStr).join(" "));
 };
 
 console.error = (...args) => {
+    trackEvent("error", { args: args.map(circularStringify).join(", ") });
     error(args.map(objToStr).join(" "));
 };
+
+onStartup(() => {
+    trackEvent("onStartup");
+});
 
 const apiOverride: ApiType = {
     async getArtist(artistId, signal) {
