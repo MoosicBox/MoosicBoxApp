@@ -68,12 +68,6 @@ jobs:
                       libayatana-appindicator3-dev \
                       librsvg2-dev
 
-            - name: Build
-              working-directory: MoosicBoxApp/src-tauri
-              env:
-                  APTABASE_APP_KEY: ${{ secrets.APTABASE_APP_KEY }}
-              run: cargo build --verbose
-
             - name: Checkout MoosicBoxUI
               uses: actions/checkout@master
               with:
