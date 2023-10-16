@@ -16,6 +16,10 @@ import { onStartup } from "./services/app";
 import { Api, ApiType, api } from "./services/api";
 import { attachConsole, debug, error, info, warn } from "tauri-plugin-log-api";
 import { trackEvent } from "@aptabase/tauri";
+import { player as howlerPlayer } from "~/services/howler-player";
+import { player } from "./services/player";
+
+Object.assign(player, howlerPlayer);
 
 function apiFetch<T>(
     url: string,
@@ -158,9 +162,7 @@ const apiOverride: ApiType = {
     },
 };
 
-Object.entries(apiOverride).forEach(([key, value]) => {
-    api[key as keyof typeof api] = value;
-});
+Object.assign(api, apiOverride);
 
 export default function Root() {
     onStartup(async () => {
