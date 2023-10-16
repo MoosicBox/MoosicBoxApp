@@ -35,7 +35,7 @@ jobs:
             - uses: ncipollo/release-action@v1
               with:
                   token: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
-                  tag: "${{github.ref_name}}"
+                  tag: "${{ github.ref_name }}"
                   prerelease: true
                   body: |
                       **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.stable_release.outputs.release || github.head_ref || github.ref_name }}...${{ github.ref_name }}
