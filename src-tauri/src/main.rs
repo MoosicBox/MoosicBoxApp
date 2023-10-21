@@ -10,7 +10,7 @@ use std::{
 
 use debounce::EventDebouncer;
 use log::{debug, trace};
-use moosicbox_core::slim::menu::Album;
+use moosicbox_core::sqlite::models::Album;
 use serde_json::json;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_aptabase::EventTracker;
