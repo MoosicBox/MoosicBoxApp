@@ -18,8 +18,33 @@ import { attachConsole, debug, error, info, warn } from "tauri-plugin-log-api";
 import { trackEvent } from "@aptabase/tauri";
 import { player as howlerPlayer } from "~/services/howler-player";
 import { player } from "./services/player";
+import { connectionId, connectionName, onConnect, onConnectionNameChanged, registerConnection } from "./services/ws";
 
 Object.assign(player, howlerPlayer);
+
+function updateConnection(connectionId: string, name: string) {
+    registerConnection({
+        connectionId,
+        name,
+        players: [
+            {
+                type: Api.PlayerType.HOWLER,
+                name: 'Web Player',
+            },
+            {
+                type: Api.PlayerType.SYMPHONIA,
+                name: 'Symphonia Player',
+            },
+        ],
+    });
+}
+
+onConnect(() => {
+    updateConnection(connectionId()!, connectionName());
+});
+onConnectionNameChanged((name) => {
+    updateConnection(connectionId()!, name);
+});
 
 function apiFetch<T>(
     url: string,
