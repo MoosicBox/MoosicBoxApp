@@ -22,6 +22,14 @@ import { connectionId, connectionName, onConnect, onConnectionNameChanged, regis
 
 Object.assign(player, howlerPlayer);
 
+declare module './services/api' {
+    namespace Api {
+        export enum PlayerType {
+            SYMPHONIA = 'SYMPHONIA',
+        }
+    }
+}
+
 function updateConnection(connectionId: string, name: string) {
     registerConnection({
         connectionId,
