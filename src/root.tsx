@@ -12,28 +12,48 @@ import {
 } from 'solid-start';
 import { ErrorBoundary } from 'solid-start/error-boundary';
 import { invoke } from '@tauri-apps/api/tauri';
-import { onStartup } from './services/app';
+import { appState, onStartup } from './services/app';
 import { Api, ApiType, api } from './services/api';
 import { attachConsole, debug, error, info, warn } from 'tauri-plugin-log-api';
 import { trackEvent } from '@aptabase/tauri';
-import { player as howlerPlayer } from '~/services/howler-player';
-import { player } from './services/player';
+import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
+import { PlayerType, player } from './services/player';
 import {
+    InboundMessageType,
     connectionId,
     connectionName,
     onConnect,
     onConnectionNameChanged,
+    onMessage,
     registerConnection,
 } from './services/ws';
 
-Object.assign(player, howlerPlayer);
+let currentPlayer: PlayerType | undefined;
 
-declare module './services/api' {
-    namespace Api {
-        export enum PlayerType {
-            SYMPHONIA = 'SYMPHONIA',
-        }
+function updatePlayer() {
+    const connection = appState.connections.find(
+        (c) => c.connectionId === connectionId(),
+    );
+
+    const newPlayer = connection?.players[0];
+
+    if (newPlayer && currentPlayer?.id !== newPlayer.playerId) {
+        currentPlayer = createHowlerPlayer(newPlayer.playerId);
     }
+
+    Object.assign(player, currentPlayer);
+
+    console.debug('Set player to', currentPlayer);
+}
+
+onMessage((data) => {
+    if (data.type === InboundMessageType.CONNECTIONS) {
+        updatePlayer();
+    }
+});
+
+export enum AppPlayerType {
+    SYMPHONIA = 'SYMPHONIA',
 }
 
 function updateConnection(connectionId: string, name: string) {
@@ -46,7 +66,7 @@ function updateConnection(connectionId: string, name: string) {
                 name: 'Web Player',
             },
             {
-                type: Api.PlayerType.SYMPHONIA,
+                type: AppPlayerType.SYMPHONIA as unknown as Api.PlayerType,
                 name: 'Symphonia Player',
             },
         ],
