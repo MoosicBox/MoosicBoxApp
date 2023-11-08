@@ -35,8 +35,8 @@ impl From<PlayerError> for TauriPlayerError {
 }
 
 static API_URL: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
-static PLAYER: Lazy<Player> = Lazy::new(|| {
-    Player::new(
+static PLAYER: Lazy<Arc<RwLock<Player>>> = Lazy::new(|| {
+    Arc::new(RwLock::new(Player::new(
         Some(
             API_URL
                 .read()
@@ -46,7 +46,7 @@ static PLAYER: Lazy<Player> = Lazy::new(|| {
                 .to_string(),
         ),
         Some(PlaybackType::Stream),
-    )
+    )))
 });
 const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOptions {
     max_retry_count: 10,
@@ -59,9 +59,32 @@ async fn show_main_window(window: tauri::Window) {
     window.get_window("main").unwrap().show().unwrap(); // replace "main" by the name of your window
 }
 
+fn stop_player() -> Result<(), PlayerError> {
+    if let Err(err) = PLAYER.read().unwrap().stop(None) {
+        match err {
+            PlayerError::NoPlayersPlaying => {}
+            _ => return Err(err),
+        }
+    }
+    Ok(())
+}
+
 #[tauri::command]
-async fn set_api_url(api_url: String) {
+async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
     API_URL.write().unwrap().replace(api_url);
+    let stopped = stop_player();
+    *PLAYER.write().unwrap() = Player::new(
+        Some(
+            API_URL
+                .read()
+                .unwrap()
+                .clone()
+                .expect("API_URL not set")
+                .to_string(),
+        ),
+        Some(PlaybackType::Stream),
+    );
+    Ok(stopped?)
 }
 
 #[tauri::command]
@@ -78,12 +101,7 @@ async fn get_albums() -> Vec<Album> {
 
 #[tauri::command]
 async fn player_play(track_ids: Vec<i32>) -> Result<PlaybackStatus, TauriPlayerError> {
-    if let Err(err) = PLAYER.stop(None) {
-        match err {
-            PlayerError::NoPlayersPlaying => {}
-            _ => return Err(err.into()),
-        }
-    }
+    stop_player()?;
 
     info!("Playing Symphonia Player: {track_ids:?}");
 
@@ -92,27 +110,40 @@ async fn player_play(track_ids: Vec<i32>) -> Result<PlaybackStatus, TauriPlayerE
         None,
     );
 
-    Ok(PLAYER.play_playback(playback, None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+    Ok(PLAYER.read().unwrap().play_playback(
+        playback,
+        None,
+        Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
+    )?)
 }
 
 #[tauri::command]
 async fn player_pause() -> Result<PlaybackStatus, TauriPlayerError> {
-    Ok(PLAYER.pause_playback(None)?)
+    Ok(PLAYER.read().unwrap().pause_playback(None)?)
 }
 
 #[tauri::command]
 async fn player_resume() -> Result<PlaybackStatus, TauriPlayerError> {
-    Ok(PLAYER.resume_playback(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+    Ok(PLAYER
+        .read()
+        .unwrap()
+        .resume_playback(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
 }
 
 #[tauri::command]
 async fn player_next_track() -> Result<PlaybackStatus, TauriPlayerError> {
-    Ok(PLAYER.next_track(None, None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+    Ok(PLAYER
+        .read()
+        .unwrap()
+        .next_track(None, None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
 }
 
 #[tauri::command]
 async fn player_previous_track() -> Result<PlaybackStatus, TauriPlayerError> {
-    Ok(PLAYER.previous_track(None, None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+    Ok(PLAYER
+        .read()
+        .unwrap()
+        .previous_track(None, None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
 }
 
 #[tauri::command]
@@ -120,7 +151,12 @@ fn player_update_playback(
     position: Option<u16>,
     seek: Option<f64>,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
-    Ok(PLAYER.update_playback(None, position, seek, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+    Ok(PLAYER.read().unwrap().update_playback(
+        None,
+        position,
+        seek,
+        Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
+    )?)
 }
 
 #[tauri::command]
