@@ -4,22 +4,64 @@
 use std::{
     collections::HashMap,
     env,
-    sync::{Mutex, OnceLock},
+    sync::{Arc, Mutex, OnceLock, RwLock},
     time::Duration,
 };
 
 use debounce::EventDebouncer;
-use log::{debug, trace};
+use log::{debug, info, trace};
 use moosicbox_core::sqlite::models::Album;
+use moosicbox_player::player::{
+    Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player, PlayerError, TrackOrId,
+};
+use once_cell::sync::Lazy;
+use serde::Serialize;
 use serde_json::json;
 use tauri::{AppHandle, Manager};
 use tauri_plugin_aptabase::EventTracker;
 use tauri_plugin_log::LogTarget;
 
+#[derive(Serialize)]
+pub struct TauriPlayerError {
+    message: String,
+}
+
+impl From<PlayerError> for TauriPlayerError {
+    fn from(err: PlayerError) -> Self {
+        TauriPlayerError {
+            message: err.to_string(),
+        }
+    }
+}
+
+static API_URL: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
+static PLAYER: Lazy<Player> = Lazy::new(|| {
+    Player::new(
+        Some(
+            API_URL
+                .read()
+                .unwrap()
+                .clone()
+                .expect("API_URL not set")
+                .to_string(),
+        ),
+        Some(PlaybackType::Stream),
+    )
+});
+const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOptions {
+    max_retry_count: 10,
+    retry_delay: std::time::Duration::from_millis(1000),
+};
+
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 async fn show_main_window(window: tauri::Window) {
     window.get_window("main").unwrap().show().unwrap(); // replace "main" by the name of your window
+}
+
+#[tauri::command]
+async fn set_api_url(api_url: String) {
+    API_URL.write().unwrap().replace(api_url);
 }
 
 #[tauri::command]
@@ -35,9 +77,70 @@ async fn get_albums() -> Vec<Album> {
 }
 
 #[tauri::command]
-async fn api_proxy(url: String) -> serde_json::Value {
-    println!("Fetching url from proxy: {url}");
+async fn player_play(track_ids: Vec<i32>) -> Result<PlaybackStatus, TauriPlayerError> {
+    if let Err(err) = PLAYER.stop(None) {
+        match err {
+            PlayerError::NoPlayersPlaying => {}
+            _ => return Err(err.into()),
+        }
+    }
+
+    info!("Playing Symphonia Player: {track_ids:?}");
+
+    let playback = Playback::new(
+        track_ids.iter().map(|id| TrackOrId::Id(*id)).collect(),
+        None,
+    );
+
+    Ok(PLAYER.play_playback(playback, None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+}
+
+#[tauri::command]
+async fn player_pause() -> Result<PlaybackStatus, TauriPlayerError> {
+    Ok(PLAYER.pause_playback(None)?)
+}
+
+#[tauri::command]
+async fn player_resume() -> Result<PlaybackStatus, TauriPlayerError> {
+    Ok(PLAYER.resume_playback(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+}
+
+#[tauri::command]
+async fn player_next_track() -> Result<PlaybackStatus, TauriPlayerError> {
+    Ok(PLAYER.next_track(None, None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+}
+
+#[tauri::command]
+async fn player_previous_track() -> Result<PlaybackStatus, TauriPlayerError> {
+    Ok(PLAYER.previous_track(None, None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+}
+
+#[tauri::command]
+fn player_update_playback(
+    position: Option<u16>,
+    seek: Option<f64>,
+) -> Result<PlaybackStatus, TauriPlayerError> {
+    Ok(PLAYER.update_playback(None, position, seek, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+}
+
+#[tauri::command]
+async fn api_proxy_get(url: String) -> serde_json::Value {
+    info!("Fetching url from proxy: {url}");
     reqwest::get(url).await.unwrap().json().await.unwrap()
+}
+
+#[tauri::command]
+async fn api_proxy_post(url: String, body: Option<serde_json::Value>) -> serde_json::Value {
+    info!("Posting url from proxy: {url}");
+    let client = reqwest::Client::new();
+
+    let mut builder = client.post(url);
+
+    if let Some(body) = body {
+        builder = builder.json(&body);
+    }
+
+    builder.send().await.unwrap().json().await.unwrap()
 }
 
 static DISABLED_EVENTS: [&str; 2] = ["app_main_events_cleared", "app_window_event"];
@@ -92,8 +195,16 @@ fn main() {
         .plugin(tauri_plugin_aptabase::Builder::new(aptabase_app_key).build())
         .invoke_handler(tauri::generate_handler![
             show_main_window,
+            set_api_url,
             get_albums,
-            api_proxy
+            player_play,
+            player_pause,
+            player_resume,
+            player_next_track,
+            player_previous_track,
+            player_update_playback,
+            api_proxy_get,
+            api_proxy_post,
         ])
         .build(tauri::generate_context!())
         .expect("error while running tauri application")

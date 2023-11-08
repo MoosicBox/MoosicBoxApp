@@ -19,7 +19,9 @@ serde_json = "1.0"
 reqwest = "0.11.20"
 portpicker = "0.1"
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core" }
+moosicbox_player = { path = "../../MoosicBoxServer/packages/player" }
 log = "0.4.20"
+once_cell = { version = "1.18.0" }
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-aptabase = "0.4"
 debounce = "0.2.2"

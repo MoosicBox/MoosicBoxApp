@@ -93,7 +93,7 @@ function apiFetch<T>(
             reject();
         });
 
-        const data = await invoke<T>('api_proxy', {
+        const data = await invoke<T>('api_proxy_get', {
             url: `${Api.apiUrl()}/${url}${query ? `?${query}` : ''}`,
         });
 
@@ -226,6 +226,11 @@ Object.assign(api, apiOverride);
 export default function Root() {
     onStartup(async () => {
         await invoke('show_main_window');
+        await invoke('set_api_url', { apiUrl: Api.apiUrl() });
+
+        Api.onApiUrlUpdated(async (url) => {
+            await invoke('set_api_url', { apiUrl: url });
+        });
     });
     return (
         <Html lang="en">
