@@ -23,7 +23,7 @@ moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-fea
 log = "0.4.20"
 once_cell = { version = "1.18.0" }
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
-tauri-plugin-aptabase = "0.4"
+tauri-plugin-aptabase = { version = "0.4", optional = true }
 debounce = "0.2.2"
 
 [features]
@@ -40,3 +40,4 @@ pulseaudio = ["moosicbox_player/pulseaudio"]
 pulseaudio-standard = ["moosicbox_player/pulseaudio-standard"]
 pulseaudio-simple = ["moosicbox_player/pulseaudio-simple"]
 
+aptabase = ["dep:tauri-plugin-aptabase"]

@@ -2,23 +2,18 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{
-    collections::HashMap,
     env,
-    sync::{Arc, Mutex, OnceLock, RwLock},
-    time::Duration,
+    sync::{Arc, RwLock},
 };
 
-use debounce::EventDebouncer;
-use log::{debug, info, trace};
+use log::info;
 use moosicbox_core::sqlite::models::Album;
 use moosicbox_player::player::{
     Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player, PlayerError, TrackOrId,
 };
 use once_cell::sync::Lazy;
 use serde::Serialize;
-use serde_json::json;
-use tauri::{AppHandle, Manager};
-use tauri_plugin_aptabase::EventTracker;
+use tauri::Manager;
 use tauri_plugin_log::LogTarget;
 
 #[derive(Serialize)]
@@ -161,12 +156,20 @@ fn player_update_playback(
 
 #[tauri::command]
 async fn api_proxy_get(url: String) -> serde_json::Value {
+    let url = format!(
+        "{}/{url}",
+        API_URL.read().unwrap().clone().expect("API_URL not set")
+    );
     info!("Fetching url from proxy: {url}");
     reqwest::get(url).await.unwrap().json().await.unwrap()
 }
 
 #[tauri::command]
 async fn api_proxy_post(url: String, body: Option<serde_json::Value>) -> serde_json::Value {
+    let url = format!(
+        "{}/{url}",
+        API_URL.read().unwrap().clone().expect("API_URL not set")
+    );
     info!("Posting url from proxy: {url}");
     let client = reqwest::Client::new();
 
@@ -179,9 +182,19 @@ async fn api_proxy_post(url: String, body: Option<serde_json::Value>) -> serde_j
     builder.send().await.unwrap().json().await.unwrap()
 }
 
-static DISABLED_EVENTS: [&str; 2] = ["app_main_events_cleared", "app_window_event"];
+#[cfg(feature = "aptabase")]
+fn track_event(handler: &tauri::AppHandle, name: &str, props: Option<serde_json::Value>) {
+    use std::{
+        collections::HashMap,
+        sync::{Mutex, OnceLock},
+        time::Duration,
+    };
 
-fn track_event(handler: &AppHandle, name: &str, props: Option<serde_json::Value>) {
+    use debounce::EventDebouncer;
+    use log::{debug, trace};
+    use tauri_plugin_aptabase::EventTracker;
+
+    static DISABLED_EVENTS: [&str; 2] = ["app_main_events_cleared", "app_window_event"];
     static DEBOUNCER_COUNTS: OnceLock<Mutex<HashMap<String, u16>>> = OnceLock::new();
     static DEBOUNCER: OnceLock<EventDebouncer<String>> = OnceLock::new();
 
@@ -216,9 +229,7 @@ fn track_event(handler: &AppHandle, name: &str, props: Option<serde_json::Value>
 }
 
 fn main() {
-    let aptabase_app_key = std::env!("APTABASE_APP_KEY");
-
-    tauri::Builder::default()
+    let app_builder = tauri::Builder::default()
         .plugin(
             tauri_plugin_log::Builder::default()
                 .targets([
@@ -228,7 +239,6 @@ fn main() {
                 ])
                 .build(),
         )
-        .plugin(tauri_plugin_aptabase::Builder::new(aptabase_app_key).build())
         .invoke_handler(tauri::generate_handler![
             show_main_window,
             set_api_url,
@@ -241,29 +251,45 @@ fn main() {
             player_update_playback,
             api_proxy_get,
             api_proxy_post,
-        ])
-        .build(tauri::generate_context!())
-        .expect("error while running tauri application")
-        .run(|handler, event| match event {
-            tauri::RunEvent::Exit { .. } => {
-                track_event(handler, "app_exited", None);
-                handler.flush_events_blocking();
-            }
-            tauri::RunEvent::ExitRequested { api, .. } => track_event(
-                handler,
-                "app_exit_requested",
-                Some(json!({"api": format!("{api:?}")})),
-            ),
-            tauri::RunEvent::WindowEvent { label, event, .. } => track_event(
-                handler,
-                "app_window_event",
-                Some(json!({"label": label, "event": format!("{event:?}")})),
-            ),
-            tauri::RunEvent::Ready => track_event(handler, "app_ready", None),
-            tauri::RunEvent::Resumed => track_event(handler, "app_resumed", None),
-            tauri::RunEvent::MainEventsCleared => {
-                track_event(handler, "app_main_events_cleared", None)
-            }
-            _ => {}
-        });
+        ]);
+
+    #[cfg(feature = "aptabase")]
+    {
+        use serde_json::json;
+        use tauri_plugin_aptabase::EventTracker;
+
+        let aptabase_app_key = std::env!("APTABASE_APP_KEY");
+
+        app_builder
+            .plugin(tauri_plugin_aptabase::Builder::new(aptabase_app_key).build())
+            .build(tauri::generate_context!())
+            .expect("error while running tauri application")
+            .run(|handler, event| match event {
+                tauri::RunEvent::Exit { .. } => {
+                    track_event(handler, "app_exited", None);
+                    handler.flush_events_blocking();
+                }
+                tauri::RunEvent::ExitRequested { api, .. } => track_event(
+                    handler,
+                    "app_exit_requested",
+                    Some(json!({"api": format!("{api:?}")})),
+                ),
+                tauri::RunEvent::WindowEvent { label, event, .. } => track_event(
+                    handler,
+                    "app_window_event",
+                    Some(json!({"label": label, "event": format!("{event:?}")})),
+                ),
+                tauri::RunEvent::Ready => track_event(handler, "app_ready", None),
+                tauri::RunEvent::Resumed => track_event(handler, "app_resumed", None),
+                tauri::RunEvent::MainEventsCleared => {
+                    track_event(handler, "app_main_events_cleared", None)
+                }
+                _ => {}
+            });
+    }
+
+    #[cfg(not(feature = "aptabase"))]
+    app_builder
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
 }
