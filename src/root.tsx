@@ -94,7 +94,7 @@ function apiFetch<T>(
         });
 
         const data = await invoke<T>('api_proxy_get', {
-            url: `${Api.apiUrl()}/${url}${query ? `?${query}` : ''}`,
+            url: `${url}${query ? `?${query}` : ''}`,
         });
 
         if (!cancelled) {
