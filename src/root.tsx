@@ -204,9 +204,9 @@ const apiOverride: ApiType = {
 
         return apiFetch('album/tracks', query, signal);
     },
-    getAlbumArtwork(album) {
+    getAlbumArtwork(album, width, height) {
         if (album?.containsArtwork) {
-            return `${Api.apiUrl()}/albums/${album.albumId}/300x300`;
+            return `${Api.apiUrl()}/albums/${album.albumId}/${width}x${height}`;
         }
         return '/img/album.svg';
     },
