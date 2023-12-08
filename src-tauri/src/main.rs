@@ -9,7 +9,8 @@ use std::{
 use log::info;
 use moosicbox_core::sqlite::models::Album;
 use moosicbox_player::player::{
-    Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player, PlayerError, TrackOrId,
+    AudioFormat, Playback, PlaybackQuality, PlaybackRetryOptions, PlaybackStatus, PlaybackType,
+    Player, PlayerError, TrackOrId,
 };
 use once_cell::sync::Lazy;
 use serde::Serialize;
@@ -103,6 +104,9 @@ async fn player_play(track_ids: Vec<i32>) -> Result<PlaybackStatus, TauriPlayerE
     let playback = Playback::new(
         track_ids.iter().map(|id| TrackOrId::Id(*id)).collect(),
         None,
+        PlaybackQuality {
+            format: AudioFormat::Source,
+        },
     );
 
     Ok(PLAYER.read().unwrap().play_playback(
