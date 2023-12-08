@@ -107,6 +107,7 @@ async fn player_play(track_ids: Vec<i32>) -> Result<PlaybackStatus, TauriPlayerE
         PlaybackQuality {
             format: AudioFormat::Source,
         },
+        None,
     );
 
     Ok(PLAYER.read().unwrap().play_playback(
