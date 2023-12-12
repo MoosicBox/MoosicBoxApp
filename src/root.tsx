@@ -28,6 +28,8 @@ import {
     registerConnection,
 } from './services/ws';
 
+const APTABASE_ENABLED = false;
+
 let currentPlayer: PlayerType | undefined;
 
 function updatePlayer() {
@@ -145,17 +147,23 @@ console.log = (...args) => {
 };
 
 console.warn = (...args) => {
-    trackEvent('warn', { args: args.map(circularStringify).join(', ') });
+    if (APTABASE_ENABLED) {
+        trackEvent('warn', { args: args.map(circularStringify).join(', ') });
+    }
     warn(args.map(objToStr).join(' '));
 };
 
 console.error = (...args) => {
-    trackEvent('error', { args: args.map(circularStringify).join(', ') });
+    if (APTABASE_ENABLED) {
+        trackEvent('error', { args: args.map(circularStringify).join(', ') });
+    }
     error(args.map(objToStr).join(' '));
 };
 
 onStartup(() => {
-    trackEvent('onStartup');
+    if (APTABASE_ENABLED) {
+        trackEvent('onStartup');
+    }
 });
 
 const apiOverride: ApiType = {
