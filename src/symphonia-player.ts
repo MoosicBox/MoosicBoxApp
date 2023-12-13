@@ -22,24 +22,22 @@ onVolumeChanged((_value) => {});
 
 let playbackId: number | undefined;
 
+type PlaybackStatus = { playbackId: number };
+
 function play(): boolean {
     if (playing()) {
         console.debug('Already playing');
         (async () => {
-            await invoke('player_update_playback', {
-                position: playlistPosition(),
-                seek: 0,
-                tracks: playlist().map((p) => p.trackId),
-            });
+            await updatePlayback();
         })();
-        return false;
+        return true;
     }
     if (typeof playbackId !== 'undefined') {
         console.debug('Resuming playback');
         (async () => {
             const playbackStatus = (await invoke('player_resume', {
                 trackIds: playlist()?.map((t) => t.trackId) || [],
-            })) as { playbackId: number };
+            })) as PlaybackStatus;
 
             setPlaying(true, false);
             playbackId = playbackStatus.playbackId;
@@ -55,7 +53,7 @@ function play(): boolean {
             const playbackStatus = (await invoke('player_play', {
                 trackIds: playlist()?.map((t) => t.trackId) || [],
                 sessionId,
-            })) as { playbackId: number };
+            })) as PlaybackStatus;
 
             playbackId = playbackStatus.playbackId;
 
@@ -64,6 +62,16 @@ function play(): boolean {
         })();
     }
     return true;
+}
+
+async function updatePlayback() {
+    const playbackStatus = (await invoke('player_update_playback', {
+        position: playlistPosition(),
+        seek: 0,
+        tracks: playlist().map((p) => p.trackId),
+    })) as PlaybackStatus;
+
+    playbackId = playbackStatus.playbackId;
 }
 
 function seek(seek: number) {
@@ -108,18 +116,17 @@ function stop() {
 }
 
 async function playAlbum(album: Api.Album | Api.Track): Promise<boolean> {
-    setCurrentAlbum(album);
     const tracks = await api.getAlbumTracks(album.albumId);
     return playPlaylist(tracks);
 }
 
 function playPlaylist(tracks: Api.Track[]): boolean {
+    playbackId = undefined;
     const firstTrack = tracks[0];
     setCurrentAlbum(firstTrack);
-
-    setPlaylistPosition(0, false);
-    setPlaylist(tracks, false);
-    setCurrentSeek(0, false);
+    setPlaylistPosition(0);
+    setPlaylist(tracks);
+    setCurrentSeek(0);
     return player.play()!;
 }
 
@@ -159,7 +166,11 @@ function onSeekUpdated(seek: number) {
     }
 }
 
-function onPlayingUpdated(_updatedPlaying: boolean) {}
+function onPlayingUpdated(updatedPlaying: boolean) {
+    if (isPlayerActive()) {
+        setPlaying(updatedPlaying);
+    }
+}
 
 export function createPlayer(id: number): PlayerType {
     return {
