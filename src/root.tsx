@@ -43,16 +43,20 @@ const APTABASE_ENABLED = false;
 let currentPlayer: PlayerType | undefined;
 
 (async () => {
-    await listen('UPDATE_SESSION', (event) => {
+    await listen('UPDATE_SESSION', async (event) => {
+        const partialUpdate = event.payload as PartialUpdateSession;
+
+        if (partialUpdate.playlist) {
+            const ids = partialUpdate.playlist.tracks as unknown as number[];
+            partialUpdate.playlist.tracks = await api.getTracks(ids);
+        }
+
         setPlayerState(
             produce((state) => {
-                updateSessionPartial(
-                    state,
-                    event.payload as PartialUpdateSession,
-                );
+                updateSessionPartial(state, partialUpdate);
             }),
         );
-        updateSession(event.payload as PartialUpdateSession);
+        updateSession(partialUpdate);
     });
 })();
 
@@ -272,6 +276,13 @@ const apiOverride: Partial<ApiType> = {
         });
 
         return apiRequest('get', 'album/tracks', query, signal);
+    },
+    async getTracks(trackIds, signal) {
+        const query = new URLSearchParams({
+            trackIds: `${trackIds.join(',')}`,
+        });
+
+        return apiRequest('get', 'tracks', query, signal);
     },
     getAlbumArtwork(album, width, height) {
         if (album?.containsArtwork) {
