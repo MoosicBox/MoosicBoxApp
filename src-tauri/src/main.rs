@@ -2,19 +2,21 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use std::{
+    collections::HashMap,
     env,
-    sync::{Arc, RwLock},
+    sync::{Arc, OnceLock, RwLock},
+    usize,
 };
 
 use log::info;
-use moosicbox_core::sqlite::models::Album;
+use moosicbox_core::sqlite::models::{Album, UpdateSession};
 use moosicbox_player::player::{
     AudioFormat, Playback, PlaybackQuality, PlaybackRetryOptions, PlaybackStatus, PlaybackType,
-    Player, PlayerError, TrackOrId,
+    Player, PlayerError, PlayerSource, TrackOrId,
 };
 use once_cell::sync::Lazy;
 use serde::Serialize;
-use tauri::Manager;
+use tauri::{AppHandle, Manager};
 use tauri_plugin_log::LogTarget;
 
 #[derive(Serialize)]
@@ -31,23 +33,58 @@ impl From<PlayerError> for TauriPlayerError {
 }
 
 static API_URL: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
-static PLAYER: Lazy<Arc<RwLock<Player>>> = Lazy::new(|| {
-    Arc::new(RwLock::new(Player::new(
-        Some(
-            API_URL
+static SIGNATURE_TOKEN: Lazy<Arc<RwLock<Option<String>>>> =
+    Lazy::new(|| Arc::new(RwLock::new(None)));
+static CLIENT_ID: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
+static API_TOKEN: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
+static PLAYER: Lazy<Arc<RwLock<Player>>> = Lazy::new(|| Arc::new(RwLock::new(new_player())));
+const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOptions {
+    max_retry_count: 10,
+    retry_delay: std::time::Duration::from_millis(1000),
+};
+
+fn new_player() -> Player {
+    let headers = if API_TOKEN.read().unwrap().is_some() {
+        let mut headers = HashMap::new();
+        headers.insert(
+            "Authorization".to_string(),
+            API_TOKEN.read().unwrap().clone().unwrap().to_string(),
+        );
+        Some(headers)
+    } else {
+        None
+    };
+
+    let query = if CLIENT_ID.read().unwrap().is_some() && SIGNATURE_TOKEN.read().unwrap().is_some()
+    {
+        let mut query = HashMap::new();
+        query.insert(
+            "clientId".to_string(),
+            CLIENT_ID.read().unwrap().clone().unwrap().to_string(),
+        );
+        query.insert(
+            "signature".to_string(),
+            SIGNATURE_TOKEN.read().unwrap().clone().unwrap().to_string(),
+        );
+        Some(query)
+    } else {
+        None
+    };
+
+    Player::new(
+        PlayerSource::Remote {
+            host: API_URL
                 .read()
                 .unwrap()
                 .clone()
                 .expect("API_URL not set")
                 .to_string(),
-        ),
+            headers,
+            query,
+        },
         Some(PlaybackType::Stream),
-    )))
-});
-const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOptions {
-    max_retry_count: 10,
-    retry_delay: std::time::Duration::from_millis(1000),
-};
+    )
+}
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -56,7 +93,7 @@ async fn show_main_window(window: tauri::Window) {
 }
 
 fn stop_player() -> Result<(), PlayerError> {
-    if let Err(err) = PLAYER.read().unwrap().stop(None) {
+    if let Err(err) = PLAYER.read().unwrap().stop() {
         match err {
             PlayerError::NoPlayersPlaying => {}
             _ => return Err(err),
@@ -66,26 +103,39 @@ fn stop_player() -> Result<(), PlayerError> {
 }
 
 #[tauri::command]
+async fn set_client_id(client_id: String) -> Result<(), TauriPlayerError> {
+    CLIENT_ID.write().unwrap().replace(client_id);
+    let stopped = stop_player();
+    *PLAYER.write().unwrap() = new_player();
+    Ok(stopped?)
+}
+
+#[tauri::command]
+async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerError> {
+    SIGNATURE_TOKEN.write().unwrap().replace(signature_token);
+    let stopped = stop_player();
+    *PLAYER.write().unwrap() = new_player();
+    Ok(stopped?)
+}
+
+#[tauri::command]
+async fn set_api_token(api_token: String) -> Result<(), TauriPlayerError> {
+    API_TOKEN.write().unwrap().replace(api_token);
+    let stopped = stop_player();
+    *PLAYER.write().unwrap() = new_player();
+    Ok(stopped?)
+}
+
+#[tauri::command]
 async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
     API_URL.write().unwrap().replace(api_url);
     let stopped = stop_player();
-    *PLAYER.write().unwrap() = Player::new(
-        Some(
-            API_URL
-                .read()
-                .unwrap()
-                .clone()
-                .expect("API_URL not set")
-                .to_string(),
-        ),
-        Some(PlaybackType::Stream),
-    );
+    *PLAYER.write().unwrap() = new_player();
     Ok(stopped?)
 }
 
 #[tauri::command]
 async fn get_albums() -> Vec<Album> {
-    //moosicbox_core::sqlite::menu::get_albums()
     vec![Album {
         id: 121,
         title: "test alb".into(),
@@ -96,9 +146,10 @@ async fn get_albums() -> Vec<Album> {
 }
 
 #[tauri::command]
-async fn player_play(track_ids: Vec<i32>) -> Result<PlaybackStatus, TauriPlayerError> {
-    stop_player()?;
-
+async fn player_play(
+    track_ids: Vec<i32>,
+    session_id: usize,
+) -> Result<PlaybackStatus, TauriPlayerError> {
     info!("Playing Symphonia Player: {track_ids:?}");
 
     let playback = Playback::new(
@@ -107,7 +158,7 @@ async fn player_play(track_ids: Vec<i32>) -> Result<PlaybackStatus, TauriPlayerE
         PlaybackQuality {
             format: AudioFormat::Source,
         },
-        None,
+        Some(session_id),
     );
 
     Ok(PLAYER.read().unwrap().play_playback(
@@ -119,7 +170,7 @@ async fn player_play(track_ids: Vec<i32>) -> Result<PlaybackStatus, TauriPlayerE
 
 #[tauri::command]
 async fn player_pause() -> Result<PlaybackStatus, TauriPlayerError> {
-    Ok(PLAYER.read().unwrap().pause_playback(None)?)
+    Ok(PLAYER.read().unwrap().pause_playback()?)
 }
 
 #[tauri::command]
@@ -127,7 +178,7 @@ async fn player_resume() -> Result<PlaybackStatus, TauriPlayerError> {
     Ok(PLAYER
         .read()
         .unwrap()
-        .resume_playback(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+        .resume_playback(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
 }
 
 #[tauri::command]
@@ -135,7 +186,7 @@ async fn player_next_track() -> Result<PlaybackStatus, TauriPlayerError> {
     Ok(PLAYER
         .read()
         .unwrap()
-        .next_track(None, None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+        .next_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
 }
 
 #[tauri::command]
@@ -143,48 +194,86 @@ async fn player_previous_track() -> Result<PlaybackStatus, TauriPlayerError> {
     Ok(PLAYER
         .read()
         .unwrap()
-        .previous_track(None, None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+        .previous_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+}
+
+#[tauri::command]
+async fn player_stop_track() -> Result<PlaybackStatus, TauriPlayerError> {
+    Ok(PLAYER.read().unwrap().stop_track()?)
 }
 
 #[tauri::command]
 fn player_update_playback(
     position: Option<u16>,
     seek: Option<f64>,
+    tracks: Option<Vec<i32>>,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
     Ok(PLAYER.read().unwrap().update_playback(
-        None,
         position,
         seek,
+        tracks.map(|tracks| tracks.iter().map(|id| TrackOrId::Id(*id)).collect()),
         Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
     )?)
 }
 
 #[tauri::command]
-async fn api_proxy_get(url: String) -> serde_json::Value {
+async fn api_proxy_get(url: String, headers: Option<serde_json::Value>) -> serde_json::Value {
     let url = format!(
         "{}/{url}",
         API_URL.read().unwrap().clone().expect("API_URL not set")
     );
     info!("Fetching url from proxy: {url}");
-    reqwest::get(url).await.unwrap().json().await.unwrap()
+    let client = reqwest::Client::new();
+
+    let mut builder = client.get(url);
+
+    if let Some(headers) = headers {
+        for header in headers.as_object().unwrap() {
+            builder = builder.header(header.0, header.1.as_str().unwrap().to_string());
+        }
+    }
+
+    builder.send().await.unwrap().json().await.unwrap()
 }
 
 #[tauri::command]
-async fn api_proxy_post(url: String, body: Option<serde_json::Value>) -> serde_json::Value {
+async fn api_proxy_post(
+    url: String,
+    body: Option<serde_json::Value>,
+    headers: Option<serde_json::Value>,
+) -> serde_json::Value {
     let url = format!(
         "{}/{url}",
-        API_URL.read().unwrap().clone().expect("API_URL not set")
+        API_URL
+            .read()
+            .unwrap()
+            .clone()
+            .unwrap_or_else(|| panic!("API_URL not set ({url})"))
     );
     info!("Posting url from proxy: {url}");
     let client = reqwest::Client::new();
 
     let mut builder = client.post(url);
 
+    if let Some(headers) = headers {
+        for header in headers.as_object().unwrap() {
+            builder = builder.header(header.0, header.1.as_str().unwrap().to_string());
+        }
+    }
+
     if let Some(body) = body {
         builder = builder.json(&body);
     }
 
     builder.send().await.unwrap().json().await.unwrap()
+}
+
+static APP: OnceLock<AppHandle> = OnceLock::new();
+
+pub fn on_playback_event(update: &UpdateSession, _current: &Playback) {
+    if let Err(err) = APP.get().unwrap().emit_all("UPDATE_SESSION", update) {
+        log::error!("Failed to update session: {err:?}");
+    }
 }
 
 #[cfg(feature = "aptabase")]
@@ -234,7 +323,13 @@ fn track_event(handler: &tauri::AppHandle, name: &str, props: Option<serde_json:
 }
 
 fn main() {
+    moosicbox_player::player::on_playback_event(crate::on_playback_event);
+
     let app_builder = tauri::Builder::default()
+        .setup(|app| {
+            APP.get_or_init(|| app.handle());
+            Ok(())
+        })
         .plugin(
             tauri_plugin_log::Builder::default()
                 .targets([
@@ -246,6 +341,9 @@ fn main() {
         )
         .invoke_handler(tauri::generate_handler![
             show_main_window,
+            set_client_id,
+            set_signature_token,
+            set_api_token,
             set_api_url,
             get_albums,
             player_play,
@@ -253,6 +351,7 @@ fn main() {
             player_resume,
             player_next_track,
             player_previous_track,
+            player_stop_track,
             player_update_playback,
             api_proxy_get,
             api_proxy_post,

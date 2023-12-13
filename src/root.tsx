@@ -1,6 +1,7 @@
 // @refresh reload
 import { Routes } from '@solidjs/router';
 import { Suspense } from 'solid-js';
+import { produce } from 'solid-js/store';
 import {
     Body,
     FileRoutes,
@@ -12,12 +13,19 @@ import {
 } from 'solid-start';
 import { ErrorBoundary } from 'solid-start/error-boundary';
 import { invoke } from '@tauri-apps/api/tauri';
-import { appState, onStartup } from './services/app';
+import { listen } from '@tauri-apps/api/event';
+import { appState, onStartup, onStartupFirst } from './services/app';
 import { Api, ApiType, api } from './services/api';
 import { attachConsole, debug, error, info, warn } from 'tauri-plugin-log-api';
 import { trackEvent } from '@aptabase/tauri';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
-import { PlayerType, player } from './services/player';
+import { createPlayer as createSymphoniaPlayer } from '~/symphonia-player';
+import {
+    PlayerType,
+    player,
+    setPlayerState,
+    updateSessionPartial,
+} from './services/player';
 import {
     InboundMessageType,
     connectionId,
@@ -26,21 +34,44 @@ import {
     onConnectionNameChanged,
     onMessage,
     registerConnection,
+    updateSession,
 } from './services/ws';
+import { PartialUpdateSession } from './services/types';
 
 const APTABASE_ENABLED = false;
 
 let currentPlayer: PlayerType | undefined;
 
-function updatePlayer() {
+(async () => {
+    await listen('UPDATE_SESSION', (event) => {
+        setPlayerState(
+            produce((state) => {
+                updateSessionPartial(
+                    state,
+                    event.payload as PartialUpdateSession,
+                );
+            }),
+        );
+        updateSession(event.payload as PartialUpdateSession);
+    });
+})();
+
+function updatePlayer(type: Api.PlayerType | AppPlayerType) {
     const connection = appState.connections.find(
         (c) => c.connectionId === connectionId(),
     );
 
-    const newPlayer = connection?.players[0];
+    const newPlayer = connection?.players?.find((p) => p.type === type);
 
     if (newPlayer && currentPlayer?.id !== newPlayer.playerId) {
-        currentPlayer = createHowlerPlayer(newPlayer.playerId);
+        switch (type) {
+            case AppPlayerType.SYMPHONIA:
+                currentPlayer = createSymphoniaPlayer(newPlayer.playerId);
+                break;
+            case Api.PlayerType.HOWLER:
+                currentPlayer = createHowlerPlayer(newPlayer.playerId);
+                break;
+        }
     }
 
     Object.assign(player, currentPlayer);
@@ -49,8 +80,10 @@ function updatePlayer() {
 }
 
 onMessage((data) => {
-    if (data.type === InboundMessageType.CONNECTIONS) {
-        updatePlayer();
+    switch (data.type) {
+        case InboundMessageType.CONNECTIONS:
+            updatePlayer(Api.PlayerType.HOWLER);
+            break;
     }
 });
 
@@ -82,11 +115,13 @@ onConnectionNameChanged((name) => {
     updateConnection(connectionId()!, name);
 });
 
-function apiFetch<T>(
+function apiRequest<T>(
+    method: 'get' | 'post',
     url: string,
     query?: URLSearchParams,
     signal?: AbortSignal,
 ): Promise<T> {
+    // eslint-disable-next-line no-async-promise-executor
     return new Promise(async (resolve, reject) => {
         let cancelled = false;
 
@@ -95,9 +130,37 @@ function apiFetch<T>(
             reject();
         });
 
-        const data = await invoke<T>('api_proxy_get', {
-            url: `${url}${query ? `?${query}` : ''}`,
-        });
+        const headers: Record<string, string> = {};
+
+        const params = new URLSearchParams(query);
+        const clientId = Api.clientId();
+
+        if (clientId) {
+            params.set('clientId', clientId);
+        }
+
+        if (params.size > 0) {
+            if (url.indexOf('?') > 0) {
+                url += '&';
+            } else {
+                url += '?';
+            }
+
+            url += params.toString();
+        }
+
+        const token = Api.token();
+
+        if (token) {
+            headers.Authorization = token;
+        }
+
+        const args: { url: string; headers: Record<string, string> } = {
+            url,
+            headers,
+        };
+
+        const data = await invoke<T>(`api_proxy_${method}`, args);
 
         if (!cancelled) {
             resolve(data);
@@ -166,24 +229,24 @@ onStartup(() => {
     }
 });
 
-const apiOverride: ApiType = {
+const apiOverride: Partial<ApiType> = {
     async getArtist(artistId, signal) {
         const query = new URLSearchParams({
             artistId: `${artistId}`,
         });
 
-        return apiFetch('artist', query, signal);
+        return apiRequest('get', 'artist', query, signal);
     },
     async getArtistAlbums(artistId, signal) {
         const query = new URLSearchParams({
             artistId: `${artistId}`,
         });
 
-        return apiFetch('artist/albums', query, signal);
+        return apiRequest('get', 'artist/albums', query, signal);
     },
     getArtistCover(artist) {
         if (artist?.containsCover) {
-            return `${Api.apiUrl()}/artists/${artist.artistId}/750x750`;
+            return Api.getPath(`artists/${artist.artistId}/750x750`);
         }
         return '/img/album.svg';
     },
@@ -192,29 +255,35 @@ const apiOverride: ApiType = {
             albumId: `${albumId}`,
         });
 
-        return apiFetch('album', query, signal);
+        return apiRequest('get', 'album', query, signal);
     },
     async getAlbums(request, signal) {
-        const query = new URLSearchParams({
-            playerId: 'none',
-        });
+        const query = new URLSearchParams();
         if (request?.sources) query.set('sources', request.sources.join(','));
         if (request?.sort) query.set('sort', request.sort);
         if (request?.filters?.search)
             query.set('search', request.filters.search);
 
-        return apiFetch('albums', query, signal);
+        return apiRequest('get', 'albums', query, signal);
     },
     async getAlbumTracks(albumId, signal) {
         const query = new URLSearchParams({
             albumId: `${albumId}`,
         });
 
-        return apiFetch('album/tracks', query, signal);
+        return apiRequest('get', 'album/tracks', query, signal);
     },
     getAlbumArtwork(album, width, height) {
         if (album?.containsArtwork) {
-            return `${Api.apiUrl()}/albums/${album.albumId}/${width}x${height}`;
+            return Api.getPath(`albums/${album.albumId}/${width}x${height}`);
+        }
+        return '/img/album.svg';
+    },
+    getAlbumSourceArtwork: function (
+        album: { albumId: number; containsArtwork: boolean } | undefined,
+    ): string {
+        if (album?.containsArtwork) {
+            return Api.getPath(`albums/${album.albumId}/source`);
         }
         return '/img/album.svg';
     },
@@ -225,17 +294,71 @@ const apiOverride: ApiType = {
         if (request?.filters?.search)
             query.set('search', request.filters.search);
 
-        return apiFetch('artists', query, signal);
+        return apiRequest('get', 'artists', query, signal);
+    },
+    async validateSignatureTokenAndClient(signature, signal) {
+        const response = await apiRequest(
+            'post',
+            `auth/validate-signature-token?signature=${signature}`,
+            new URLSearchParams(),
+            signal,
+        );
+
+        return (
+            typeof response === 'object' &&
+            response !== null &&
+            'valid' in response &&
+            response.valid === true
+        );
+    },
+    fetchSignatureToken: function (signal): Promise<string | undefined> {
+        return apiRequest(
+            'post',
+            'auth/signature-token',
+            new URLSearchParams(),
+            signal,
+        );
+    },
+    magicToken: function (
+        magicToken: string,
+        signal,
+    ): Promise<{ clientId: string; accessToken: string }> {
+        return apiRequest(
+            'post',
+            'auth/magic-token',
+            new URLSearchParams({ magicToken }),
+            signal,
+        );
     },
 };
 
 Object.assign(api, apiOverride);
 
 export default function Root() {
-    onStartup(async () => {
+    onStartupFirst(async () => {
         await invoke('show_main_window');
         await invoke('set_api_url', { apiUrl: Api.apiUrl() });
+        if (Api.clientId()) {
+            await invoke('set_client_id', { clientId: Api.clientId() });
+        }
+        if (Api.signatureToken()) {
+            await invoke('set_signature_token', {
+                signatureToken: Api.signatureToken(),
+            });
+        }
+        if (Api.token()) {
+            await invoke('set_api_token', { apiToken: Api.token() });
+        }
 
+        Api.onClientIdUpdated(async (clientId) => {
+            await invoke('set_client_id', { clientId });
+        });
+        Api.onSignatureTokenUpdated(async (token) => {
+            await invoke('set_signature_token', { signatureToken: token });
+        });
+        Api.onTokenUpdated(async (token) => {
+            await invoke('set_api_token', { apiToken: token });
+        });
         Api.onApiUrlUpdated(async (url) => {
             await invoke('set_api_url', { apiUrl: url });
         });
