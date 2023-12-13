@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/tauri';
+import { InvokeArgs, invoke } from '@tauri-apps/api/tauri';
 import { Api, api } from './services/api';
 import {
     PlayerType,
@@ -24,6 +24,23 @@ let playbackId: number | undefined;
 
 type PlaybackStatus = { playbackId: number };
 
+enum PlayerAction {
+    PLAY = 'player_play',
+    PAUSE = 'player_pause',
+    RESUME = 'player_resume',
+    STOP_TRACK = 'player_stop_track',
+    NEXT_TRACK = 'player_next_track',
+    PREVIOUS_TRACK = 'player_previous_track',
+    UPDATE_PLAYBACK = 'player_update_playback',
+}
+
+async function invokePlayer(
+    action: PlayerAction,
+    args?: InvokeArgs,
+): Promise<PlaybackStatus> {
+    return (await invoke(action, args)) as PlaybackStatus;
+}
+
 function play(): boolean {
     if (playing()) {
         console.debug('Already playing');
@@ -35,9 +52,7 @@ function play(): boolean {
     if (typeof playbackId !== 'undefined') {
         console.debug('Resuming playback');
         (async () => {
-            const playbackStatus = (await invoke('player_resume', {
-                trackIds: playlist()?.map((t) => t.trackId) || [],
-            })) as PlaybackStatus;
+            const playbackStatus = await invokePlayer(PlayerAction.RESUME);
 
             setPlaying(true, false);
             playbackId = playbackStatus.playbackId;
@@ -50,10 +65,10 @@ function play(): boolean {
             throw new Error('Failed to get current playback sessions id');
         }
         (async () => {
-            const playbackStatus = (await invoke('player_play', {
+            const playbackStatus = await invokePlayer(PlayerAction.PLAY, {
                 trackIds: playlist()?.map((t) => t.trackId) || [],
                 sessionId,
-            })) as PlaybackStatus;
+            });
 
             playbackId = playbackStatus.playbackId;
 
@@ -65,11 +80,11 @@ function play(): boolean {
 }
 
 async function updatePlayback() {
-    const playbackStatus = (await invoke('player_update_playback', {
+    const playbackStatus = await invokePlayer(PlayerAction.UPDATE_PLAYBACK, {
         position: playlistPosition(),
         seek: 0,
         tracks: playlist().map((p) => p.trackId),
-    })) as PlaybackStatus;
+    });
 
     playbackId = playbackStatus.playbackId;
 }
@@ -85,20 +100,20 @@ function seek(seek: number) {
 function pause() {
     setPlaying(false);
     (async () => {
-        await invoke('player_pause');
+        await invokePlayer(PlayerAction.PAUSE);
     })();
 }
 
 function previousTrack(): boolean {
     (async () => {
-        await invoke('player_previous_track');
+        await invokePlayer(PlayerAction.PREVIOUS_TRACK);
     })();
     return false;
 }
 
 function nextTrack(): boolean {
     (async () => {
-        await invoke('player_next_track');
+        await invokePlayer(PlayerAction.NEXT_TRACK);
     })();
     return false;
 }
@@ -109,7 +124,7 @@ function stop() {
     setPlayerState({ currentTrack: undefined });
     setCurrentTrackLength(0);
     (async () => {
-        await invoke('player_stop_track');
+        await invokePlayer(PlayerAction.STOP_TRACK);
     })();
     console.debug('Track stopped');
     console.trace();
@@ -147,7 +162,7 @@ function removeTrackFromPlaylist(index: number) {
 function playFromPlaylistPosition(index: number) {
     console.debug('Playing from playlist position', index);
     (async () => {
-        await invoke('player_update_playback', {
+        await invokePlayer(PlayerAction.UPDATE_PLAYBACK, {
             position: index,
             seek: 0,
             tracks: playlist().map((p) => p.trackId),
