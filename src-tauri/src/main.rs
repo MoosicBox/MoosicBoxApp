@@ -10,9 +10,10 @@ use std::{
 
 use log::info;
 use moosicbox_core::sqlite::models::{Album, UpdateSession};
+use moosicbox_core::types::PlaybackQuality;
 use moosicbox_player::player::{
-    AudioFormat, Playback, PlaybackQuality, PlaybackRetryOptions, PlaybackStatus, PlaybackType,
-    Player, PlayerError, PlayerSource, TrackOrId,
+    Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player, PlayerError,
+    PlayerSource, TrackOrId,
 };
 use once_cell::sync::Lazy;
 use serde::Serialize;
@@ -149,15 +150,14 @@ async fn get_albums() -> Vec<Album> {
 async fn player_play(
     track_ids: Vec<i32>,
     session_id: usize,
+    quality: PlaybackQuality,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
     info!("Playing Symphonia Player: {track_ids:?}");
 
     let playback = Playback::new(
         track_ids.iter().map(|id| TrackOrId::Id(*id)).collect(),
         None,
-        PlaybackQuality {
-            format: AudioFormat::Source,
-        },
+        quality,
         Some(session_id),
     );
 

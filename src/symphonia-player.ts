@@ -68,6 +68,7 @@ function play(): boolean {
             const playbackStatus = await invokePlayer(PlayerAction.PLAY, {
                 trackIds: playlist()?.map((t) => t.trackId) || [],
                 sessionId,
+                quality: player.playbackQuality(),
             });
 
             playbackId = playbackStatus.playbackId;
