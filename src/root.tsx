@@ -343,11 +343,24 @@ const apiOverride: Partial<ApiType> = {
     },
 };
 
-Object.assign(api, apiOverride);
+const originalApi = { ...api };
+
+function updateApi(secure: boolean) {
+    if (secure) {
+        Object.assign(api, originalApi);
+    } else {
+        Object.assign(api, apiOverride);
+    }
+}
+
+Api.onApiUrlUpdated((url) => {
+    updateApi(url.toLowerCase().startsWith('https://'));
+});
 
 export default function Root() {
     onStartupFirst(async () => {
         await invoke('show_main_window');
+        updateApi(Api.apiUrl().toLowerCase().startsWith('https://'));
         await invoke('set_api_url', { apiUrl: Api.apiUrl() });
         if (Api.clientId()) {
             await invoke('set_client_id', { clientId: Api.clientId() });
