@@ -277,6 +277,13 @@ const apiOverride: Partial<ApiType> = {
 
         return apiRequest('get', 'album/tracks', query, signal);
     },
+    async getAlbumVersions(albumId, signal) {
+        const query = new URLSearchParams({
+            albumId: `${albumId}`,
+        });
+
+        return apiRequest('get', 'album/versions', query, signal);
+    },
     async getTracks(trackIds, signal) {
         const query = new URLSearchParams({
             trackIds: `${trackIds.join(',')}`,

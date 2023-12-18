@@ -132,7 +132,9 @@ function stop() {
 }
 
 async function playAlbum(album: Api.Album | Api.Track): Promise<boolean> {
-    const tracks = await api.getAlbumTracks(album.albumId);
+    const versions = await api.getAlbumVersions(album.albumId);
+    const tracks = versions[0].tracks;
+
     return playPlaylist(tracks);
 }
 
@@ -147,8 +149,13 @@ function playPlaylist(tracks: Api.Track[]): boolean {
 }
 
 async function addAlbumToQueue(album: Api.Album | Api.Track) {
-    const tracks = await api.getAlbumTracks(album.albumId);
+    const versions = await api.getAlbumVersions(album.albumId);
+    const tracks = versions[0].tracks;
 
+    addTracksToQueue(tracks);
+}
+
+async function addTracksToQueue(tracks: Api.Track[]) {
     setPlaylist([...playlist()!, ...tracks]);
 }
 
@@ -196,6 +203,7 @@ export function createPlayer(id: number): PlayerType {
         playPlaylist,
         playFromPlaylistPosition,
         addAlbumToQueue,
+        addTracksToQueue,
         removeTrackFromPlaylist,
         pause,
         stop,
