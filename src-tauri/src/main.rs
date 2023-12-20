@@ -209,11 +209,15 @@ fn player_update_playback(
     position: Option<u16>,
     seek: Option<f64>,
     tracks: Option<Vec<i32>>,
+    quality: Option<PlaybackQuality>,
+    session_id: Option<usize>,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
     Ok(PLAYER.read().unwrap().update_playback(
         position,
         seek,
         tracks.map(|tracks| tracks.iter().map(|id| TrackOrId::Id(*id)).collect()),
+        quality,
+        session_id,
         Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
     )?)
 }

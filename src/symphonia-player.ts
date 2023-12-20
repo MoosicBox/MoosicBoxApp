@@ -44,10 +44,7 @@ async function invokePlayer(
 function play(): boolean {
     if (playing()) {
         console.debug('Already playing');
-        (async () => {
-            await updatePlayback();
-        })();
-        return true;
+        return false;
     }
     if (typeof playbackId !== 'undefined') {
         console.debug('Resuming playback');
@@ -83,17 +80,22 @@ function play(): boolean {
 }
 
 async function updatePlayback() {
+    console.debug('Updating playback');
+
+    const sessionId = currentPlaybackSessionId();
     const playbackStatus = await invokePlayer(PlayerAction.UPDATE_PLAYBACK, {
         position: playlistPosition(),
         seek: player.currentSeek(),
         tracks: playlist().map((p) => p.trackId),
+        sessionId,
+        quality: player.playbackQuality(),
     });
 
     playbackId = playbackStatus.playbackId;
 }
 
 function seek(seek: number) {
-    console.debug('Track seeked');
+    console.debug('Track seeked', seek);
     if (typeof seek === 'number') {
         setCurrentSeek(seek, false);
         console.debug(`Setting seek to ${seek}`);
@@ -101,6 +103,7 @@ function seek(seek: number) {
 }
 
 function pause() {
+    console.debug('Pausing');
     setPlaying(false);
     (async () => {
         await invokePlayer(PlayerAction.PAUSE);
@@ -108,6 +111,7 @@ function pause() {
 }
 
 function previousTrack(): boolean {
+    console.debug('Previous track');
     (async () => {
         await invokePlayer(PlayerAction.PREVIOUS_TRACK);
     })();
@@ -115,6 +119,7 @@ function previousTrack(): boolean {
 }
 
 function nextTrack(): boolean {
+    console.debug('Next track');
     (async () => {
         await invokePlayer(PlayerAction.NEXT_TRACK);
     })();
@@ -122,6 +127,7 @@ function nextTrack(): boolean {
 }
 
 function stop() {
+    console.debug('Stopping');
     playbackId = undefined;
     setCurrentSeek(undefined);
     setPlayerState({ currentTrack: undefined });
@@ -130,7 +136,6 @@ function stop() {
         await invokePlayer(PlayerAction.STOP_TRACK);
     })();
     console.debug('Track stopped');
-    console.trace();
 }
 
 async function playAlbum(album: Api.Album | Api.Track): Promise<boolean> {
@@ -141,13 +146,18 @@ async function playAlbum(album: Api.Album | Api.Track): Promise<boolean> {
 }
 
 function playPlaylist(tracks: Api.Track[]): boolean {
+    console.debug('playPlaylist', tracks);
     playbackId = undefined;
     const firstTrack = tracks[0];
     setCurrentAlbum(firstTrack);
     setPlaylistPosition(0);
     setPlaylist(tracks);
     setCurrentSeek(0);
-    return player.play()!;
+    (async () => {
+        await updatePlayback();
+        setPlaying(true);
+    })();
+    return true;
 }
 
 async function addAlbumToQueue(album: Api.Album | Api.Track) {
@@ -181,6 +191,7 @@ function playFromPlaylistPosition(index: number) {
 }
 
 function onPositionUpdated(position: number) {
+    console.debug('onPositionUpdated', position);
     if (isPlayerActive()) {
         setPlaylistPosition(position, false);
         setCurrentSeek(0, false);
@@ -189,12 +200,14 @@ function onPositionUpdated(position: number) {
 }
 
 function onSeekUpdated(seek: number) {
+    console.debug('onSeekUpdated', seek);
     if (isPlayerActive()) {
         setCurrentSeek(seek, false);
     }
 }
 
 function onPlayingUpdated(updatedPlaying: boolean) {
+    console.debug('onPlayingUpdated', updatedPlaying);
     if (isPlayerActive()) {
         if (updatedPlaying) {
             play();
