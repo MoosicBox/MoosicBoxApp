@@ -21,8 +21,7 @@ import { trackEvent } from '@aptabase/tauri';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
 import { createPlayer as createSymphoniaPlayer } from '~/symphonia-player';
 import {
-    PlayerType,
-    player,
+    registerPlayer,
     setPlayerState,
     updateSessionPartial,
 } from './services/player';
@@ -39,8 +38,6 @@ import {
 import { PartialUpdateSession } from './services/types';
 
 const APTABASE_ENABLED = false;
-
-let currentPlayer: PlayerType | undefined;
 
 (async () => {
     await listen('UPDATE_SESSION', async (event) => {
@@ -60,33 +57,28 @@ let currentPlayer: PlayerType | undefined;
     });
 })();
 
-function updatePlayer(type: Api.PlayerType | AppPlayerType) {
+function updatePlayers() {
     const connection = appState.connections.find(
         (c) => c.connectionId === connectionId(),
     );
 
-    const newPlayer = connection?.players?.find((p) => p.type === type);
-
-    if (newPlayer && currentPlayer?.id !== newPlayer.playerId) {
+    connection?.players.forEach((player) => {
+        const type = player.type as Api.PlayerType | AppPlayerType;
         switch (type) {
             case AppPlayerType.SYMPHONIA:
-                currentPlayer = createSymphoniaPlayer(newPlayer.playerId);
+                registerPlayer(createSymphoniaPlayer(player.playerId));
                 break;
             case Api.PlayerType.HOWLER:
-                currentPlayer = createHowlerPlayer(newPlayer.playerId);
+                registerPlayer(createHowlerPlayer(player.playerId));
                 break;
         }
-    }
-
-    Object.assign(player, currentPlayer);
-
-    console.debug('Set player to', currentPlayer);
+    });
 }
 
 onMessage((data) => {
     switch (data.type) {
         case InboundMessageType.CONNECTIONS:
-            updatePlayer(Api.PlayerType.HOWLER);
+            updatePlayers();
             break;
     }
 });
