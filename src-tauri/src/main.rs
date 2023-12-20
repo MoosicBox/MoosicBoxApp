@@ -150,6 +150,7 @@ async fn get_albums() -> Vec<Album> {
 async fn player_play(
     track_ids: Vec<i32>,
     position: Option<u16>,
+    seek: Option<f64>,
     session_id: usize,
     quality: PlaybackQuality,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
@@ -164,7 +165,7 @@ async fn player_play(
 
     Ok(PLAYER.read().unwrap().play_playback(
         playback,
-        None,
+        seek,
         Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
     )?)
 }
