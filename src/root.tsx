@@ -25,6 +25,7 @@ import {
     setPlayerState,
     updateSessionPartial,
 } from './services/player';
+import * as player from './services/player';
 import {
     InboundMessageType,
     connectionId,
@@ -46,6 +47,14 @@ const APTABASE_ENABLED = false;
         if (partialUpdate.playlist) {
             const ids = partialUpdate.playlist.tracks as unknown as number[];
             partialUpdate.playlist.tracks = await api.getTracks(ids);
+
+            const matchingSession = player.playerState.playbackSessions.find(
+                (s) => s.sessionId === partialUpdate.sessionId,
+            );
+            if (matchingSession) {
+                partialUpdate.playlist.sessionPlaylistId =
+                    matchingSession.playlist.sessionPlaylistId;
+            }
         }
 
         setPlayerState(
