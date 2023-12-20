@@ -67,6 +67,7 @@ function play(): boolean {
         (async () => {
             const playbackStatus = await invokePlayer(PlayerAction.PLAY, {
                 trackIds: playlist()?.map((t) => t.trackId) || [],
+                position: playlistPosition(),
                 sessionId,
                 quality: player.playbackQuality(),
             });
