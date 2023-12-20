@@ -68,6 +68,7 @@ function play(): boolean {
             const playbackStatus = await invokePlayer(PlayerAction.PLAY, {
                 trackIds: playlist()?.map((t) => t.trackId) || [],
                 position: playlistPosition(),
+                seek: player.currentSeek(),
                 sessionId,
                 quality: player.playbackQuality(),
             });
@@ -84,7 +85,7 @@ function play(): boolean {
 async function updatePlayback() {
     const playbackStatus = await invokePlayer(PlayerAction.UPDATE_PLAYBACK, {
         position: playlistPosition(),
-        seek: 0,
+        seek: player.currentSeek(),
         tracks: playlist().map((p) => p.trackId),
     });
 
@@ -180,8 +181,11 @@ function playFromPlaylistPosition(index: number) {
 }
 
 function onPositionUpdated(position: number) {
-    setPlaylistPosition(position, false);
-    setCurrentSeek(0, false);
+    if (isPlayerActive()) {
+        setPlaylistPosition(position, false);
+        setCurrentSeek(0, false);
+        updatePlayback();
+    }
 }
 
 function onSeekUpdated(seek: number) {
@@ -192,7 +196,11 @@ function onSeekUpdated(seek: number) {
 
 function onPlayingUpdated(updatedPlaying: boolean) {
     if (isPlayerActive()) {
-        setPlaying(updatedPlaying);
+        if (updatedPlaying) {
+            play();
+        } else {
+            pause();
+        }
     }
 }
 
