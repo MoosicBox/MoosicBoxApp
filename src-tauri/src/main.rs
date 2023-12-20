@@ -149,6 +149,7 @@ async fn get_albums() -> Vec<Album> {
 #[tauri::command]
 async fn player_play(
     track_ids: Vec<i32>,
+    position: Option<u16>,
     session_id: usize,
     quality: PlaybackQuality,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
@@ -156,7 +157,7 @@ async fn player_play(
 
     let playback = Playback::new(
         track_ids.iter().map(|id| TrackOrId::Id(*id)).collect(),
-        None,
+        position,
         quality,
         Some(session_id),
     );
