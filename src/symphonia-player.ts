@@ -199,6 +199,7 @@ function playFromPlaylistPosition(index: number) {
     console.debug('Playing from playlist position', index);
     (async () => {
         await invokePlayer(PlayerAction.UPDATE_PLAYBACK, {
+            play: true,
             position: index,
             seek: 0,
             tracks: playlist().map((p) => p.trackId),
