@@ -231,7 +231,7 @@ function onPositionUpdated(position: number) {
     if (isPlayerActive()) {
         setPlaylistPosition(position, false);
         setCurrentSeek(0, false);
-        updatePlayback(true);
+        updatePlayback(false);
     }
 }
 
