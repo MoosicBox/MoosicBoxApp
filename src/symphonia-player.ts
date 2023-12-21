@@ -184,7 +184,20 @@ async function addAlbumToQueue(album: Api.Album | Api.Track) {
 }
 
 async function addTracksToQueue(tracks: Api.Track[]) {
-    setPlaylist([...playlist()!, ...tracks]);
+    setPlaylist([...playlist()!, ...tracks], false);
+    (async () => {
+        const sessionId = currentPlaybackSessionId();
+        const playbackStatus = await invokePlayer(
+            PlayerAction.UPDATE_PLAYBACK,
+            {
+                tracks: playlist().map((p) => p.trackId),
+                position: playlistPosition(),
+                sessionId,
+            },
+        );
+
+        playbackId = playbackStatus.playbackId;
+    })();
 }
 
 function removeTrackFromPlaylist(index: number) {
