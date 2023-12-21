@@ -42,11 +42,15 @@ const APTABASE_ENABLED = false;
 
 (async () => {
     await listen('UPDATE_SESSION', async (event) => {
+        console.debug('Received UPDATE_SESSION', event);
         const partialUpdate = event.payload as PartialUpdateSession;
 
         if (partialUpdate.playlist) {
             const ids = partialUpdate.playlist.tracks as unknown as number[];
-            partialUpdate.playlist.tracks = await api.getTracks(ids);
+            const tracks = await api.getTracks(ids);
+            partialUpdate.playlist.tracks = ids.map(
+                (id) => tracks.find(({ trackId }) => trackId === id)!,
+            );
 
             const matchingSession = player.playerState.playbackSessions.find(
                 (s) => s.sessionId === partialUpdate.sessionId,
