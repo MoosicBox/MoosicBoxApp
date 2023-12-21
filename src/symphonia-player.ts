@@ -203,9 +203,15 @@ async function addTracksToQueue(tracks: Api.Track[]) {
 function removeTrackFromPlaylist(index: number) {
     console.debug('Removing track from playlist', index);
     if (index < playlistPosition()!) {
-        setPlaylistPosition(playlistPosition()! - 1);
+        setPlaylistPosition(playlistPosition()! - 1, false);
     }
-    setPlaylist([...playlist()!.filter((_, i) => i !== index)]);
+    setPlaylist([...playlist()!.filter((_, i) => i !== index)], false);
+    (async () => {
+        await invokePlayer(PlayerAction.UPDATE_PLAYBACK, {
+            position: playlistPosition(),
+            tracks: playlist().map((p) => p.trackId),
+        });
+    })();
 }
 
 function playFromPlaylistPosition(index: number) {
