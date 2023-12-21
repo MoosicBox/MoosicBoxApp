@@ -18,8 +18,6 @@ import {
 } from './services/player';
 import * as player from './services/player';
 
-onVolumeChanged((_value) => {});
-
 let playbackId: number | undefined;
 
 type PlaybackStatus = { playbackId: number };
@@ -66,6 +64,7 @@ function play(): boolean {
                 trackIds: playlist()?.map((t) => t.trackId) || [],
                 position: playlistPosition(),
                 seek: player.currentSeek(),
+                volume: player.volume() / 100,
                 sessionId,
                 quality: player.playbackQuality(),
             });
@@ -79,13 +78,30 @@ function play(): boolean {
     return true;
 }
 
-async function updatePlayback() {
-    console.debug('Updating playback');
+onVolumeChanged((value) => {
+    (async () => {
+        const sessionId = currentPlaybackSessionId();
+        const playbackStatus = await invokePlayer(
+            PlayerAction.UPDATE_PLAYBACK,
+            {
+                volume: value / 100,
+                sessionId,
+            },
+        );
+
+        playbackId = playbackStatus.playbackId;
+    })();
+});
+
+async function updatePlayback(play: boolean) {
+    console.debug('Updating playback', play);
 
     const sessionId = currentPlaybackSessionId();
     const playbackStatus = await invokePlayer(PlayerAction.UPDATE_PLAYBACK, {
+        play,
         position: playlistPosition(),
         seek: player.currentSeek(),
+        volume: player.volume() / 100,
         tracks: playlist().map((p) => p.trackId),
         sessionId,
         quality: player.playbackQuality(),
@@ -154,7 +170,7 @@ function playPlaylist(tracks: Api.Track[]): boolean {
     setPlaylist(tracks);
     setCurrentSeek(0);
     (async () => {
-        await updatePlayback();
+        await updatePlayback(true);
         setPlaying(true);
     })();
     return true;
@@ -195,7 +211,7 @@ function onPositionUpdated(position: number) {
     if (isPlayerActive()) {
         setPlaylistPosition(position, false);
         setCurrentSeek(0, false);
-        updatePlayback();
+        updatePlayback(true);
     }
 }
 

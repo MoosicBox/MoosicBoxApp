@@ -27,6 +27,7 @@ once_cell = { version = "1.18.0" }
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
 tauri-plugin-aptabase = { version = "0.4", optional = true }
 debounce = "0.2.2"
+atomic_float = "0.1.0"
 
 [features]
 default = ["cpal"]

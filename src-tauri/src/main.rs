@@ -8,6 +8,7 @@ use std::{
     usize,
 };
 
+use atomic_float::AtomicF64;
 use log::info;
 use moosicbox_core::sqlite::models::{Album, UpdateSession};
 use moosicbox_core::types::PlaybackQuality;
@@ -151,6 +152,7 @@ async fn player_play(
     track_ids: Vec<i32>,
     position: Option<u16>,
     seek: Option<f64>,
+    volume: Option<f64>,
     session_id: usize,
     quality: PlaybackQuality,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
@@ -159,6 +161,7 @@ async fn player_play(
     let playback = Playback::new(
         track_ids.iter().map(|id| TrackOrId::Id(*id)).collect(),
         position,
+        AtomicF64::new(volume.unwrap_or(1.0)),
         quality,
         Some(session_id),
     );
@@ -206,15 +209,19 @@ async fn player_stop_track() -> Result<PlaybackStatus, TauriPlayerError> {
 
 #[tauri::command]
 fn player_update_playback(
+    play: Option<bool>,
     position: Option<u16>,
     seek: Option<f64>,
+    volume: Option<f64>,
     tracks: Option<Vec<i32>>,
     quality: Option<PlaybackQuality>,
     session_id: Option<usize>,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
     Ok(PLAYER.read().unwrap().update_playback(
+        play.unwrap_or(false),
         position,
         seek,
+        volume,
         tracks.map(|tracks| tracks.iter().map(|id| TrackOrId::Id(*id)).collect()),
         quality,
         session_id,
