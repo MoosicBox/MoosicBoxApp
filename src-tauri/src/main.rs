@@ -208,8 +208,11 @@ async fn player_stop_track() -> Result<PlaybackStatus, TauriPlayerError> {
 }
 
 #[tauri::command]
+#[allow(clippy::too_many_arguments)]
 fn player_update_playback(
     play: Option<bool>,
+    stop: Option<bool>,
+    playing: Option<bool>,
     position: Option<u16>,
     seek: Option<f64>,
     volume: Option<f64>,
@@ -218,7 +221,9 @@ fn player_update_playback(
     session_id: Option<usize>,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
     Ok(PLAYER.read().unwrap().update_playback(
-        play.unwrap_or(false),
+        play,
+        stop,
+        playing,
         position,
         seek,
         volume,
