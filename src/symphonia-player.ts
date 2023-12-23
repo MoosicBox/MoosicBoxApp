@@ -97,7 +97,7 @@ async function updatePlayback(update: player.PlaybackUpdate): Promise<void> {
                 updatePlayback.position = value;
                 break;
             case 'volume':
-                updatePlayback.volume = value / 100;
+                updatePlayback.volume = value;
                 break;
             case 'seek':
                 if (!updatePlayback.play) continue;
@@ -130,11 +130,17 @@ export function createPlayer(id: number): PlayerType {
     return {
         id,
         async activate() {
+            const currentSesion = player.playerState.currentPlaybackSession;
+
+            if (!currentSesion) {
+                console.error('No current session');
+            }
+
             const update: UpdatePlayback = {
                 tracks: player.playlist().map(({ trackId }) => trackId),
                 position: player.playlistPosition(),
                 seek: player.currentSeek(),
-                volume: player.volume() / 100,
+                volume: currentSesion?.volume,
                 sessionId: currentPlaybackSessionId()!,
                 quality: player.playbackQuality(),
             };
