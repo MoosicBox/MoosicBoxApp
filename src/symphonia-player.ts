@@ -69,7 +69,7 @@ async function updatePlayback(update: player.PlaybackUpdate): Promise<void> {
         handler,
     );
 
-    const updates = orderedEntries(update, [
+    for (const [key, value] of orderedEntries(update, [
         'stop',
         'play',
         'tracks',
@@ -78,9 +78,7 @@ async function updatePlayback(update: player.PlaybackUpdate): Promise<void> {
         'seek',
         'playing',
         'quality',
-    ]);
-
-    for (const [key, value] of updates) {
+    ])) {
         if (typeof value === 'undefined') continue;
 
         switch (key) {
