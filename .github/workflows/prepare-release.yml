@@ -126,6 +126,12 @@ jobs:
                   mv deb/moosic-box_${{ steps.package_version.outputs.version }}_amd64.deb \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox_amd64${{ matrix.target == 'debug' && '_debug' || '' }}.deb
 
+            - name: Add MoosicBox_linux_amd64${{ matrix.target == 'debug' && '_debug' || '' }} Asset
+              if: ${{ matrix.os == 'ubuntu-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}
+              run: |
+                  mv MoosicBox ${{ steps.assets_dir.outputs.path }}/MoosicBox_linux_amd64${{ matrix.target == 'debug' && '_debug' || '' }}
+
             - name: Add MoosicBox_amd64${{ matrix.target == 'debug' && '_debug' || '' }}.AppImage Asset
               if: ${{ matrix.os == 'ubuntu-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}/bundle
