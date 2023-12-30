@@ -151,6 +151,13 @@ jobs:
                   mv dmg/MoosicBox_${{ steps.package_version.outputs.version }}_x64.dmg \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.dmg
 
+            - name: Add MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.exe Asset
+              if: ${{ matrix.os == 'windows-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}
+              shell: bash
+              run: |
+                  mv MoosicBox.exe ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.exe
+
             - name: Add MoosicBox_x64-setup${{ matrix.target == 'debug' && '_debug' || '' }}.exe Asset
               if: ${{ matrix.os == 'windows-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}/bundle
