@@ -17,6 +17,7 @@ jobs:
             fail-fast: false
             matrix:
                 os: [ubuntu-latest, windows-latest, macos-latest]
+                target: [release, debug]
 
         steps:
             - name: Checkout audiotags
@@ -108,7 +109,7 @@ jobs:
               working-directory: MoosicBoxApp
               env:
                   APTABASE_APP_KEY: ${{ secrets.APTABASE_APP_KEY }}
-              run: pnpm tauri build
+              run: pnpm tauri build${{ matrix.target.debug && ' --debug' || '' }}
 
             - name: Make assets directory
               shell: bash
@@ -120,17 +121,17 @@ jobs:
 
             - name: Add MoosicBox_amd64.deb Asset
               if: ${{ matrix.os == 'ubuntu-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/release/bundle
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target.debug && 'debug' || 'release' }}/bundle
               run: |
                   mv deb/moosic-box_${{ steps.package_version.outputs.version }}_amd64.deb \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_amd64.deb
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_amd64${{ matrix.target.debug && '_debug' || '' }}.deb
 
             - name: Add MoosicBox_amd64.AppImage Asset
               if: ${{ matrix.os == 'ubuntu-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/release/bundle
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target.debug && 'debug' || 'release' }}/bundle
               run: |
                   mv appimage/moosic-box_${{ steps.package_version.outputs.version }}_amd64.AppImage \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_amd64.AppImage
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_amd64${{ matrix.target.debug && '_debug' || '' }}.AppImage
 
             - name: Add MoosicBox_x64_macos_app Asset
               if: ${{ matrix.os == 'macos-latest' }}
@@ -140,31 +141,31 @@ jobs:
                       a \
                       -mx=9 \
                       -tzip \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64_macos_app.zip \
-                      MoosicBoxApp/src-tauri/target/release/bundle/macos/MoosicBox.app
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64_macos${{ matrix.target.debug && '_debug' || '' }}_app.zip \
+                      MoosicBoxApp/src-tauri/target/${{ matrix.target.debug && 'debug' || 'release' }}/bundle/macos/MoosicBox.app
 
             - name: Add MoosicBox_x64.dmg Asset
               if: ${{ matrix.os == 'macos-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/release/bundle
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target.debug && 'debug' || 'release' }}/bundle
               run: |
                   mv dmg/MoosicBox_${{ steps.package_version.outputs.version }}_x64.dmg \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64.dmg
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.target.debug && '_debug' || '' }}.dmg
 
             - name: Add MoosicBox_x64-setup.exe Asset
               if: ${{ matrix.os == 'windows-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/release/bundle
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target.debug && 'debug' || 'release' }}/bundle
               shell: bash
               run: |
                   mv nsis/MoosicBox_${{ steps.package_version.outputs.version }}_x64-setup.exe \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64-setup.exe
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64-setup${{ matrix.target.debug && '_debug' || '' }}.exe
 
             - name: Add MoosicBox_x64.msi Asset
               if: ${{ matrix.os == 'windows-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/release/bundle
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target.debug && 'debug' || 'release' }}/bundle
               shell: bash
               run: |
                   mv msi/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64.msi
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.target.debug && '_debug' || '' }}.msi
 
             - name: Delete Linux Assets
               uses: mknejp/delete-release-assets@v1
@@ -175,8 +176,8 @@ jobs:
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
                   assets: |
-                      MoosicBox_amd64.deb
-                      MoosicBox_amd64.AppImage
+                      MoosicBox_amd64${{ matrix.target.debug && '_debug' || '' }}.deb
+                      MoosicBox_amd64${{ matrix.target.debug && '_debug' || '' }}.AppImage
 
             - name: Delete Mac Assets
               uses: mknejp/delete-release-assets@v1
@@ -187,8 +188,8 @@ jobs:
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
                   assets: |
-                      MoosicBox_x64_macos_app.zip
-                      MoosicBox_x64.dmg
+                      MoosicBox_x64_macos${{ matrix.target.debug && '_debug' || '' }}_app.zip
+                      MoosicBox_x64${{ matrix.target.debug && '_debug' || '' }}.dmg
 
             - name: Delete Windows Assets
               uses: mknejp/delete-release-assets@v1
@@ -199,8 +200,8 @@ jobs:
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
                   assets: |
-                      MoosicBox_x64-setup.exe
-                      MoosicBox_x64.msi
+                      MoosicBox_x64-setup${{ matrix.target.debug && '_debug' || '' }}.exe
+                      MoosicBox_x64${{ matrix.target.debug && '_debug' || '' }}.msi
 
             - name: Upload Assets
               uses: softprops/action-gh-release@v1
@@ -248,6 +249,11 @@ jobs:
                       extension: app
                       decompress: true
                       decompress_file: MoosicBox_x64_macos_app.zip
+                      decompress_algorithm: zip
+                    - name: MoosicBox_x64_macos_debug
+                      extension: app
+                      decompress: true
+                      decompress_file: MoosicBox_x64_macos_debug_app.zip
                       decompress_algorithm: zip
 
         steps:
