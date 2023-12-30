@@ -130,6 +130,9 @@ jobs:
               if: ${{ matrix.os == 'ubuntu-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}
               run: |
+                  ls
+                  echo '===================='
+                  ls -aux
                   mv MoosicBox ${{ steps.assets_dir.outputs.path }}/MoosicBox_linux_amd64${{ matrix.target == 'debug' && '_debug' || '' }}
 
             - name: Add MoosicBox_amd64${{ matrix.target == 'debug' && '_debug' || '' }}.AppImage Asset
