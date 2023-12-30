@@ -286,6 +286,8 @@ const apiOverride: Partial<ApiType> = {
         const query = new URLSearchParams({
             albumId: `${albumId}`,
         });
+        console.debug('ALBUM_ID', albumId);
+        console.debug('QUERY', query);
 
         return apiRequest('get', 'album/versions', query, signal);
     },
