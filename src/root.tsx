@@ -163,6 +163,8 @@ function apiRequest<T>(
         if (token) {
             headers.Authorization = token;
         }
+        console.log('URL', url);
+        console.debug('URL', url);
 
         const args: { url: string; headers: Record<string, string> } = {
             url,
@@ -286,6 +288,8 @@ const apiOverride: Partial<ApiType> = {
         const query = new URLSearchParams({
             albumId: `${albumId}`,
         });
+        console.log('QUERY', query);
+        console.debug('QUERY', query);
 
         return apiRequest('get', 'album/versions', query, signal);
     },
