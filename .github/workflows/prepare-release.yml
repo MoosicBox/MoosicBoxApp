@@ -144,6 +144,13 @@ jobs:
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64_macos${{ matrix.target == 'debug' && '_debug' || '' }}_app.zip \
                       MoosicBoxApp/src-tauri/target/${{ matrix.target }}/bundle/macos/MoosicBox.app
 
+            - name: test MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.dmg Asset
+              if: ${{ matrix.os == 'macos-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}
+              run: |
+                  echo 'hey!!!'
+                  ls -aux
+
             - name: Add MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.dmg Asset
               if: ${{ matrix.os == 'macos-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}/bundle
