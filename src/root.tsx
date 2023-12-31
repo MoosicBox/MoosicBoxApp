@@ -37,6 +37,7 @@ import {
     updateSession,
 } from './services/ws';
 import { PartialUpdateSession } from './services/types';
+import { QueryParams } from './services/util';
 
 const APTABASE_ENABLED = false;
 
@@ -127,7 +128,7 @@ onConnectionNameChanged((name) => {
 function apiRequest<T>(
     method: 'get' | 'post',
     url: string,
-    query?: URLSearchParams,
+    query?: QueryParams,
     signal?: AbortSignal,
 ): Promise<T> {
     // eslint-disable-next-line no-async-promise-executor
@@ -141,7 +142,7 @@ function apiRequest<T>(
 
         const headers: Record<string, string> = {};
 
-        const params = new URLSearchParams(query);
+        const params = new QueryParams(query);
         const clientId = Api.clientId();
 
         if (clientId) {
@@ -240,14 +241,14 @@ onStartup(() => {
 
 const apiOverride: Partial<ApiType> = {
     async getArtist(artistId, signal) {
-        const query = new URLSearchParams({
+        const query = new QueryParams({
             artistId: `${artistId}`,
         });
 
         return apiRequest('get', 'artist', query, signal);
     },
     async getArtistAlbums(artistId, signal) {
-        const query = new URLSearchParams({
+        const query = new QueryParams({
             artistId: `${artistId}`,
         });
 
@@ -260,14 +261,14 @@ const apiOverride: Partial<ApiType> = {
         return '/img/album.svg';
     },
     async getAlbum(albumId, signal) {
-        const query = new URLSearchParams({
+        const query = new QueryParams({
             albumId: `${albumId}`,
         });
 
         return apiRequest('get', 'album', query, signal);
     },
     async getAlbums(request, signal) {
-        const query = new URLSearchParams();
+        const query = new QueryParams();
         if (request?.sources) query.set('sources', request.sources.join(','));
         if (request?.sort) query.set('sort', request.sort);
         if (request?.filters?.search)
@@ -276,21 +277,21 @@ const apiOverride: Partial<ApiType> = {
         return apiRequest('get', 'albums', query, signal);
     },
     async getAlbumTracks(albumId, signal) {
-        const query = new URLSearchParams({
+        const query = new QueryParams({
             albumId: `${albumId}`,
         });
 
         return apiRequest('get', 'album/tracks', query, signal);
     },
     async getAlbumVersions(albumId, signal) {
-        const query = new URLSearchParams({
+        const query = new QueryParams({
             albumId: `${albumId}`,
         });
 
         return apiRequest('get', 'album/versions', query, signal);
     },
     async getTracks(trackIds, signal) {
-        const query = new URLSearchParams({
+        const query = new QueryParams({
             trackIds: `${trackIds.join(',')}`,
         });
 
@@ -311,7 +312,7 @@ const apiOverride: Partial<ApiType> = {
         return '/img/album.svg';
     },
     async getArtists(request, signal) {
-        const query = new URLSearchParams();
+        const query = new QueryParams();
         if (request?.sources) query.set('sources', request.sources.join(','));
         if (request?.sort) query.set('sort', request.sort);
         if (request?.filters?.search)
@@ -323,7 +324,7 @@ const apiOverride: Partial<ApiType> = {
         const response = await apiRequest(
             'post',
             `auth/validate-signature-token?signature=${signature}`,
-            new URLSearchParams(),
+            new QueryParams(),
             signal,
         );
 
@@ -338,7 +339,7 @@ const apiOverride: Partial<ApiType> = {
         return apiRequest(
             'post',
             'auth/signature-token',
-            new URLSearchParams(),
+            new QueryParams(),
             signal,
         );
     },
@@ -349,7 +350,7 @@ const apiOverride: Partial<ApiType> = {
         return apiRequest(
             'post',
             'auth/magic-token',
-            new URLSearchParams({ magicToken }),
+            new QueryParams({ magicToken }),
             signal,
         );
     },
