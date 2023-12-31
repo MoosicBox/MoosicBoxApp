@@ -251,7 +251,14 @@ async fn api_proxy_get(url: String, headers: Option<serde_json::Value>) -> serde
         }
     }
 
-    builder.send().await.unwrap().json().await.unwrap()
+    let resp = builder.send().await.expect("Failed to get response");
+
+    match resp.json().await {
+        Ok(json) => json,
+        Err(err) => {
+            panic!("Json failed: {err:?}");
+        }
+    }
 }
 
 #[tauri::command]
