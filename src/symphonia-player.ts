@@ -98,7 +98,7 @@ async function updatePlayback(update: player.PlaybackUpdate): Promise<void> {
                 updatePlayback.volume = value;
                 break;
             case 'seek':
-                if (!updatePlayback.play) continue;
+                if (!updatePlayback.play && player.playing()) continue;
                 updatePlayback.seek = value;
                 break;
             case 'playing':
