@@ -298,15 +298,15 @@ const apiOverride: Partial<ApiType> = {
         return apiRequest('get', 'tracks', query, signal);
     },
     getAlbumArtwork(album, width, height) {
-        if (album?.containsArtwork) {
+        if (album?.containsCover) {
             return Api.getPath(`albums/${album.albumId}/${width}x${height}`);
         }
         return '/img/album.svg';
     },
     getAlbumSourceArtwork: function (
-        album: { albumId: number; containsArtwork: boolean } | undefined,
+        album: { albumId: number; containsCover: boolean } | undefined,
     ): string {
-        if (album?.containsArtwork) {
+        if (album?.containsCover) {
             return Api.getPath(`albums/${album.albumId}/source`);
         }
         return '/img/album.svg';
