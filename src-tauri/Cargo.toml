@@ -19,9 +19,6 @@ serde_json = "1.0"
 reqwest = "0.11.20"
 portpicker = "0.1"
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core" }
-moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-features = false, features = [
-  "opus",
-] }
 log = "0.4.20"
 once_cell = { version = "1.18.0" }
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
@@ -30,13 +27,16 @@ debounce = "0.2.2"
 atomic_float = "0.1.0"
 
 [features]
-default = ["cpal"]
+default = ["cpal", "aac", "mp3", "opus"]
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
 
 # Player audio outputs
 cpal = ["moosicbox_player/cpal"]
+aac = ["moosicbox_player/aac"]
+mp3 = ["moosicbox_player/mp3"]
+opus = ["moosicbox_player/opus"]
 jack = ["moosicbox_player/jack"]
 asio = ["moosicbox_player/asio"]
 pulseaudio = ["moosicbox_player/pulseaudio"]
