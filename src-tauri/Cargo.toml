@@ -13,13 +13,14 @@ edition = "2021"
 tauri-build = { version = "1.5", features = [] }
 
 [dependencies]
+moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
+moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-features = false }
+
 tauri = { version = "1.5", features = ["api-all"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 reqwest = "0.11.23"
 portpicker = "0.1"
-moosicbox_core = { path = "../../MoosicBoxServer/packages/core" }
-moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-features = false }
 log = "0.4.20"
 once_cell = { version = "1.19.0" }
 tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
@@ -35,9 +36,9 @@ custom-protocol = ["tauri/custom-protocol"]
 
 # Player audio outputs
 cpal = ["moosicbox_player/cpal"]
-aac = ["moosicbox_player/aac"]
-mp3 = ["moosicbox_player/mp3"]
-opus = ["moosicbox_player/opus"]
+aac = ["moosicbox_player/aac", "moosicbox_core/aac"]
+mp3 = ["moosicbox_player/mp3", "moosicbox_core/mp3"]
+opus = ["moosicbox_player/opus", "moosicbox_core/opus"]
 jack = ["moosicbox_player/jack"]
 asio = ["moosicbox_player/asio"]
 pulseaudio = ["moosicbox_player/pulseaudio"]
