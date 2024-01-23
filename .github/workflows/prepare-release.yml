@@ -11,13 +11,35 @@ jobs:
     package:
         permissions: write-all
 
-        runs-on: ${{ matrix.os }}
+        runs-on: ${{ matrix.release.name }}
 
         strategy:
             fail-fast: false
             matrix:
-                os: [ubuntu-latest, windows-latest, macos-latest]
-                target: [release, debug]
+                release:
+                    - os: ubuntu-latest
+                      profile: release-lto
+                      target: release
+
+                    - os: ubuntu-latest
+                      profile: debug
+                      target: debug
+
+                    - os: windows-latest
+                      profile: release-lto
+                      target: release
+
+                    - os: windows-latest
+                      profile: debug
+                      target: debug
+
+                    - os: macos-latest
+                      profile: release
+                      target: release
+
+                    - os: macos-latest
+                      profile: debug
+                      target: debug
 
         steps:
             - name: Checkout audiotags
@@ -53,10 +75,10 @@ jobs:
                       ~/.cargo/registry
                       ~/.cargo/git
                       target
-                  key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+                  key: ${{ matrix.release.name }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
             - name: Install Dependencies
-              if: ${{ matrix.os == 'ubuntu-latest' }}
+              if: ${{ matrix.release.name == 'ubuntu-latest' }}
               run: |
                   sudo apt update
                   sudo apt install libwebkit2gtk-4.0-dev \
@@ -97,9 +119,9 @@ jobs:
               uses: actions/cache@v3
               with:
                   path: ${{ env.STORE_PATH }}
-                  key: ${{ matrix.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  key: ${{ matrix.release.name }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
                   restore-keys: |
-                      ${{ matrix.os }}-pnpm-store-
+                      ${{ matrix.release.name }}-pnpm-store-
 
             - name: pnpm install
               working-directory: MoosicBoxApp
@@ -109,7 +131,7 @@ jobs:
               working-directory: MoosicBoxApp
               env:
                   APTABASE_APP_KEY: ${{ secrets.APTABASE_APP_KEY }}
-              run: pnpm tauri build${{ matrix.target == 'debug' && ' --debug' || '' }}
+              run: pnpm tauri build${{ matrix.release.profile == 'debug' && ' --debug' || ' -- --profile ' }}${{ matrix.release.profile == 'debug' && '' || matrix.release.profile }}
 
             - name: Make assets directory
               shell: bash
@@ -119,108 +141,108 @@ jobs:
                   cd assets
                   echo "path=$(pwd)" >> $GITHUB_OUTPUT
 
-            - name: Add moosicbox_amd64${{ matrix.target == 'debug' && '_debug' || '' }}.deb Asset
-              if: ${{ matrix.os == 'ubuntu-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}/bundle
+            - name: Add moosicbox_amd64${{ matrix.release.target == 'debug' && '_debug' || '' }}.deb Asset
+              if: ${{ matrix.release.name == 'ubuntu-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.target }}/bundle
               run: |
                   mv deb/moosic-box_${{ steps.package_version.outputs.version }}_amd64.deb \
-                      ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.target == 'debug' && '_debug' || '' }}.deb
+                      ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.release.target == 'debug' && '_debug' || '' }}.deb
 
-            - name: Add MoosicBox_linux_amd64${{ matrix.target == 'debug' && '_debug' || '' }} Asset
-              if: ${{ matrix.os == 'ubuntu-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}
+            - name: Add MoosicBox_linux_amd64${{ matrix.release.target == 'debug' && '_debug' || '' }} Asset
+              if: ${{ matrix.release.name == 'ubuntu-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.target }}
               run: |
-                  mv moosic-box ${{ steps.assets_dir.outputs.path }}/moosicbox_linux_amd64${{ matrix.target == 'debug' && '_debug' || '' }}
+                  mv moosic-box ${{ steps.assets_dir.outputs.path }}/moosicbox_linux_amd64${{ matrix.release.target == 'debug' && '_debug' || '' }}
 
-            - name: Add MoosicBox_amd64${{ matrix.target == 'debug' && '_debug' || '' }}.AppImage Asset
-              if: ${{ matrix.os == 'ubuntu-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}/bundle
+            - name: Add MoosicBox_amd64${{ matrix.release.target == 'debug' && '_debug' || '' }}.AppImage Asset
+              if: ${{ matrix.release.name == 'ubuntu-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.target }}/bundle
               run: |
                   mv appimage/moosic-box_${{ steps.package_version.outputs.version }}_amd64.AppImage \
-                      ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.target == 'debug' && '_debug' || '' }}.AppImage
+                      ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.release.target == 'debug' && '_debug' || '' }}.AppImage
 
-            - name: Add MoosicBox_x64_macos${{ matrix.target == 'debug' && '_debug' || '' }}_app Asset
-              if: ${{ matrix.os == 'macos-latest' }}
+            - name: Add MoosicBox_x64_macos${{ matrix.release.target == 'debug' && '_debug' || '' }}_app Asset
+              if: ${{ matrix.release.name == 'macos-latest' }}
               shell: bash
               run: |
                   7z \
                       a \
                       -mx=9 \
                       -tzip \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64_macos${{ matrix.target == 'debug' && '_debug' || '' }}_app.zip \
-                      MoosicBoxApp/src-tauri/target/${{ matrix.target }}/bundle/macos/MoosicBox.app
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64_macos${{ matrix.release.target == 'debug' && '_debug' || '' }}_app.zip \
+                      MoosicBoxApp/src-tauri/target/${{ matrix.release.target }}/bundle/macos/MoosicBox.app
 
-            - name: Add MoosicBox_macos_x64${{ matrix.target == 'debug' && '_debug' || '' }} Asset
-              if: ${{ matrix.os == 'macos-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}
+            - name: Add MoosicBox_macos_x64${{ matrix.release.target == 'debug' && '_debug' || '' }} Asset
+              if: ${{ matrix.release.name == 'macos-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.target }}
               run: |
-                  mv MoosicBox ${{ steps.assets_dir.outputs.path }}/MoosicBox_macos_x64${{ matrix.target == 'debug' && '_debug' || '' }}
+                  mv MoosicBox ${{ steps.assets_dir.outputs.path }}/MoosicBox_macos_x64${{ matrix.release.target == 'debug' && '_debug' || '' }}
 
-            - name: Add MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.dmg Asset
-              if: ${{ matrix.os == 'macos-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}/bundle
+            - name: Add MoosicBox_x64${{ matrix.release.target == 'debug' && '_debug' || '' }}.dmg Asset
+              if: ${{ matrix.release.name == 'macos-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.target }}/bundle
               run: |
                   mv dmg/MoosicBox_${{ steps.package_version.outputs.version }}_x64.dmg \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.dmg
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.target == 'debug' && '_debug' || '' }}.dmg
 
-            - name: Add MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.exe Asset
-              if: ${{ matrix.os == 'windows-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}
+            - name: Add MoosicBox_x64${{ matrix.release.target == 'debug' && '_debug' || '' }}.exe Asset
+              if: ${{ matrix.release.name == 'windows-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.target }}
               shell: bash
               run: |
-                  mv MoosicBox.exe ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.exe
+                  mv MoosicBox.exe ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.target == 'debug' && '_debug' || '' }}.exe
 
-            - name: Add MoosicBox_x64-setup${{ matrix.target == 'debug' && '_debug' || '' }}.exe Asset
-              if: ${{ matrix.os == 'windows-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}/bundle
+            - name: Add MoosicBox_x64-setup${{ matrix.release.target == 'debug' && '_debug' || '' }}.exe Asset
+              if: ${{ matrix.release.name == 'windows-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.target }}/bundle
               shell: bash
               run: |
                   mv nsis/MoosicBox_${{ steps.package_version.outputs.version }}_x64-setup.exe \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64-setup${{ matrix.target == 'debug' && '_debug' || '' }}.exe
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64-setup${{ matrix.release.target == 'debug' && '_debug' || '' }}.exe
 
-            - name: Add MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.msi Asset
-              if: ${{ matrix.os == 'windows-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.target }}/bundle
+            - name: Add MoosicBox_x64${{ matrix.release.target == 'debug' && '_debug' || '' }}.msi Asset
+              if: ${{ matrix.release.name == 'windows-latest' }}
+              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.target }}/bundle
               shell: bash
               run: |
                   mv msi/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.msi
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.target == 'debug' && '_debug' || '' }}.msi
 
             - name: Delete Linux Assets
               uses: mknejp/delete-release-assets@v1
-              if: ${{ matrix.os == 'ubuntu-latest' }}
+              if: ${{ matrix.release.name == 'ubuntu-latest' }}
               with:
                   fail-if-no-assets: false
                   token: ${{ github.token }}
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
                   assets: |
-                      MoosicBox_amd64${{ matrix.target == 'debug' && '_debug' || '' }}.deb
-                      MoosicBox_amd64${{ matrix.target == 'debug' && '_debug' || '' }}.AppImage
+                      MoosicBox_amd64${{ matrix.release.target == 'debug' && '_debug' || '' }}.deb
+                      MoosicBox_amd64${{ matrix.release.target == 'debug' && '_debug' || '' }}.AppImage
 
             - name: Delete Mac Assets
               uses: mknejp/delete-release-assets@v1
-              if: ${{ matrix.os == 'macos-latest' }}
+              if: ${{ matrix.release.name == 'macos-latest' }}
               with:
                   fail-if-no-assets: false
                   token: ${{ github.token }}
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
                   assets: |
-                      MoosicBox_x64_macos${{ matrix.target == 'debug' && '_debug' || '' }}_app.zip
-                      MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.dmg
+                      MoosicBox_x64_macos${{ matrix.release.target == 'debug' && '_debug' || '' }}_app.zip
+                      MoosicBox_x64${{ matrix.release.target == 'debug' && '_debug' || '' }}.dmg
 
             - name: Delete Windows Assets
               uses: mknejp/delete-release-assets@v1
-              if: ${{ matrix.os == 'windows-latest' }}
+              if: ${{ matrix.release.name == 'windows-latest' }}
               with:
                   fail-if-no-assets: false
                   token: ${{ github.token }}
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
                   assets: |
-                      MoosicBox_x64-setup${{ matrix.target == 'debug' && '_debug' || '' }}.exe
-                      MoosicBox_x64${{ matrix.target == 'debug' && '_debug' || '' }}.msi
+                      MoosicBox_x64-setup${{ matrix.release.target == 'debug' && '_debug' || '' }}.exe
+                      MoosicBox_x64${{ matrix.release.target == 'debug' && '_debug' || '' }}.msi
 
             - name: Upload Assets
               uses: softprops/action-gh-release@v1
