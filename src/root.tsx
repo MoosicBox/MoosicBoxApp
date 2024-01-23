@@ -254,12 +254,6 @@ const apiOverride: Partial<ApiType> = {
 
         return apiRequest('get', 'artist/albums', query, signal);
     },
-    getArtistCover(artist) {
-        if (artist?.containsCover) {
-            return Api.getPath(`artists/${artist.artistId}/750x750`);
-        }
-        return '/img/album.svg';
-    },
     async getAlbum(albumId, signal) {
         const query = new QueryParams({
             albumId: `${albumId}`,
@@ -296,20 +290,6 @@ const apiOverride: Partial<ApiType> = {
         });
 
         return apiRequest('get', 'tracks', query, signal);
-    },
-    getAlbumArtwork(album, width, height) {
-        if (album?.containsCover) {
-            return Api.getPath(`albums/${album.albumId}/${width}x${height}`);
-        }
-        return '/img/album.svg';
-    },
-    getAlbumSourceArtwork: function (
-        album: { albumId: number; containsCover: boolean } | undefined,
-    ): string {
-        if (album?.containsCover) {
-            return Api.getPath(`albums/${album.albumId}/source`);
-        }
-        return '/img/album.svg';
     },
     async getArtists(request, signal) {
         const query = new QueryParams();
