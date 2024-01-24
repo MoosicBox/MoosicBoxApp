@@ -1,21 +1,33 @@
 {
     "compilerOptions": {
-        "strict": true,
+        "allowSyntheticDefaultImports": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
         "target": "ESNext",
         "module": "ESNext",
         "moduleResolution": "node",
-        "allowSyntheticDefaultImports": true,
-        "esModuleInterop": true,
-        "jsx": "preserve",
         "jsxImportSource": "solid-js",
-        "types": [
-            "vite/client"
-        ],
+        "jsx": "preserve",
+        "strict": true,
         "baseUrl": "./",
         "paths": {
             "~/*": [
                 "./src/*"
             ]
         }
-    }
+    },
+    "types": [
+        "vitest"
+    ],
+    "exclude": [
+        "src-tauri"
+    ],
+    "include": [
+        "**/*.ts",
+        "**/*.tsx",
+        "**/*.js",
+        "**/*.jsx",
+        "**/*.cjs",
+        "**/*.mjs"
+    ]
 }
