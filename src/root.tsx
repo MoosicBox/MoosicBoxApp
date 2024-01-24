@@ -15,7 +15,14 @@ import { ErrorBoundary } from 'solid-start/error-boundary';
 import { invoke } from '@tauri-apps/api/tauri';
 import { listen } from '@tauri-apps/api/event';
 import { appState, onStartup, onStartupFirst } from './services/app';
-import { Api, ApiType, Track, api, trackId } from './services/api';
+import {
+    Api,
+    ApiType,
+    Track,
+    api,
+    toSessionPlaylistTrack,
+    trackId,
+} from './services/api';
 import { attachConsole, debug, error, info, warn } from 'tauri-plugin-log-api';
 import { trackEvent } from '@aptabase/tauri';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
@@ -45,8 +52,6 @@ const APTABASE_ENABLED = false;
     await listen('UPDATE_SESSION', async (event) => {
         console.debug('Received UPDATE_SESSION', event);
         const partialUpdate = event.payload as Api.UpdatePlaybackSession;
-
-        updateSession(partialUpdate);
 
         const updatePlaybackSession: PartialUpdateSession = {
             ...partialUpdate,
@@ -84,6 +89,11 @@ const APTABASE_ENABLED = false;
                 ),
             };
 
+            partialUpdate.playlist.tracks =
+                updatePlaybackSession.playlist.tracks.map(
+                    toSessionPlaylistTrack,
+                );
+
             const matchingSession = player.playerState.playbackSessions.find(
                 (s) => s.sessionId === updatePlaybackSession.sessionId,
             );
@@ -105,6 +115,7 @@ const APTABASE_ENABLED = false;
                 updateSessionPartial(state, updatePlaybackSession);
             }),
         );
+        updateSession(partialUpdate);
     });
 })();
 
