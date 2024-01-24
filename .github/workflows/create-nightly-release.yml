@@ -2,14 +2,14 @@ name: Create Nightly MoosicBoxApp Release
 
 on:
     schedule:
-        - cron: "0 4 * * *"
+        - cron: '0 4 * * *'
 
 jobs:
     create-nightly-release:
         runs-on: ubuntu-latest
 
         steps:
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   token: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
 

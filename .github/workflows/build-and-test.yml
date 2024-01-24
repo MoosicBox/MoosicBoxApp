@@ -32,12 +32,12 @@ jobs:
                   repository: MoosicBox/MoosicBoxServer
                   path: MoosicBoxServer
 
-            - uses: actions/checkout@v3
+            - uses: actions/checkout@v4
               with:
                   path: MoosicBoxApp
 
             - name: ⚡ Cache cargo
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: |
                       ~/.cargo/registry
@@ -96,7 +96,7 @@ jobs:
                   echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
             - name: ⚡ Cache pnpm
-              uses: actions/cache@v3
+              uses: actions/cache@v4
               with:
                   path: ${{ env.STORE_PATH }}
                   key: ${{ matrix.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
