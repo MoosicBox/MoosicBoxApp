@@ -15,7 +15,7 @@ import { ErrorBoundary } from 'solid-start/error-boundary';
 import { invoke } from '@tauri-apps/api/tauri';
 import { listen } from '@tauri-apps/api/event';
 import { appState, onStartup, onStartupFirst } from './services/app';
-import { Api, ApiType, api } from './services/api';
+import { Api, ApiType, Track, api, trackId } from './services/api';
 import { attachConsole, debug, error, info, warn } from 'tauri-plugin-log-api';
 import { trackEvent } from '@aptabase/tauri';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
@@ -46,6 +46,8 @@ const APTABASE_ENABLED = false;
         console.debug('Received UPDATE_SESSION', event);
         const partialUpdate = event.payload as Api.UpdatePlaybackSession;
 
+        updateSession(partialUpdate);
+
         const updatePlaybackSession: PartialUpdateSession = {
             ...partialUpdate,
             sessionId: partialUpdate.sessionId,
@@ -53,23 +55,47 @@ const APTABASE_ENABLED = false;
         };
 
         if (partialUpdate.playlist) {
-            const ids = partialUpdate.playlist.tracks.map(({ id }) => id);
-            const tracks = await api.getTracks(ids);
+            const libraryTracks = partialUpdate.playlist.tracks.filter(
+                ({ type }) => type == 'LIBRARY',
+            );
+
+            const libraryIds = libraryTracks.map(({ id }) => id);
+
+            const tidalTracks = partialUpdate.playlist.tracks.filter(
+                ({ type }) => type == 'TIDAL',
+            );
+
+            const tracks: Track[] = (
+                await Promise.all([
+                    api.getTracks(libraryIds),
+                    ...tidalTracks.map(({ id }) => api.getTidalTrack(id)),
+                ])
+            ).flat();
+
             updatePlaybackSession.playlist = {
                 ...partialUpdate.playlist,
                 sessionPlaylistId: partialUpdate.playlist.sessionPlaylistId,
-                tracks: ids.map(
-                    (id) => tracks.find(({ trackId }) => trackId === id)!,
+                tracks: partialUpdate.playlist.tracks.map(
+                    ({ id, type }) =>
+                        tracks.find(
+                            (track) =>
+                                track.type === type && trackId(track) === id,
+                        )!,
                 ),
             };
 
             const matchingSession = player.playerState.playbackSessions.find(
                 (s) => s.sessionId === updatePlaybackSession.sessionId,
             );
-            if (matchingSession) {
-                updatePlaybackSession.playlist.sessionPlaylistId =
-                    matchingSession.playlist.sessionPlaylistId;
+
+            if (!matchingSession) {
+                throw new Error(
+                    `Could not find matching session with id ${updatePlaybackSession.sessionId}`,
+                );
             }
+
+            updatePlaybackSession.playlist.sessionPlaylistId =
+                matchingSession.playlist.sessionPlaylistId;
         } else {
             delete updatePlaybackSession.playlist;
         }
@@ -79,7 +105,6 @@ const APTABASE_ENABLED = false;
                 updateSessionPartial(state, updatePlaybackSession);
             }),
         );
-        updateSession(partialUpdate);
     });
 })();
 

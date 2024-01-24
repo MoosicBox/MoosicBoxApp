@@ -1,5 +1,5 @@
 import { InvokeArgs, invoke } from '@tauri-apps/api/tauri';
-import { Api } from './services/api';
+import { Api, Track, TrackType, trackId } from './services/api';
 import { PlayerType, currentPlaybackSessionId } from './services/player';
 import * as player from './services/player';
 import { orderedEntries } from './services/util';
@@ -18,8 +18,14 @@ enum PlayerAction {
     UPDATE_PLAYBACK = 'player_update_playback',
 }
 
+type TrackIdWithApiSource = {
+    id: number;
+    source: TrackType;
+};
+
 type UpdatePlayback = {
     sessionId: number;
+    sessionPlaylistId: number;
     play?: boolean;
     stop?: boolean;
     playing?: boolean;
@@ -27,7 +33,7 @@ type UpdatePlayback = {
     position?: number;
     seek?: number;
     volume?: number;
-    tracks?: number[];
+    tracks?: TrackIdWithApiSource[];
 };
 
 async function invokePlayer(
@@ -36,6 +42,13 @@ async function invokePlayer(
 ): Promise<PlaybackStatus> {
     console.debug('invokePlayer', action, args);
     return (await invoke(action, args)) as PlaybackStatus;
+}
+
+function toTrackIdWithApiSource(track: Track) {
+    return {
+        id: trackId(track)!,
+        source: track.type,
+    };
 }
 
 async function updatePlayback(update: player.PlaybackUpdate): Promise<void> {
@@ -65,6 +78,10 @@ async function updatePlayback(update: player.PlaybackUpdate): Promise<void> {
     const updatePlayback = new Proxy<UpdatePlayback>(
         {
             sessionId: update.sessionId,
+            sessionPlaylistId:
+                player.playerState.playbackSessions.find(
+                    ({ sessionId }) => sessionId === update.sessionId,
+                )?.playlist.sessionPlaylistId ?? -1,
         },
         handler,
     );
@@ -89,7 +106,7 @@ async function updatePlayback(update: player.PlaybackUpdate): Promise<void> {
                 updatePlayback.play = value;
                 break;
             case 'tracks':
-                updatePlayback.tracks = value.map(({ trackId }) => trackId);
+                updatePlayback.tracks = value.map(toTrackIdWithApiSource);
                 break;
             case 'position':
                 updatePlayback.position = value;
@@ -135,11 +152,14 @@ export function createPlayer(id: number): PlayerType {
             }
 
             const update: UpdatePlayback = {
-                tracks: player.playlist().map(({ trackId }) => trackId),
+                tracks: player.playlist().map(toTrackIdWithApiSource),
                 position: player.playlistPosition(),
                 seek: player.currentSeek(),
                 volume: currentSesion?.volume,
                 sessionId: currentPlaybackSessionId()!,
+                sessionPlaylistId:
+                    player.playerState.currentPlaybackSession?.playlist
+                        .sessionPlaylistId ?? -1,
                 quality: player.playbackQuality(),
             };
             await invokePlayer(PlayerAction.UPDATE_PLAYBACK, update);

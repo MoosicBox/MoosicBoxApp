@@ -42,6 +42,8 @@ tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", br
 tauri-plugin-aptabase = { version = "0.4", optional = true }
 debounce = "0.2.2"
 atomic_float = "0.1.0"
+strum = "0.25.0"
+strum_macros = "0.25.3"
 
 [features]
 default = ["cpal", "aac", "mp3", "opus"]

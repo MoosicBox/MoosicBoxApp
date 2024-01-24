@@ -10,14 +10,15 @@ use std::{
 
 use atomic_float::AtomicF64;
 use log::info;
-use moosicbox_core::sqlite::models::{Album, UpdateSession};
+use moosicbox_core::sqlite::models::{Album, ApiSource, UpdateSession};
 use moosicbox_core::types::PlaybackQuality;
 use moosicbox_player::player::{
     Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player, PlayerError,
     PlayerSource, TrackOrId,
 };
 use once_cell::sync::Lazy;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use strum_macros::{AsRefStr, EnumString};
 use tauri::{AppHandle, Manager};
 use tauri_plugin_log::LogTarget;
 
@@ -154,16 +155,21 @@ async fn player_play(
     seek: Option<f64>,
     volume: Option<f64>,
     session_id: usize,
+    session_playlist_id: usize,
     quality: PlaybackQuality,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
     info!("Playing Symphonia Player: {track_ids:?}");
 
     let playback = Playback::new(
-        track_ids.iter().map(|id| TrackOrId::Id(*id)).collect(),
+        track_ids
+            .iter()
+            .map(|id| TrackOrId::Id(*id, ApiSource::Library))
+            .collect(),
         position,
         AtomicF64::new(volume.unwrap_or(1.0)),
         quality,
         Some(session_id),
+        Some(session_playlist_id),
     );
 
     Ok(PLAYER.read().unwrap().play_playback(
@@ -207,6 +213,32 @@ async fn player_stop_track() -> Result<PlaybackStatus, TauriPlayerError> {
     Ok(PLAYER.read().unwrap().stop_track()?)
 }
 
+#[derive(Copy, Debug, Serialize, Deserialize, EnumString, AsRefStr, PartialEq, Clone)]
+#[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
+#[serde(untagged)]
+pub enum TrackId {
+    Library(i32),
+    Tidal(u64),
+    Qobuz(u64),
+}
+
+impl From<TrackId> for i32 {
+    fn from(value: TrackId) -> Self {
+        match value {
+            TrackId::Library(id) => id,
+            TrackId::Tidal(id) => id as i32,
+            TrackId::Qobuz(id) => id as i32,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct TrackIdWithApiSource {
+    id: TrackId,
+    source: ApiSource,
+}
+
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
 fn player_update_playback(
@@ -216,10 +248,14 @@ fn player_update_playback(
     position: Option<u16>,
     seek: Option<f64>,
     volume: Option<f64>,
-    tracks: Option<Vec<i32>>,
+    tracks: Option<Vec<TrackIdWithApiSource>>,
     quality: Option<PlaybackQuality>,
     session_id: Option<usize>,
+    session_playlist_id: Option<usize>,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
+    log::debug!(
+        "player_update_playback: play={play:?} stop={stop:?} playing={playing:?} position={position:?}"
+    );
     Ok(PLAYER.read().unwrap().update_playback(
         play,
         stop,
@@ -227,9 +263,15 @@ fn player_update_playback(
         position,
         seek,
         volume,
-        tracks.map(|tracks| tracks.iter().map(|id| TrackOrId::Id(*id)).collect()),
+        tracks.map(|tracks| {
+            tracks
+                .iter()
+                .map(|track| TrackOrId::Id(track.id.into(), track.source))
+                .collect()
+        }),
         quality,
         session_id,
+        session_playlist_id,
         Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
     )?)
 }
