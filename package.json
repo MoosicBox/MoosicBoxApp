@@ -16,7 +16,8 @@
         "pretty:write": "prettier --write \"**/*.{js,cjs,mjs,jsx,ts,tsx}\"",
         "lint": "eslint --ext .ts,.tsx .",
         "lint:write": "eslint --fix",
-        "tauri": "tauri"
+        "tauri": "tauri",
+        "validate": "pnpm run pretty && pnpm run lint && tsc --noEmit"
     },
     "type": "module",
     "license": "MIT",
