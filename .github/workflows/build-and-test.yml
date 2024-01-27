@@ -20,14 +20,14 @@ jobs:
 
         steps:
             - name: Checkout audiotags
-              uses: actions/checkout@master
+              uses: actions/checkout@v4
               with:
                   repository: BSteffaniak/audiotags
                   ref: feat/add-full-date-capabilities
                   path: audiotags
 
             - name: Checkout MoosicBoxServer
-              uses: actions/checkout@master
+              uses: actions/checkout@v4
               with:
                   repository: MoosicBox/MoosicBoxServer
                   path: MoosicBoxServer
@@ -73,7 +73,7 @@ jobs:
               run: cargo test --verbose
 
             - name: Checkout MoosicBoxUI
-              uses: actions/checkout@master
+              uses: actions/checkout@v4
               with:
                   repository: MoosicBox/MoosicBoxUI
                   path: MoosicBoxUI
