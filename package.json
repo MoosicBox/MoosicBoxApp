@@ -17,7 +17,8 @@
         "lint": "eslint --ext .ts,.tsx .",
         "lint:write": "eslint --fix",
         "tauri": "tauri",
-        "validate": "pnpm run pretty && pnpm run lint && tsc --noEmit"
+        "typecheck": "tsc --noEmit",
+        "validate": "pnpm pretty && pnpm lint && pnpm typecheck"
     },
     "type": "module",
     "license": "MIT",
