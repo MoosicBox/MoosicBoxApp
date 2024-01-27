@@ -2,6 +2,7 @@ node_modules
 dist/
 .solid/
 src/components
+src/pages
 src/routes
 src/services
 /public/
