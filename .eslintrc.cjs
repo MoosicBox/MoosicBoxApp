@@ -44,7 +44,7 @@ module.exports = {
     },
     overrides: [
         {
-            files: ['**/*.ts'],
+            files: ['**/*.ts', '**/*.tsx'],
             rules: {
                 '@typescript-eslint/naming-convention': [
                     'error',
