@@ -348,40 +348,6 @@ const apiOverride: Partial<ApiType> = {
 
         return apiRequest('get', 'artists', query, signal);
     },
-    async validateSignatureTokenAndClient(signature, signal) {
-        const response = await apiRequest(
-            'post',
-            `auth/validate-signature-token?signature=${signature}`,
-            new QueryParams(),
-            signal,
-        );
-
-        return (
-            typeof response === 'object' &&
-            response !== null &&
-            'valid' in response &&
-            response.valid === true
-        );
-    },
-    fetchSignatureToken: function (signal): Promise<string | undefined> {
-        return apiRequest(
-            'post',
-            'auth/signature-token',
-            new QueryParams(),
-            signal,
-        );
-    },
-    magicToken: function (
-        magicToken: string,
-        signal,
-    ): Promise<{ clientId: string; accessToken: string }> {
-        return apiRequest(
-            'post',
-            'auth/magic-token',
-            new QueryParams({ magicToken }),
-            signal,
-        );
-    },
 };
 
 const originalApi = { ...api };
