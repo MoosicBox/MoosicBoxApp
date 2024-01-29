@@ -287,61 +287,7 @@ onStartup(() => {
     }
 });
 
-const apiOverride: Partial<ApiType> = {
-    async getArtist(artistId, signal) {
-        const query = new QueryParams({
-            artistId: `${artistId}`,
-        });
-
-        return apiRequest('get', 'artist', query, signal);
-    },
-    async getAlbum(albumId, signal) {
-        const query = new QueryParams({
-            albumId: `${albumId}`,
-        });
-
-        return apiRequest('get', 'album', query, signal);
-    },
-    async getAlbums(request, signal) {
-        const query = new QueryParams();
-        if (request?.sources) query.set('sources', request.sources.join(','));
-        if (request?.sort) query.set('sort', request.sort);
-        if (request?.filters?.search)
-            query.set('search', request.filters.search);
-
-        return apiRequest('get', 'albums', query, signal);
-    },
-    async getAlbumTracks(albumId, signal) {
-        const query = new QueryParams({
-            albumId: `${albumId}`,
-        });
-
-        return apiRequest('get', 'album/tracks', query, signal);
-    },
-    async getAlbumVersions(albumId, signal) {
-        const query = new QueryParams({
-            albumId: `${albumId}`,
-        });
-
-        return apiRequest('get', 'album/versions', query, signal);
-    },
-    async getTracks(trackIds, signal) {
-        const query = new QueryParams({
-            trackIds: `${trackIds.join(',')}`,
-        });
-
-        return apiRequest('get', 'tracks', query, signal);
-    },
-    async getArtists(request, signal) {
-        const query = new QueryParams();
-        if (request?.sources) query.set('sources', request.sources.join(','));
-        if (request?.sort) query.set('sort', request.sort);
-        if (request?.filters?.search)
-            query.set('search', request.filters.search);
-
-        return apiRequest('get', 'artists', query, signal);
-    },
-};
+const apiOverride: Partial<ApiType> = {};
 
 const originalApi = { ...api };
 
