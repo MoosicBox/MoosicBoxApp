@@ -295,13 +295,6 @@ const apiOverride: Partial<ApiType> = {
 
         return apiRequest('get', 'artist', query, signal);
     },
-    async getArtistAlbums(artistId, signal) {
-        const query = new QueryParams({
-            artistId: `${artistId}`,
-        });
-
-        return apiRequest('get', 'artist/albums', query, signal);
-    },
     async getAlbum(albumId, signal) {
         const query = new QueryParams({
             albumId: `${albumId}`,
