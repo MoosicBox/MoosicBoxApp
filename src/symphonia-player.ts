@@ -4,8 +4,6 @@ import { PlayerType, currentPlaybackSessionId } from './services/player';
 import * as player from './services/player';
 import { orderedEntries } from './services/util';
 
-let playbackId: number | undefined;
-
 type PlaybackStatus = { playbackId: number };
 
 enum PlayerAction {
@@ -54,7 +52,7 @@ function toTrackIdWithApiSource(track: Track) {
 async function updatePlayback(update: player.PlaybackUpdate): Promise<void> {
     console.debug('Received updatePlayback', update);
 
-    let actions = {
+    const actions = {
         update: false,
     };
 
@@ -137,7 +135,7 @@ async function updatePlayback(update: player.PlaybackUpdate): Promise<void> {
             updatePlayback,
         );
 
-        playbackId = playbackStatus.playbackId;
+        console.debug('Updated playback:', playbackStatus);
     }
 }
 
