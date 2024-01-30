@@ -173,6 +173,7 @@ onConnectionNameChanged((name) => {
     updateConnection(connectionId()!, name);
 });
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function apiRequest<T>(
     method: 'get' | 'post',
     url: string,
