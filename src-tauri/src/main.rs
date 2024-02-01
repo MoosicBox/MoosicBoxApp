@@ -138,17 +138,6 @@ async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
 }
 
 #[tauri::command]
-async fn get_albums() -> Vec<Album> {
-    vec![Album {
-        id: 121,
-        title: "test alb".into(),
-        artist: "test".into(),
-        artist_id: 123,
-        ..Default::default()
-    }]
-}
-
-#[tauri::command]
 async fn player_play(
     track_ids: Vec<i32>,
     position: Option<u16>,
@@ -412,7 +401,6 @@ fn main() {
             set_signature_token,
             set_api_token,
             set_api_url,
-            get_albums,
             player_play,
             player_pause,
             player_resume,
