@@ -3102,6 +3102,7 @@ dependencies = [
  "enum-as-inner",
  "futures",
  "log",
+ "moosicbox_database",
  "moosicbox_json_utils",
  "once_cell",
  "rusqlite",
@@ -3113,10 +3114,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "moosicbox_database"
+version = "0.1.0"
+dependencies = [
+ "async-recursion",
+ "async-trait",
+ "futures",
+ "log",
+ "once_cell",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "strum",
+ "strum_macros",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
 name = "moosicbox_json_utils"
 version = "0.1.0"
 dependencies = [
  "log",
+ "moosicbox_database",
  "rusqlite",
  "serde",
  "serde_json",
@@ -3161,6 +3182,7 @@ dependencies = [
  "bytes",
  "futures",
  "log",
+ "pin-project",
  "thiserror",
  "tokio",
 ]
@@ -3847,6 +3869,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "90fcb95eef784c2ac79119d1dd819e162b5da872ce6f3c3abe1e8ca1c082f72b"
 dependencies = [
  "siphasher",
+]
+
+[[package]]
+name = "pin-project"
+version = "1.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0302c4a0442c456bd56f841aee5c3bfd17967563f6fadc9ceb9f9c23cf3807e0"
+dependencies = [
+ "pin-project-internal",
+]
+
+[[package]]
+name = "pin-project-internal"
+version = "1.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "266c042b60c9c76b8d53061e52b2e0d1116abc57cefc8c5cd671619a56ac3690"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.48",
 ]
 
 [[package]]

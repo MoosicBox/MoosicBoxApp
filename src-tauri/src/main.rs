@@ -10,7 +10,7 @@ use std::{
 
 use atomic_float::AtomicF64;
 use log::info;
-use moosicbox_core::sqlite::models::{Album, ApiSource, UpdateSession};
+use moosicbox_core::sqlite::models::{ApiSource, UpdateSession};
 use moosicbox_core::types::PlaybackQuality;
 use moosicbox_player::player::{
     Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player, PlayerError,
