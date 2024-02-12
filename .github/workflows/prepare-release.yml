@@ -153,27 +153,27 @@ jobs:
                   cd assets
                   echo "path=$(pwd)" >> $GITHUB_OUTPUT
 
-            - name: Add moosicbox_amd64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.deb Asset
+            - name: Add moosicbox_amd64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.deb Asset
               if: ${{ matrix.release.os == 'ubuntu-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
               run: |
                   mv deb/moosic-box_${{ steps.package_version.outputs.version }}_amd64.deb \
-                      ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.deb
+                      ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.deb
 
-            - name: Add MoosicBox_linux_amd64${{ matrix.release.profile == 'debug' && '_debug' || '' }} Asset
+            - name: Add MoosicBox_linux_amd64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }} Asset
               if: ${{ matrix.release.os == 'ubuntu-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}
               run: |
-                  mv moosic-box ${{ steps.assets_dir.outputs.path }}/moosicbox_linux_amd64${{ matrix.release.profile == 'debug' && '_debug' || '' }}
+                  mv moosic-box ${{ steps.assets_dir.outputs.path }}/moosicbox_linux_amd64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}
 
-            - name: Add MoosicBox_amd64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.AppImage Asset
+            - name: Add MoosicBox_amd64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.AppImage Asset
               if: ${{ matrix.release.os == 'ubuntu-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
               run: |
                   mv appimage/moosic-box_${{ steps.package_version.outputs.version }}_amd64.AppImage \
-                      ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.AppImage
+                      ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.AppImage
 
-            - name: Add MoosicBox_x64_macos${{ matrix.release.profile == 'debug' && '_debug' || '' }}_app Asset
+            - name: Add MoosicBox_x64_macos${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}_app Asset
               if: ${{ matrix.release.os == 'macos-latest' }}
               shell: bash
               run: |
@@ -181,44 +181,44 @@ jobs:
                       a \
                       -mx=9 \
                       -tzip \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64_macos${{ matrix.release.profile == 'debug' && '_debug' || '' }}_app.zip \
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64_macos${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}_app.zip \
                       MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle/macos/MoosicBox.app
 
-            - name: Add MoosicBox_macos_x64${{ matrix.release.profile == 'debug' && '_debug' || '' }} Asset
+            - name: Add MoosicBox_macos_x64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }} Asset
               if: ${{ matrix.release.os == 'macos-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}
               run: |
-                  mv MoosicBox ${{ steps.assets_dir.outputs.path }}/MoosicBox_macos_x64${{ matrix.release.profile == 'debug' && '_debug' || '' }}
+                  mv MoosicBox ${{ steps.assets_dir.outputs.path }}/MoosicBox_macos_x64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}
 
-            - name: Add MoosicBox_x64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.dmg Asset
+            - name: Add MoosicBox_x64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.dmg Asset
               if: ${{ matrix.release.os == 'macos-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
               run: |
                   mv dmg/MoosicBox_${{ steps.package_version.outputs.version }}_x64.dmg \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.dmg
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.dmg
 
-            - name: Add MoosicBox_x64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.exe Asset
+            - name: Add MoosicBox_x64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.exe Asset
               if: ${{ matrix.release.os == 'windows-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}
               shell: bash
               run: |
-                  mv MoosicBox.exe ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.exe
+                  mv MoosicBox.exe ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.exe
 
-            - name: Add MoosicBox_x64-setup${{ matrix.release.profile == 'debug' && '_debug' || '' }}.exe Asset
+            - name: Add MoosicBox_x64-setup${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.exe Asset
               if: ${{ matrix.release.os == 'windows-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
               shell: bash
               run: |
                   mv nsis/MoosicBox_${{ steps.package_version.outputs.version }}_x64-setup.exe \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64-setup${{ matrix.release.profile == 'debug' && '_debug' || '' }}.exe
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64-setup${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.exe
 
-            - name: Add MoosicBox_x64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.msi Asset
+            - name: Add MoosicBox_x64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.msi Asset
               if: ${{ matrix.release.os == 'windows-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
               shell: bash
               run: |
                   mv msi/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.msi
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.msi
 
             - name: Delete Linux Assets
               uses: mknejp/delete-release-assets@v1
@@ -229,8 +229,8 @@ jobs:
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
                   assets: |
-                      MoosicBox_amd64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.deb
-                      MoosicBox_amd64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.AppImage
+                      MoosicBox_amd64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.deb
+                      MoosicBox_amd64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.AppImage
 
             - name: Delete Mac Assets
               uses: mknejp/delete-release-assets@v1
@@ -241,8 +241,8 @@ jobs:
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
                   assets: |
-                      MoosicBox_x64_macos${{ matrix.release.profile == 'debug' && '_debug' || '' }}_app.zip
-                      MoosicBox_x64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.dmg
+                      MoosicBox_x64_macos${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}_app.zip
+                      MoosicBox_x64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.dmg
 
             - name: Delete Windows Assets
               uses: mknejp/delete-release-assets@v1
@@ -253,8 +253,8 @@ jobs:
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
                   assets: |
-                      MoosicBox_x64-setup${{ matrix.release.profile == 'debug' && '_debug' || '' }}.exe
-                      MoosicBox_x64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.msi
+                      MoosicBox_x64-setup${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.exe
+                      MoosicBox_x64${{ matrix.release.profile != 'release-lto' && matrix.release.profile || '' }}.msi
 
             - name: Upload Assets
               uses: softprops/action-gh-release@master
