@@ -116,7 +116,7 @@ jobs:
               run: |
                   ./copy-files.sh
 
-            - uses: pnpm/action-setup@v2
+            - uses: pnpm/action-setup@v3
               name: Install pnpm
               with:
                   version: 8
