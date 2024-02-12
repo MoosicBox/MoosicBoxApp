@@ -18,22 +18,40 @@ jobs:
             matrix:
                 release:
                     - os: ubuntu-latest
+                      profile: debug
+
+                    - os: ubuntu-latest
+                      profile: release
+
+                    - os: ubuntu-latest
                       profile: release-lto
 
                     - os: ubuntu-latest
+                      profile: release-lto-no-panic
+
+                    - os: windows-latest
                       profile: debug
+
+                    - os: windows-latest
+                      profile: release
 
                     - os: windows-latest
                       profile: release-lto
 
                     - os: windows-latest
+                      profile: release-lto-no-panic
+
+                    - os: macos-latest
                       profile: debug
 
                     - os: macos-latest
                       profile: release
 
                     - os: macos-latest
-                      profile: debug
+                      profile: release-lto
+
+                    - os: ubuntu-latest
+                      profile: release-lto-no-panic
 
         steps:
             - name: Checkout audiotags
@@ -348,4 +366,4 @@ jobs:
               uses: softprops/action-gh-release@v1
               with:
                   token: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
-                  files: ${{ steps.asset_names.outputs.output }}
+                  fis: ${{ steps.asset_names.outputs.output }}
