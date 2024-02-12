@@ -3098,6 +3098,7 @@ version = "0.1.0"
 dependencies = [
  "actix-cors",
  "actix-web",
+ "async-trait",
  "awc",
  "enum-as-inner",
  "futures",
@@ -3160,6 +3161,7 @@ dependencies = [
  "log",
  "moosicbox_converter",
  "moosicbox_core",
+ "moosicbox_database",
  "moosicbox_json_utils",
  "moosicbox_symphonia_player",
  "ogg",
