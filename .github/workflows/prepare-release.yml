@@ -257,7 +257,7 @@ jobs:
                       MoosicBox_x64${{ matrix.release.profile == 'debug' && '_debug' || '' }}.msi
 
             - name: Upload Assets
-              uses: softprops/action-gh-release@v1
+              uses: softprops/action-gh-release@master
               with:
                   token: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
                   files: assets/*
@@ -363,7 +363,7 @@ jobs:
                   assets: ${{ steps.asset_names.outputs.output }}
 
             - name: Upload Assets
-              uses: softprops/action-gh-release@v1
+              uses: softprops/action-gh-release@master
               with:
                   token: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
                   fis: ${{ steps.asset_names.outputs.output }}
