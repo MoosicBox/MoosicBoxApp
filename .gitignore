@@ -1,8 +1,7 @@
 node_modules
 dist/
 .solid/
-src/components
-src/pages
-src/routes
-src/services
+/src/*
+!/src/startup.ts
+!/src/symphonia-player.ts
 /public/

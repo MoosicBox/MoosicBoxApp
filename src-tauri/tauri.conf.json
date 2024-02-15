@@ -3,7 +3,7 @@
         "beforeDevCommand": "pnpm dev",
         "beforeBuildCommand": "pnpm build",
         "devPath": "http://localhost:1420",
-        "distDir": "../dist/public",
+        "distDir": "../dist",
         "withGlobalTauri": false
     },
     "package": {
@@ -56,7 +56,7 @@
                 "title": "MoosicBox",
                 "width": 800,
                 "height": 600,
-                "visible": false
+                "visible": true
             }
         ]
     }

@@ -1,28 +1,19 @@
 // @refresh reload
-import { Routes } from '@solidjs/router';
-import { Suspense } from 'solid-js';
 import { produce } from 'solid-js/store';
-import {
-    Body,
-    FileRoutes,
-    Head,
-    Html,
-    Meta,
-    Scripts,
-    Title,
-} from 'solid-start';
-import { ErrorBoundary } from 'solid-start/error-boundary';
 import { invoke } from '@tauri-apps/api/tauri';
 import { listen } from '@tauri-apps/api/event';
-import { appState, onStartup, onStartupFirst } from './services/app';
+import { appState, onStartup, onStartupFirst } from '~/services/app';
 import {
     Api,
     ApiType,
     Track,
     api,
+    apiUrl,
+    clientId,
     toSessionPlaylistTrack,
+    token,
     trackId,
-} from './services/api';
+} from '~/services/api';
 import { attachConsole, debug, error, info, warn } from 'tauri-plugin-log-api';
 import { trackEvent } from '@aptabase/tauri';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
@@ -31,8 +22,8 @@ import {
     registerPlayer,
     setPlayerState,
     updateSessionPartial,
-} from './services/player';
-import * as player from './services/player';
+} from '~/services/player';
+import * as player from '~/services/player';
 import {
     InboundMessageType,
     connectionId,
@@ -42,9 +33,9 @@ import {
     onMessage,
     registerConnection,
     updateSession,
-} from './services/ws';
-import { PartialUpdateSession } from './services/types';
-import { QueryParams } from './services/util';
+} from '~/services/ws';
+import { PartialUpdateSession } from '~/services/types';
+import { QueryParams } from '~/services/util';
 
 const APTABASE_ENABLED = false;
 
@@ -192,10 +183,10 @@ function apiRequest<T>(
         const headers: Record<string, string> = {};
 
         const params = new QueryParams(query);
-        const clientId = Api.clientId();
+        const clientIdParam = clientId.get();
 
-        if (clientId) {
-            params.set('clientId', clientId);
+        if (clientIdParam) {
+            params.set('clientId', clientIdParam);
         }
 
         if (params.size > 0) {
@@ -208,10 +199,10 @@ function apiRequest<T>(
             url += params.toString();
         }
 
-        const token = Api.token();
+        const tokenParam = token.get();
 
-        if (token) {
-            headers.Authorization = token;
+        if (tokenParam) {
+            headers.Authorization = tokenParam;
         }
 
         const args: { url: string; headers: Record<string, string> } = {
@@ -232,7 +223,7 @@ attachConsole();
 function circularStringify(obj: object): string {
     const getCircularReplacer = () => {
         const seen = new WeakSet();
-        return (_key: string, value: any) => {
+        return (_key: string, value: unknown) => {
             if (typeof value === 'object' && value !== null) {
                 if (seen.has(value)) {
                     return '[[circular]]';
@@ -300,60 +291,36 @@ function updateApi(secure: boolean) {
     }
 }
 
-Api.onApiUrlUpdated((url) => {
+apiUrl.listen((url) => {
     updateApi(url.toLowerCase().startsWith('https://'));
 });
 
-export default function Root() {
-    onStartupFirst(async () => {
-        await invoke('show_main_window');
-        updateApi(Api.apiUrl().toLowerCase().startsWith('https://'));
-        await invoke('set_api_url', { apiUrl: Api.apiUrl() });
-        if (Api.clientId()) {
-            await invoke('set_client_id', { clientId: Api.clientId() });
-        }
-        if (Api.signatureToken()) {
-            await invoke('set_signature_token', {
-                signatureToken: Api.signatureToken(),
-            });
-        }
-        if (Api.token()) {
-            await invoke('set_api_token', { apiToken: Api.token() });
-        }
+onStartupFirst(async () => {
+    await invoke('show_main_window');
+    updateApi(apiUrl.get().toLowerCase().startsWith('https://'));
+    await invoke('set_api_url', { apiUrl: apiUrl.get() });
+    if (clientId.get()) {
+        await invoke('set_client_id', { clientId: clientId.get() });
+    }
+    if (Api.signatureToken()) {
+        await invoke('set_signature_token', {
+            signatureToken: Api.signatureToken(),
+        });
+    }
+    if (token.get()) {
+        await invoke('set_api_token', { apiToken: token.get() });
+    }
 
-        Api.onClientIdUpdated(async (clientId) => {
-            await invoke('set_client_id', { clientId });
-        });
-        Api.onSignatureTokenUpdated(async (token) => {
-            await invoke('set_signature_token', { signatureToken: token });
-        });
-        Api.onTokenUpdated(async (token) => {
-            await invoke('set_api_token', { apiToken: token });
-        });
-        Api.onApiUrlUpdated(async (url) => {
-            await invoke('set_api_url', { apiUrl: url });
-        });
+    clientId.listen(async (clientId) => {
+        await invoke('set_client_id', { clientId });
     });
-    return (
-        <Html lang="en">
-            <Head>
-                <Title>MoosicBox</Title>
-                <Meta charset="utf-8" />
-                <Meta
-                    name="viewport"
-                    content="width=device-width, initial-scale=1"
-                />
-            </Head>
-            <Body>
-                <Suspense>
-                    <ErrorBoundary>
-                        <Routes>
-                            <FileRoutes />
-                        </Routes>
-                    </ErrorBoundary>
-                </Suspense>
-                <Scripts />
-            </Body>
-        </Html>
-    );
-}
+    Api.onSignatureTokenUpdated(async (token) => {
+        await invoke('set_signature_token', { signatureToken: token });
+    });
+    token.listen(async (token) => {
+        await invoke('set_api_token', { apiToken: token });
+    });
+    apiUrl.listen(async (url) => {
+        await invoke('set_api_url', { apiUrl: url });
+    });
+});
