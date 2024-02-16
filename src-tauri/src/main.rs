@@ -107,6 +107,12 @@ fn stop_player() -> Result<(), PlayerError> {
 
 #[tauri::command]
 async fn set_client_id(client_id: String) -> Result<(), TauriPlayerError> {
+    let existing = CLIENT_ID.read().as_ref().unwrap().as_ref().cloned();
+
+    if existing.is_some_and(|x| x == client_id) {
+        return Ok(());
+    }
+
     CLIENT_ID.write().unwrap().replace(client_id);
     let stopped = stop_player();
     *PLAYER.write().unwrap() = new_player();
@@ -115,6 +121,12 @@ async fn set_client_id(client_id: String) -> Result<(), TauriPlayerError> {
 
 #[tauri::command]
 async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerError> {
+    let existing = SIGNATURE_TOKEN.read().as_ref().unwrap().as_ref().cloned();
+
+    if existing.is_some_and(|x| x == signature_token) {
+        return Ok(());
+    }
+
     SIGNATURE_TOKEN.write().unwrap().replace(signature_token);
     let stopped = stop_player();
     *PLAYER.write().unwrap() = new_player();
@@ -123,6 +135,12 @@ async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerE
 
 #[tauri::command]
 async fn set_api_token(api_token: String) -> Result<(), TauriPlayerError> {
+    let existing = API_TOKEN.read().as_ref().unwrap().as_ref().cloned();
+
+    if existing.is_some_and(|x| x == api_token) {
+        return Ok(());
+    }
+
     API_TOKEN.write().unwrap().replace(api_token);
     let stopped = stop_player();
     *PLAYER.write().unwrap() = new_player();
@@ -131,6 +149,12 @@ async fn set_api_token(api_token: String) -> Result<(), TauriPlayerError> {
 
 #[tauri::command]
 async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
+    let existing = API_URL.read().as_ref().unwrap().as_ref().cloned();
+
+    if existing.is_some_and(|x| x == api_url) {
+        return Ok(());
+    }
+
     API_URL.write().unwrap().replace(api_url);
     let stopped = stop_player();
     *PLAYER.write().unwrap() = new_player();
