@@ -1,4 +1,4 @@
-import { InvokeArgs, invoke } from '@tauri-apps/api/tauri';
+import { InvokeArgs, invoke } from '@tauri-apps/api/core';
 import { Api, Track, TrackType, trackId } from './services/api';
 import { PlayerType, currentPlaybackSessionId } from './services/player';
 import * as player from './services/player';

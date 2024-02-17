@@ -24,21 +24,20 @@ panic = "abort"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "1.5", features = [] }
+tauri-build = { version = "2.0.0-beta.1", features = [] }
 
 [dependencies]
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
 moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-features = false }
 
-tauri = { version = "1.5", features = ["api-all"] }
+tauri = { version = "2.0.0-beta.2", features = ["protocol-asset"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-reqwest = "0.11.23"
+reqwest = "0.11.24"
 portpicker = "0.1"
 log = "0.4.20"
 once_cell = { version = "1.19.0" }
-tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
-tauri-plugin-aptabase = { version = "0.4", optional = true }
+tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
 debounce = "0.2.2"
 atomic_float = "0.1.0"
 strum = "0.25.0"
@@ -60,5 +59,3 @@ asio = ["moosicbox_player/asio"]
 pulseaudio = ["moosicbox_player/pulseaudio"]
 pulseaudio-standard = ["moosicbox_player/pulseaudio-standard"]
 pulseaudio-simple = ["moosicbox_player/pulseaudio-simple"]
-
-aptabase = ["dep:tauri-plugin-aptabase"]

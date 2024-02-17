@@ -1,6 +1,6 @@
 // @refresh reload
 import { produce } from 'solid-js/store';
-import { invoke } from '@tauri-apps/api/tauri';
+import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { appState, onStartup, onStartupFirst } from '~/services/app';
 import {
@@ -14,7 +14,6 @@ import {
     token,
     trackId,
 } from '~/services/api';
-import { attachConsole, debug, error, info, warn } from 'tauri-plugin-log-api';
 import { trackEvent } from '@aptabase/tauri';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
 import { createPlayer as createSymphoniaPlayer } from '~/symphonia-player';
@@ -218,8 +217,6 @@ function apiRequest<T>(
     });
 }
 
-attachConsole();
-
 function circularStringify(obj: object): string {
     const getCircularReplacer = () => {
         const seen = new WeakSet();
@@ -250,28 +247,6 @@ function objToStr(obj: unknown): string {
         return obj.toString();
     }
 }
-
-console.debug = (...args) => {
-    debug(args.map(objToStr).join(' '));
-};
-
-console.log = (...args) => {
-    info(args.map(objToStr).join(' '));
-};
-
-console.warn = (...args) => {
-    if (APTABASE_ENABLED) {
-        trackEvent('warn', { args: args.map(circularStringify).join(', ') });
-    }
-    warn(args.map(objToStr).join(' '));
-};
-
-console.error = (...args) => {
-    if (APTABASE_ENABLED) {
-        trackEvent('error', { args: args.map(circularStringify).join(', ') });
-    }
-    error(args.map(objToStr).join(' '));
-};
 
 onStartup(() => {
     if (APTABASE_ENABLED) {

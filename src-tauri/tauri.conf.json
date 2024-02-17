@@ -2,53 +2,25 @@
     "build": {
         "beforeDevCommand": "pnpm dev",
         "beforeBuildCommand": "pnpm build",
-        "devPath": "http://localhost:1420",
-        "distDir": "../dist",
-        "withGlobalTauri": false
+        "devUrl": "http://localhost:1420",
+        "frontendDist": "../dist"
     },
-    "package": {
-        "productName": "MoosicBox",
-        "version": "0.1.0"
+    "identifier": "com.moosicbox",
+    "productName": "MoosicBox",
+    "version": "0.1.0",
+    "bundle": {
+        "active": true,
+        "targets": "all",
+        "icon": [
+            "icons/32x32.png",
+            "icons/128x128.png",
+            "icons/128x128@2x.png",
+            "icons/icon.icns",
+            "icons/icon.ico"
+        ]
     },
-    "tauri": {
-        "allowlist": {
-            "all": true,
-            "shell": {
-                "all": true,
-                "open": true
-            },
-            "protocol": {
-                "all": true,
-                "asset": true,
-                "assetScope": [
-                    "**/*"
-                ]
-            },
-            "http": {
-                "all": true,
-                "scope": [
-                    "https://*",
-                    "http://*"
-                ],
-                "request": true
-            }
-        },
-        "bundle": {
-            "active": true,
-            "targets": "all",
-            "identifier": "com.moosicbox",
-            "icon": [
-                "icons/32x32.png",
-                "icons/128x128.png",
-                "icons/128x128@2x.png",
-                "icons/icon.icns",
-                "icons/icon.ico"
-            ]
-        },
-        "security": {
-            "csp": null,
-            "dangerousUseHttpScheme": true
-        },
+    "app": {
+        "withGlobalTauri": false,
         "windows": [
             {
                 "fullscreen": false,
@@ -58,6 +30,18 @@
                 "height": 600,
                 "visible": true
             }
-        ]
+        ],
+        "security": {
+            "csp": null,
+            "assetProtocol": {
+                "scope": [
+                    "https://*",
+                    "http://*",
+                    "wss://*",
+                    "ws://*"
+                ],
+                "enable": true
+            }
+        }
     }
 }

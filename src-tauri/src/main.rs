@@ -20,7 +20,7 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, EnumString};
 use tauri::{AppHandle, Manager};
-use tauri_plugin_log::LogTarget;
+use tauri_plugin_log::Target;
 
 #[derive(Serialize)]
 pub struct TauriPlayerError {
@@ -92,7 +92,7 @@ fn new_player() -> Player {
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 async fn show_main_window(window: tauri::Window) {
-    window.get_window("main").unwrap().show().unwrap(); // replace "main" by the name of your window
+    window.get_webview_window("main").unwrap().show().unwrap(); // replace "main" by the name of your window
 }
 
 fn stop_player() -> Result<(), PlayerError> {
@@ -351,7 +351,7 @@ async fn api_proxy_post(
 static APP: OnceLock<AppHandle> = OnceLock::new();
 
 pub fn on_playback_event(update: &UpdateSession, _current: &Playback) {
-    if let Err(err) = APP.get().unwrap().emit_all("UPDATE_SESSION", update) {
+    if let Err(err) = APP.get().unwrap().emit("UPDATE_SESSION", update) {
         log::error!("Failed to update session: {err:?}");
     }
 }
@@ -407,18 +407,9 @@ fn main() {
 
     let app_builder = tauri::Builder::default()
         .setup(|app| {
-            APP.get_or_init(|| app.handle());
+            APP.get_or_init(|| app.handle().clone());
             Ok(())
         })
-        .plugin(
-            tauri_plugin_log::Builder::default()
-                .targets([
-                    LogTarget::Stdout,
-                    // LogTarget::Webview,
-                    LogTarget::LogDir,
-                ])
-                .build(),
-        )
         .invoke_handler(tauri::generate_handler![
             show_main_window,
             set_client_id,
