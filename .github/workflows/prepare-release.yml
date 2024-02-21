@@ -142,9 +142,7 @@ jobs:
 
             - name: Build Tauri App
               working-directory: MoosicBoxApp
-              env:
-                  APTABASE_APP_KEY: ${{ secrets.APTABASE_APP_KEY }}
-              run: pnpm tauri build${{ matrix.release.profile == 'debug' && ' --debug' || ' -- --profile ' }}${{ matrix.release.profile != 'debug' && matrix.release.profile || '' }}
+              run: pnpm tauri ${{ matrix.release.target }} build${{ matrix.release.profile == 'debug' && ' --debug' || ' -- --profile ' }}${{ matrix.release.profile != 'debug' && matrix.release.profile || '' }}
 
             - name: Make assets directory
               shell: bash
