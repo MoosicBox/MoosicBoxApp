@@ -358,7 +358,12 @@ async fn api_proxy_post(
     builder.send().await.unwrap().json().await.unwrap()
 }
 
-pub fn on_playback_event(update: &UpdateSession, _current: &Playback) {
+pub fn on_playback_event(update: &UpdateSession, current: &Playback) {
+    if log::log_enabled!(log::Level::Trace) {
+        log::debug!("Emitting UPDATE_SESSION: update={update:?} current={current:?}");
+    } else {
+        log::debug!("Emitting UPDATE_SESSION");
+    }
     if let Err(err) = APP.get().unwrap().emit("UPDATE_SESSION", update) {
         log::error!("Failed to update session: {err:?}");
     }
@@ -412,7 +417,7 @@ fn track_event(handler: &tauri::AppHandle, name: &str, props: Option<serde_json:
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // moosicbox_player::player::on_playback_event(crate::on_playback_event);
+    moosicbox_player::player::on_playback_event(crate::on_playback_event);
 
     let app_builder = tauri::Builder::default()
         .setup(|app| {
