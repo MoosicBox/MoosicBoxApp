@@ -2,7 +2,7 @@
 import { produce } from 'solid-js/store';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { appState, onStartup, onStartupFirst } from '~/services/app';
+import { appState, onStartupFirst } from '~/services/app';
 import {
     Api,
     ApiType,
@@ -14,7 +14,6 @@ import {
     token,
     trackId,
 } from '~/services/api';
-import { trackEvent } from '@aptabase/tauri';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
 import { createPlayer as createSymphoniaPlayer } from '~/symphonia-player';
 import {
@@ -34,9 +33,6 @@ import {
     updateSession,
 } from '~/services/ws';
 import { PartialUpdateSession } from '~/services/types';
-import { QueryParams } from '~/services/util';
-
-const APTABASE_ENABLED = false;
 
 (async () => {
     await listen('UPDATE_SESSION', async (event) => {
@@ -161,97 +157,6 @@ onConnect(() => {
 });
 onConnectionNameChanged((name) => {
     updateConnection(connectionId()!, name);
-});
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-function apiRequest<T>(
-    method: 'get' | 'post',
-    url: string,
-    query?: QueryParams,
-    signal?: AbortSignal,
-): Promise<T> {
-    // eslint-disable-next-line no-async-promise-executor
-    return new Promise(async (resolve, reject) => {
-        let cancelled = false;
-
-        signal?.addEventListener('abort', () => {
-            cancelled = true;
-            reject();
-        });
-
-        const headers: Record<string, string> = {};
-
-        const params = new QueryParams(query);
-        const clientIdParam = clientId.get();
-
-        if (clientIdParam) {
-            params.set('clientId', clientIdParam);
-        }
-
-        if (params.size > 0) {
-            if (url.indexOf('?') > 0) {
-                url += '&';
-            } else {
-                url += '?';
-            }
-
-            url += params.toString();
-        }
-
-        const tokenParam = token.get();
-
-        if (tokenParam) {
-            headers.Authorization = tokenParam;
-        }
-
-        const args: { url: string; headers: Record<string, string> } = {
-            url,
-            headers,
-        };
-
-        const data = await invoke<T>(`api_proxy_${method}`, args);
-
-        if (!cancelled) {
-            resolve(data);
-        }
-    });
-}
-
-function circularStringify(obj: object): string {
-    const getCircularReplacer = () => {
-        const seen = new WeakSet();
-        return (_key: string, value: unknown) => {
-            if (typeof value === 'object' && value !== null) {
-                if (seen.has(value)) {
-                    return '[[circular]]';
-                }
-                seen.add(value);
-            }
-            return value;
-        };
-    };
-
-    return JSON.stringify(obj, getCircularReplacer());
-}
-
-function objToStr(obj: unknown): string {
-    if (typeof obj === 'string') {
-        return obj;
-    } else if (typeof obj === 'undefined') {
-        return 'undefined';
-    } else if (obj === null) {
-        return 'null';
-    } else if (typeof obj === 'object') {
-        return circularStringify(obj);
-    } else {
-        return obj.toString();
-    }
-}
-
-onStartup(() => {
-    if (APTABASE_ENABLED) {
-        trackEvent('onStartup');
-    }
 });
 
 const apiOverride: Partial<ApiType> = {};
