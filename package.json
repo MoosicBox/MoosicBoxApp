@@ -41,8 +41,7 @@
         "date-fns": "^3.3.1",
         "howler": "^2.2.4",
         "nanostores": "^0.9.5",
-        "solid-js": "^1.8.14",
-        "tauri-plugin-log-api": "github:tauri-apps/tauri-plugin-log#v1"
+        "solid-js": "^1.8.14"
     },
     "devDependencies": {
         "@solidjs/meta": "^0.29.3",
