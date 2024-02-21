@@ -69,6 +69,11 @@ jobs:
                       target: desktop
 
                     - os: ubuntu-latest
+                      profile: debug
+                      target: android
+
+                    - os: ubuntu-latest
+                      profile: release
                       target: android
 
         steps:
@@ -195,7 +200,7 @@ jobs:
             - name: Build Tauri Android App
               if: ${{ matrix.release.target == 'android' }}
               working-directory: MoosicBoxApp
-              run: pnpm tauri ${{ matrix.release.target }} build
+              run: pnpm tauri ${{ matrix.release.target }} build${{ matrix.release.profile == 'debug' && ' --debug' || '' }}
 
             - name: Make assets directory
               shell: bash
@@ -272,16 +277,16 @@ jobs:
                   mv msi/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.msi
 
-            - name: Add moosicbox.apk Asset
+            - name: Add moosicbox${{ matrix.release.profile == 'debug' && '_debug' || '' }}.apk Asset
               if: ${{ matrix.release.target == 'android' }}
               working-directory: MoosicBoxApp/src-tauri/gen/android/app/build/outputs/apk
               shell: bash
               run: |
-                  mv universal/release/app-universal-release.apk \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox.apk
+                  mv universal/${{ matrix.release.profile }}/app-universal-${{ matrix.release.profile }}.apk \
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.profile == 'debug' && '_debug' || '' }}.apk
 
             - name: Add moosicbox.aab Asset
-              if: ${{ matrix.release.target == 'android' }}
+              if: ${{ matrix.release.target == 'android' && matrix.release.profile == 'release' }}
               working-directory: MoosicBoxApp/src-tauri/gen/android/app/build/outputs/bundle
               shell: bash
               run: |
@@ -333,8 +338,8 @@ jobs:
                   tag: ${{ github.event.release.tag_name }}
                   repository: ${{ github.repository }}
                   assets: |
-                      MoosicBox.apk
-                      MoosicBox.aab
+                      MoosicBox${{ matrix.release.profile != 'release' && format('_{0}', matrix.release.profile) || '' }}.apk
+                      MoosicBox${{ matrix.release.profile != 'release' && format('_{0}', matrix.release.profile) || '' }}.aab
 
             - name: Upload Assets
               uses: softprops/action-gh-release@master
