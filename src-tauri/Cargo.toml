@@ -7,6 +7,10 @@ license = ""
 repository = ""
 edition = "2021"
 
+[lib]
+crate-type = ["staticlib", "cdylib", "rlib"]
+name = "moosicbox_lib"
+
 [profile.release]
 codegen-units = 1
 lto = false
@@ -33,7 +37,9 @@ moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-fea
 tauri = { version = "2.0.0-beta.2", features = ["protocol-asset"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-reqwest = "0.11.24"
+reqwest = { version = "0.11.23", default-features = false, features = [
+  "rustls-tls",
+] }
 portpicker = "0.1"
 log = "0.4.20"
 once_cell = { version = "1.19.0" }
@@ -42,12 +48,18 @@ debounce = "0.2.2"
 atomic_float = "0.1.0"
 strum = "0.25.0"
 strum_macros = "0.25.3"
+ndk-context = { version = "0.1.1", optional = true }
+jni = { version = "0.21.1", optional = true }
 
 [features]
-default = ["cpal", "aac", "mp3", "opus"]
+# default = ["cpal", "aac", "mp3", "opus"]
+default = ["cpal"]
+
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
+
+android = ["dep:ndk-context", "dep:jni"]
 
 # Player audio outputs
 cpal = ["moosicbox_player/cpal"]
