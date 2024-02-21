@@ -6,6 +6,9 @@ on:
 
 env:
     CARGO_TERM_COLOR: always
+    ANDROID_HOME: /home/runner/.android
+    ANDROID_SDK_ROOT: /home/runner/.android
+    NDK_HOME: /home/runner/.android/ndk/25.0.8775105
 
 jobs:
     package:
@@ -19,39 +22,54 @@ jobs:
                 release:
                     - os: ubuntu-latest
                       profile: debug
+                      target: desktop
 
                     - os: ubuntu-latest
                       profile: release
+                      target: desktop
 
                     - os: ubuntu-latest
                       profile: release-lto
+                      target: desktop
 
                     - os: ubuntu-latest
                       profile: release-lto-no-panic
+                      target: desktop
 
                     - os: windows-latest
                       profile: debug
+                      target: desktop
 
                     - os: windows-latest
                       profile: release
+                      target: desktop
 
                     - os: windows-latest
                       profile: release-lto
+                      target: desktop
 
                     - os: windows-latest
                       profile: release-lto-no-panic
+                      target: desktop
 
                     - os: macos-latest
                       profile: debug
+                      target: desktop
 
                     - os: macos-latest
                       profile: release
+                      target: desktop
 
                     - os: macos-latest
                       profile: release-lto
+                      target: desktop
 
                     - os: macos-latest
                       profile: release-lto-no-panic
+                      target: desktop
+
+                    - os: ubuntu-latest
+                      target: android
 
         steps:
             - name: Checkout audiotags
@@ -105,6 +123,24 @@ jobs:
                       libasound2-dev \
                       libsoup-3.0-dev
 
+            - name: Install Android Dependencies
+              if: ${{ matrix.release.target == 'android' }}
+              run: |
+                  rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+                  wget https://dl.google.com/android/repository/commandlinetools-linux-8512546_latest.zip
+                  unzip commandlinetools-linux-8512546_latest.zip
+                  mkdir -p ~/.android/cmdline-tools/latest
+                  mv cmdline-tools/* ~/.android/cmdline-tools/latest/
+                  yes | ~/.android/cmdline-tools/latest/bin/sdkmanager --licenses
+                  ~/.android/cmdline-tools/latest/bin/sdkmanager "platforms;android-33" "platform-tools" "ndk;25.0.8775105" "build-tools;33.0.0"
+                  echo "/home/runner/.android/cmdline-tools/latest/bin" >> $GITHUB_PATH
+                  echo "/home/runner/.android/platform-tools" >> $GITHUB_PATH
+
+            - uses: actions/setup-java@v4
+              with:
+                  distribution: 'adopt'
+                  java-version: '17'
+
             - name: Checkout MoosicBoxUI
               uses: actions/checkout@v4
               with:
@@ -140,9 +176,26 @@ jobs:
               working-directory: MoosicBoxApp
               run: pnpm install
 
-            - name: Build Tauri App
+            - name: Build Tauri Desktop App
+              if: ${{ matrix.release.target == 'desktop' }}
               working-directory: MoosicBoxApp
-              run: pnpm tauri ${{ matrix.release.target }} build${{ matrix.release.profile == 'debug' && ' --debug' || ' -- --profile ' }}${{ matrix.release.profile != 'debug' && matrix.release.profile || '' }}
+              run: pnpm tauri build${{ matrix.release.profile == 'debug' && ' --debug' || ' -- --profile ' }}${{ matrix.release.profile != 'debug' && matrix.release.profile || '' }}
+
+            - name: Set up Keystore
+              if: ${{ matrix.release.target == 'android' }}
+              working-directory: MoosicBoxApp
+              run: |
+                  echo "${{ secrets.ANDROID_SIGNING_KEY_KEYSTORE }}" | \
+                      base64 -di > /home/runner/upload-keystore.jks
+                  echo "storePassword=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}" >> src-tauri/gen/android/key.properties
+                  echo "keyPassword=${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}" >> src-tauri/gen/android/key.properties
+                  echo "keyAlias=upload" >> src-tauri/gen/android/key.properties
+                  echo "storeFile=/home/runner/upload-keystore.jks" >> src-tauri/gen/android/key.properties
+
+            - name: Build Tauri Android App
+              if: ${{ matrix.release.target == 'android' }}
+              working-directory: MoosicBoxApp
+              run: pnpm tauri ${{ matrix.release.target }} build
 
             - name: Make assets directory
               shell: bash
@@ -153,20 +206,20 @@ jobs:
                   echo "path=$(pwd)" >> $GITHUB_OUTPUT
 
             - name: Add moosicbox_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.deb Asset
-              if: ${{ matrix.release.os == 'ubuntu-latest' }}
+              if: ${{ matrix.release.os == 'ubuntu-latest' && matrix.release.target == 'desktop' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
               run: |
                   mv deb/moosic-box_${{ steps.package_version.outputs.version }}_amd64.deb \
                       ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.deb
 
             - name: Add MoosicBox_linux_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }} Asset
-              if: ${{ matrix.release.os == 'ubuntu-latest' }}
+              if: ${{ matrix.release.os == 'ubuntu-latest' && matrix.release.target == 'desktop' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}
               run: |
                   mv moosic-box ${{ steps.assets_dir.outputs.path }}/moosicbox_linux_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}
 
             - name: Add MoosicBox_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.AppImage Asset
-              if: ${{ matrix.release.os == 'ubuntu-latest' }}
+              if: ${{ matrix.release.os == 'ubuntu-latest' && matrix.release.target == 'desktop' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
               run: |
                   mv appimage/moosic-box_${{ steps.package_version.outputs.version }}_amd64.AppImage \
@@ -219,9 +272,25 @@ jobs:
                   mv msi/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.msi
 
+            - name: Add moosicbox.apk Asset
+              if: ${{ matrix.release.target == 'android' }}
+              working-directory: MoosicBoxApp/src-tauri/gen/android/app/build/outputs/apk
+              shell: bash
+              run: |
+                  mv universal/release/app-universal-release.apk \
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox.apk
+
+            - name: Add moosicbox.aab Asset
+              if: ${{ matrix.release.target == 'android' }}
+              working-directory: MoosicBoxApp/src-tauri/gen/android/app/build/outputs/bundle
+              shell: bash
+              run: |
+                  mv universalRelease/app-universal-release.aab \
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox.aab
+
             - name: Delete Linux Assets
               uses: mknejp/delete-release-assets@v1
-              if: ${{ matrix.release.os == 'ubuntu-latest' }}
+              if: ${{ matrix.release.os == 'ubuntu-latest' && matrix.release.target == 'desktop' }}
               with:
                   fail-if-no-assets: false
                   token: ${{ github.token }}
@@ -254,6 +323,18 @@ jobs:
                   assets: |
                       MoosicBox_x64-setup${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.exe
                       MoosicBox_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.msi
+
+            - name: Delete Android Assets
+              uses: mknejp/delete-release-assets@v1
+              if: ${{ matrix.release.target == 'android' }}
+              with:
+                  fail-if-no-assets: false
+                  token: ${{ github.token }}
+                  tag: ${{ github.event.release.tag_name }}
+                  repository: ${{ github.repository }}
+                  assets: |
+                      MoosicBox.apk
+                      MoosicBox.aab
 
             - name: Upload Assets
               uses: softprops/action-gh-release@master
