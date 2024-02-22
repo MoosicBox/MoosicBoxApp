@@ -52,8 +52,7 @@ ndk-context = { version = "0.1.1", optional = true }
 jni = { version = "0.21.1", optional = true }
 
 [features]
-# default = ["cpal", "aac", "mp3", "opus"]
-default = ["cpal"]
+default = ["cpal", "aac", "mp3", "opus"]
 
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
@@ -63,9 +62,9 @@ android = ["dep:ndk-context", "dep:jni"]
 
 # Player audio outputs
 cpal = ["moosicbox_player/cpal", "moosicbox_player/oboe-shared-stdcxx"]
-aac = ["moosicbox_player/aac", "moosicbox_core/aac"]
-mp3 = ["moosicbox_player/mp3", "moosicbox_core/mp3"]
-opus = ["moosicbox_player/opus", "moosicbox_core/opus"]
+aac = ["moosicbox_core/aac"]
+mp3 = ["moosicbox_core/mp3"]
+opus = ["moosicbox_core/opus"]
 jack = ["moosicbox_player/jack"]
 asio = ["moosicbox_player/asio"]
 pulseaudio = ["moosicbox_player/pulseaudio"]
