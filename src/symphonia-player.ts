@@ -139,6 +139,14 @@ async function updatePlayback(update: player.PlaybackUpdate): Promise<void> {
     }
 }
 
+player.onPlaybackQualityChanged(async (quality) => {
+    const playbackStatus = await invokePlayer(PlayerAction.UPDATE_PLAYBACK, {
+        quality,
+    });
+
+    console.debug('Updated playback:', playbackStatus);
+});
+
 export function createPlayer(id: number): PlayerType {
     return {
         id,
