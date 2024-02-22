@@ -176,7 +176,10 @@ apiUrl.listen((url) => {
 });
 
 onStartupFirst(async () => {
-    await invoke('show_main_window');
+    try {
+        await invoke('show_main_window');
+    } catch {}
+
     updateApi(apiUrl.get().toLowerCase().startsWith('https://'));
     await invoke('set_api_url', { apiUrl: apiUrl.get() });
     if (clientId.get()) {
