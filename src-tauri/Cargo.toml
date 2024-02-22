@@ -53,7 +53,7 @@ jni = { version = "0.21.1", optional = true }
 
 [features]
 # default = ["cpal", "aac", "mp3", "opus"]
-default = ["cpal"]
+default = []
 
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
