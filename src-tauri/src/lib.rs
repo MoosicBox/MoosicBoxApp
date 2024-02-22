@@ -123,6 +123,7 @@ fn stop_player() -> Result<(), PlayerError> {
 
 #[tauri::command]
 async fn set_client_id(client_id: String) -> Result<(), TauriPlayerError> {
+    log::debug!("Setting CLIENT_ID: {client_id}");
     let existing = CLIENT_ID.read().as_ref().unwrap().as_ref().cloned();
 
     if existing.is_some_and(|x| x == client_id) {
@@ -137,6 +138,7 @@ async fn set_client_id(client_id: String) -> Result<(), TauriPlayerError> {
 
 #[tauri::command]
 async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerError> {
+    log::debug!("Setting SIGNATURE_TOKEN: {signature_token}");
     let existing = SIGNATURE_TOKEN.read().as_ref().unwrap().as_ref().cloned();
 
     if existing.is_some_and(|x| x == signature_token) {
@@ -151,6 +153,7 @@ async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerE
 
 #[tauri::command]
 async fn set_api_token(api_token: String) -> Result<(), TauriPlayerError> {
+    log::debug!("Setting API_TOKEN: {api_token}");
     let existing = API_TOKEN.read().as_ref().unwrap().as_ref().cloned();
 
     if existing.is_some_and(|x| x == api_token) {
@@ -165,6 +168,7 @@ async fn set_api_token(api_token: String) -> Result<(), TauriPlayerError> {
 
 #[tauri::command]
 async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
+    log::debug!("Setting API_URL: {api_url}");
     let existing = API_URL.read().as_ref().unwrap().as_ref().cloned();
 
     if existing.is_some_and(|x| x == api_url) {
