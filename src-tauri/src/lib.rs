@@ -29,7 +29,7 @@ pub extern "C" fn JNI_OnLoad(vm: jni::JavaVM, res: *mut std::os::raw::c_void) ->
     jni::JNIVersion::V6.into()
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Serialize)]
 pub struct TauriPlayerError {
     message: String,
 }
@@ -49,13 +49,17 @@ static SIGNATURE_TOKEN: Lazy<Arc<RwLock<Option<String>>>> =
     Lazy::new(|| Arc::new(RwLock::new(None)));
 static CLIENT_ID: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
 static API_TOKEN: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
-static PLAYER: Lazy<Arc<RwLock<Player>>> = Lazy::new(|| Arc::new(RwLock::new(new_player())));
+static PLAYER: Lazy<Arc<RwLock<Player>>> = Lazy::new(|| {
+    Arc::new(RwLock::new(
+        new_player().expect("Failed to create new player"),
+    ))
+});
 const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOptions {
     max_retry_count: 10,
     retry_delay: std::time::Duration::from_millis(1000),
 };
 
-fn new_player() -> Player {
+fn new_player() -> Result<Player, TauriPlayerError> {
     let headers = if API_TOKEN.read().unwrap().is_some() {
         let mut headers = HashMap::new();
         headers.insert(
@@ -83,19 +87,21 @@ fn new_player() -> Player {
         None
     };
 
-    Player::new(
+    Ok(Player::new(
         PlayerSource::Remote {
             host: API_URL
                 .read()
                 .unwrap()
                 .clone()
-                .expect("API_URL not set")
+                .ok_or(TauriPlayerError {
+                    message: "API_URL not set".to_string(),
+                })?
                 .to_string(),
             headers,
             query,
         },
         Some(PlaybackType::Stream),
-    )
+    ))
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -125,7 +131,7 @@ async fn set_client_id(client_id: String) -> Result<(), TauriPlayerError> {
 
     CLIENT_ID.write().unwrap().replace(client_id);
     let stopped = stop_player();
-    *PLAYER.write().unwrap() = new_player();
+    *PLAYER.write().unwrap() = new_player()?;
     Ok(stopped?)
 }
 
@@ -139,7 +145,7 @@ async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerE
 
     SIGNATURE_TOKEN.write().unwrap().replace(signature_token);
     let stopped = stop_player();
-    *PLAYER.write().unwrap() = new_player();
+    *PLAYER.write().unwrap() = new_player()?;
     Ok(stopped?)
 }
 
@@ -153,7 +159,7 @@ async fn set_api_token(api_token: String) -> Result<(), TauriPlayerError> {
 
     API_TOKEN.write().unwrap().replace(api_token);
     let stopped = stop_player();
-    *PLAYER.write().unwrap() = new_player();
+    *PLAYER.write().unwrap() = new_player()?;
     Ok(stopped?)
 }
 
@@ -167,7 +173,7 @@ async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
 
     API_URL.write().unwrap().replace(api_url);
     let stopped = stop_player();
-    *PLAYER.write().unwrap() = new_player();
+    *PLAYER.write().unwrap() = new_player()?;
     Ok(stopped?)
 }
 
