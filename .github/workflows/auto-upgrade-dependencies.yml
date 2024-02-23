@@ -28,7 +28,10 @@ jobs:
               id: upgrade
               shell: bash
               run: |
-                  cargo upgrade --skip-git-dependencies
+                  cargo upgrade \
+                      --skip-git-dependencies \
+                      --exclude moosicbox_core \
+                      --exclude moosicbox_player
                   cargo update
                   if [ -n "$(git status --porcelain)" ]; then
                       echo "Found upgrades"
