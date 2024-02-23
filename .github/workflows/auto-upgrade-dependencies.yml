@@ -11,9 +11,23 @@ jobs:
         runs-on: ubuntu-latest
 
         steps:
+            - name: Checkout audiotags
+              uses: actions/checkout@v4
+              with:
+                  repository: BSteffaniak/audiotags
+                  ref: feat/add-full-date-capabilities
+                  path: audiotags
+
+            - name: Checkout MoosicBoxServer
+              uses: actions/checkout@v4
+              with:
+                  repository: MoosicBox/MoosicBoxServer
+                  path: MoosicBoxServer
+
             - uses: actions/checkout@v4
               with:
                   token: ${{ secrets.MOOSICBOX_BOT_UPGRADES_TOKEN }}
+                  path: MoosicBoxApp
 
             - name: Install cargo-edit
               shell: bash
@@ -24,7 +38,7 @@ jobs:
                       --branch add-skip-git-dependencies
 
             - name: Upgrade
-              working-directory: src-tauri
+              working-directory: MoosicBoxApp/src-tauri
               id: upgrade
               shell: bash
               run: |
@@ -43,20 +57,21 @@ jobs:
 
             - name: Build
               if: ${{ steps.upgrade.outputs.upgraded == 'true'}}
-              working-directory: src-tauri
+              working-directory: MoosicBoxApp/src-tauri
               shell: bash
               run: |
                   cargo build
 
             - name: Test
               if: ${{ steps.upgrade.outputs.upgraded == 'true'}}
-              working-directory: src-tauri
+              working-directory: MoosicBoxApp/src-tauri
               shell: bash
               run: |
                   cargo test
 
             - name: Commit
               if: ${{ steps.upgrade.outputs.upgraded == 'true'}}
+              working-directory: MoosicBoxApp
               shell: bash
               run: |
                   git config user.name "MoosicBoxBot"
