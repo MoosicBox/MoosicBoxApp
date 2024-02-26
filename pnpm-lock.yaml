@@ -17,6 +17,9 @@ dependencies:
   '@aws-sdk/client-ssm':
     specifier: ^3.521.0
     version: 3.521.0
+  '@free-log/node-client':
+    specifier: 0.0.2
+    version: 0.0.2
   '@hotwired/turbo':
     specifier: ^8.0.3
     version: 8.0.3
@@ -2266,6 +2269,10 @@ packages:
   /@fastify/busboy@2.1.0:
     resolution: {integrity: sha512-+KpH+QxZU7O4675t3mnkQKcZZg56u+K/Ct2K+N2AZYNVK8kyeo/bI18tI8aPm3tvNNRyTWfj6s5tnGNlcbQRsA==}
     engines: {node: '>=14'}
+
+  /@free-log/node-client@0.0.2:
+    resolution: {integrity: sha512-fQxNo4TcRMW3X0DR75tVY8cCuPaEr1Regx+yin+hVfropWBZPDYcNaKSCBrGTQVBtvIs8irqM2IC3fqeEUBYnw==}
+    dev: false
 
   /@graphql-tools/executor@0.0.18(graphql@16.8.1):
     resolution: {integrity: sha512-xZC0C+/npXoSHBB5bsJdwxDLgtl1Gu4fL9J2TPQmXoZC3L2N506KJoppf9LgWdHU/xK04luJrhP6WjhfkIN0pQ==}

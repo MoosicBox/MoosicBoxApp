@@ -41,6 +41,7 @@
         "date-fns": "^3.3.1",
         "howler": "^2.2.4",
         "nanostores": "^0.9.5",
+        "@free-log/node-client": "0.0.2",
         "solid-js": "^1.8.15"
     },
     "devDependencies": {

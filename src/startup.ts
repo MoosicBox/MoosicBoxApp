@@ -1,4 +1,5 @@
 // @refresh reload
+import { init } from '@free-log/node-client';
 import { produce } from 'solid-js/store';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -32,6 +33,8 @@ import {
     updateSession,
 } from '~/services/ws';
 import { PartialUpdateSession } from '~/services/types';
+
+init({ logWriterApiUrl: 'https://logs.moosicbox.com', shimConsole: true });
 
 (async () => {
     await listen('UPDATE_SESSION', async (event) => {
