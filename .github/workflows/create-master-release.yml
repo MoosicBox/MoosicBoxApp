@@ -1,4 +1,4 @@
-name: Create Master Airship Release
+name: Create Master MoosicboxApp Release
 
 on:
     push:
