@@ -9,6 +9,7 @@ use atomic_float::AtomicF64;
 use log::info;
 use moosicbox_core::sqlite::models::{ApiSource, UpdateSession};
 use moosicbox_core::types::PlaybackQuality;
+use moosicbox_env_utils::default_env;
 use moosicbox_player::player::{
     Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player, PlayerError,
     PlayerSource, TrackOrId,
@@ -17,7 +18,6 @@ use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, EnumString};
 use tauri::{AppHandle, Manager};
-use tauri_plugin_log::{Target, TargetKind};
 
 #[cfg(all(feature = "cpal", feature = "android"))]
 #[no_mangle]
@@ -427,6 +427,20 @@ fn track_event(handler: &tauri::AppHandle, name: &str, props: Option<serde_json:
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(debug_assertions)]
+    const DEFAULT_LOG_LEVEL: &str = "moosicbox=trace";
+    #[cfg(not(debug_assertions))]
+    const DEFAULT_LOG_LEVEL: &str = "moosicbox=info";
+
+    free_log_client::init(
+        free_log_client::LogsConfig::builder()
+            .user_agent("moosicbox_app")
+            .log_writer_api_url("https://logs.moosicbox.com")
+            .log_level(free_log_client::Level::Warn)
+            .env_filter(default_env!("MOOSICBOX_LOG", DEFAULT_LOG_LEVEL)),
+    )
+    .expect("Failed to initialize FreeLog");
+
     moosicbox_player::player::on_playback_event(crate::on_playback_event);
 
     let app_builder = tauri::Builder::default()
@@ -434,15 +448,6 @@ pub fn run() {
             APP.get_or_init(|| app.handle().clone());
             Ok(())
         })
-        .plugin(
-            tauri_plugin_log::Builder::new()
-                .targets([
-                    Target::new(TargetKind::Stdout),
-                    // LogTarget::Webview,
-                    Target::new(TargetKind::LogDir { file_name: None }),
-                ])
-                .build(),
-        )
         .invoke_handler(tauri::generate_handler![
             #[cfg(not(all(target_os = "android")))]
             show_main_window,
