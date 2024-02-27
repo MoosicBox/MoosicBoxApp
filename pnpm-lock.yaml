@@ -18,7 +18,7 @@ dependencies:
     specifier: ^3.521.0
     version: 3.521.0
   '@free-log/node-client':
-    specifier: 0.0.3
+    specifier: ^0.0.3
     version: 0.0.3
   '@hotwired/turbo':
     specifier: ^8.0.3
