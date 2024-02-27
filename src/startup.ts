@@ -34,7 +34,11 @@ import {
 } from '~/services/ws';
 import { PartialUpdateSession } from '~/services/types';
 
-init({ logWriterApiUrl: 'https://logs.moosicbox.com', shimConsole: true });
+init({
+    logWriterApiUrl: 'https://logs.moosicbox.com',
+    shimConsole: true,
+    logLevel: 'WARN',
+});
 
 (async () => {
     await listen('UPDATE_SESSION', async (event) => {
