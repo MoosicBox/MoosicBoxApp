@@ -448,4 +448,4 @@ jobs:
               uses: softprops/action-gh-release@master
               with:
                   token: ${{ secrets.WORKFLOW_MANAGEMENT_TOKEN }}
-                  fis: ${{ steps.asset_names.outputs.output }}
+                  files: ${{ steps.asset_names.outputs.output }}
