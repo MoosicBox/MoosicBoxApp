@@ -3,7 +3,7 @@ name: Auto-upgrade Node Dependencies
 on:
     workflow_dispatch:
     schedule:
-        - cron: '0 2 * * *'
+        - cron: '0 3 * * *'
 
 env:
     CARGO_TERM_COLOR: always
