@@ -133,7 +133,6 @@ jobs:
               run: |
                   ./MoosicBoxApp/free_disk_space.sh
 
-
             - name: Install Android Dependencies
               if: ${{ matrix.release.target == 'android' }}
               run: |
@@ -174,14 +173,6 @@ jobs:
               shell: bash
               run: |
                   echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-            - name: ⚡ Cache pnpm
-              uses: actions/cache@v4
-              with:
-                  path: ${{ env.STORE_PATH }}
-                  key: ${{ matrix.release.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-                  restore-keys: |
-                      ${{ matrix.release.os }}-pnpm-store-
 
             - name: pnpm install
               working-directory: MoosicBoxApp
