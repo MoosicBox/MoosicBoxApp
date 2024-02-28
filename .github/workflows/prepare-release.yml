@@ -282,13 +282,13 @@ jobs:
                   mv universal/${{ matrix.release.profile }}/app-universal-${{ matrix.release.profile }}.apk \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.profile == 'debug' && '_debug' || '' }}.apk
 
-            - name: Add moosicbox.aab Asset
-              if: ${{ matrix.release.target == 'android' && matrix.release.profile == 'release' }}
+            - name: Add moosicbox${{ matrix.release.profile == 'debug' && '_debug' || '' }}.aab Asset
+              if: ${{ matrix.release.target == 'android' }}
               working-directory: MoosicBoxApp/src-tauri/gen/android/app/build/outputs/bundle
               shell: bash
               run: |
-                  mv universalRelease/app-universal-release.aab \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox.aab
+                  mv universal${{ matrix.release.profile == 'release' && 'Release' || 'Debug' }}/app-universal-${{ matrix.release.profile }}.aab \
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.profile == 'debug' && '_debug' || '' }}.aab
 
             - name: Delete Linux Assets
               uses: mknejp/delete-release-assets@v1
