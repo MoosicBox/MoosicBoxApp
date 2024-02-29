@@ -18,8 +18,8 @@ dependencies:
     specifier: ^3.523.0
     version: 3.523.0
   '@free-log/node-client':
-    specifier: ^0.0.3
-    version: 0.0.3
+    specifier: ^0.0.5
+    version: 0.0.5
   '@hotwired/turbo':
     specifier: ^8.0.3
     version: 8.0.3
@@ -2270,8 +2270,8 @@ packages:
     resolution: {integrity: sha512-+KpH+QxZU7O4675t3mnkQKcZZg56u+K/Ct2K+N2AZYNVK8kyeo/bI18tI8aPm3tvNNRyTWfj6s5tnGNlcbQRsA==}
     engines: {node: '>=14'}
 
-  /@free-log/node-client@0.0.3:
-    resolution: {integrity: sha512-hDKd/zaFCIbaBAvh5ZeQZEdcbYmmtGM8ApO/V6KNVfj/x87yC9jqtVIAFDZJOAINaJSzPPI7U1IQn+1L/HV1fw==}
+  /@free-log/node-client@0.0.5:
+    resolution: {integrity: sha512-E/4okCqmQ+X6wj8w/ukJVH7l4K2TnaOXxJFbTrRFUQliIX2wwNaSMjabfgIl2OmcNYEf+TFJ/M83hBGf/uWjIg==}
     dev: false
 
   /@graphql-tools/executor@0.0.18(graphql@16.8.1):
