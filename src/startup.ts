@@ -113,7 +113,7 @@ init({
 
 function updatePlayers() {
     const connection = appState.connections.find(
-        (c) => c.connectionId === connectionId(),
+        (c) => c.connectionId === connectionId.get(),
     );
 
     connection?.players.forEach((player) => {
@@ -159,10 +159,10 @@ function updateConnection(connectionId: string, name: string) {
 }
 
 onConnect(() => {
-    updateConnection(connectionId()!, connectionName.get());
+    updateConnection(connectionId.get()!, connectionName.get());
 });
 connectionName.listen((name) => {
-    updateConnection(connectionId()!, name);
+    updateConnection(connectionId.get()!, name);
 });
 
 const apiOverride: Partial<ApiType> = {};
@@ -186,6 +186,8 @@ onStartupFirst(async () => {
         await invoke('show_main_window');
     } catch {}
 
+    await invoke('set_connection_id', { connectionId: connectionId.get() });
+
     updateApi(apiUrl.get().toLowerCase().startsWith('https://'));
     await invoke('set_api_url', { apiUrl: apiUrl.get() });
     if (clientId.get()) {
@@ -200,6 +202,9 @@ onStartupFirst(async () => {
         await invoke('set_api_token', { apiToken: token.get() });
     }
 
+    connectionId.listen(async (connectionId) => {
+        await invoke('set_connection_id', { connectionId });
+    });
     clientId.listen(async (clientId) => {
         await invoke('set_client_id', { clientId });
     });

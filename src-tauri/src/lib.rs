@@ -6,6 +6,7 @@ use std::{
 };
 
 use atomic_float::AtomicF64;
+use free_log_client::FreeLogLayer;
 use log::info;
 use moosicbox_core::sqlite::models::{ApiSource, UpdateSession};
 use moosicbox_core::types::PlaybackQuality;
@@ -43,6 +44,7 @@ impl From<PlayerError> for TauriPlayerError {
 }
 
 static APP: OnceLock<AppHandle> = OnceLock::new();
+static LOG_LAYER: OnceLock<FreeLogLayer> = OnceLock::new();
 
 static API_URL: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
 static SIGNATURE_TOKEN: Lazy<Arc<RwLock<Option<String>>>> =
@@ -118,6 +120,18 @@ fn stop_player() -> Result<(), PlayerError> {
             _ => return Err(err),
         }
     }
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_connection_id(connection_id: String) -> Result<(), TauriPlayerError> {
+    log::debug!("Setting CONNECTION_ID: {connection_id}");
+
+    LOG_LAYER.get().unwrap().with_properties(HashMap::from([(
+        "connectionId".into(),
+        connection_id.into(),
+    )]));
+
     Ok(())
 }
 
@@ -432,7 +446,7 @@ pub fn run() {
     #[cfg(not(debug_assertions))]
     const DEFAULT_LOG_LEVEL: &str = "moosicbox=info";
 
-    free_log_client::init(
+    let layer = free_log_client::init(
         free_log_client::LogsConfig::builder()
             .user_agent("moosicbox_app")
             .log_writer_api_url("https://logs.moosicbox.com")
@@ -440,6 +454,8 @@ pub fn run() {
             .env_filter(default_env!("MOOSICBOX_LOG", DEFAULT_LOG_LEVEL)),
     )
     .expect("Failed to initialize FreeLog");
+
+    LOG_LAYER.set(layer).expect("Failed to set LOG_LAYER");
 
     moosicbox_player::player::on_playback_event(crate::on_playback_event);
 
@@ -451,6 +467,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             #[cfg(not(all(target_os = "android")))]
             show_main_window,
+            set_connection_id,
             set_client_id,
             set_signature_token,
             set_api_token,

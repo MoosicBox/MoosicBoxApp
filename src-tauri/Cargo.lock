@@ -1632,8 +1632,9 @@ dependencies = [
 [[package]]
 name = "free_log_client"
 version = "0.1.0"
-source = "git+https://github.com/BSteffaniak/FreeLog.git#3e6251ca1b51c975ecbdae39b4c3961ff0c0c8d2"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#34c05e6894ade2d59e1e17cabf50491b82ba0b63"
 dependencies = [
+ "free_log_models",
  "futures-util",
  "once_cell",
  "reqwest",
@@ -1646,6 +1647,19 @@ dependencies = [
  "tracing",
  "tracing-log",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "free_log_models"
+version = "0.1.0"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#34c05e6894ade2d59e1e17cabf50491b82ba0b63"
+dependencies = [
+ "log",
+ "serde",
+ "serde_json",
+ "strum",
+ "strum_macros",
+ "thiserror",
 ]
 
 [[package]]
