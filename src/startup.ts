@@ -1,5 +1,5 @@
 // @refresh reload
-import { init } from '@free-log/node-client';
+import { init, setProperty } from '@free-log/node-client';
 import { produce } from 'solid-js/store';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -186,6 +186,9 @@ onStartupFirst(async () => {
         await invoke('show_main_window');
     } catch {}
 
+    setProperty('connectionId', connectionId.get());
+    setProperty('connectionName', connectionName.get());
+
     await Promise.all([
         invoke('set_connection_id', { connectionId: connectionId.get() }),
         invoke('set_connection_name', { connectionName: connectionName.get() }),
@@ -206,9 +209,11 @@ onStartupFirst(async () => {
     }
 
     connectionId.listen(async (connectionId) => {
+        setProperty('connectionId', connectionId);
         await invoke('set_connection_id', { connectionId });
     });
     connectionName.listen(async (connectionName) => {
+        setProperty('connectionName', connectionName);
         await invoke('set_connection_name', { connectionName });
     });
     clientId.listen(async (clientId) => {
