@@ -186,7 +186,10 @@ onStartupFirst(async () => {
         await invoke('show_main_window');
     } catch {}
 
-    await invoke('set_connection_id', { connectionId: connectionId.get() });
+    await Promise.all([
+        invoke('set_connection_id', { connectionId: connectionId.get() }),
+        invoke('set_connection_name', { connectionName: connectionName.get() }),
+    ]);
 
     updateApi(apiUrl.get().toLowerCase().startsWith('https://'));
     await invoke('set_api_url', { apiUrl: apiUrl.get() });
@@ -204,6 +207,9 @@ onStartupFirst(async () => {
 
     connectionId.listen(async (connectionId) => {
         await invoke('set_connection_id', { connectionId });
+    });
+    connectionName.listen(async (connectionName) => {
+        await invoke('set_connection_name', { connectionName });
     });
     clientId.listen(async (clientId) => {
         await invoke('set_client_id', { clientId });

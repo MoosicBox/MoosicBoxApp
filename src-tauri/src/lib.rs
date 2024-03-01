@@ -127,10 +127,22 @@ fn stop_player() -> Result<(), PlayerError> {
 async fn set_connection_id(connection_id: String) -> Result<(), TauriPlayerError> {
     log::debug!("Setting CONNECTION_ID: {connection_id}");
 
-    LOG_LAYER.get().unwrap().with_properties(HashMap::from([(
-        "connectionId".into(),
-        connection_id.into(),
-    )]));
+    LOG_LAYER
+        .get()
+        .unwrap()
+        .set_property("connectionId", connection_id.into());
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn set_connection_name(connection_name: String) -> Result<(), TauriPlayerError> {
+    log::debug!("Setting CONNECTION_NAME: {connection_name}");
+
+    LOG_LAYER
+        .get()
+        .unwrap()
+        .set_property("connectionName", connection_name.into());
 
     Ok(())
 }
@@ -468,6 +480,7 @@ pub fn run() {
             #[cfg(not(all(target_os = "android")))]
             show_main_window,
             set_connection_id,
+            set_connection_name,
             set_client_id,
             set_signature_token,
             set_api_token,
