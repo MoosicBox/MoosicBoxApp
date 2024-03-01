@@ -85,7 +85,7 @@
           }
         },
         "platforms": {
-          "description": "Target platforms this capability applies. By default all platforms applies.",
+          "description": "Target platforms this capability applies. By default all platforms are affected by this capability.",
           "default": [
             "linux",
             "macOS",
@@ -269,27 +269,6 @@
           "type": "string",
           "enum": [
             "event:deny-unlisten"
-          ]
-        },
-        {
-          "description": "log:default -> Allows the log command",
-          "type": "string",
-          "enum": [
-            "log:default"
-          ]
-        },
-        {
-          "description": "log:allow-log -> Enables the log command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "log:allow-log"
-          ]
-        },
-        {
-          "description": "log:deny-log -> Denies the log command without any pre-configured scope.",
-          "type": "string",
-          "enum": [
-            "log:deny-log"
           ]
         },
         {
