@@ -2,7 +2,7 @@ name: Create Nightly MoosicBoxApp Release
 
 on:
     schedule:
-        - cron: '0 4 * * *'
+        - cron: '0 5 * * *'
 
 jobs:
     create-nightly-release:
