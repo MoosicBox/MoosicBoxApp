@@ -30,7 +30,7 @@
         "@astrojs/solid-js": "^4.0.1",
         "@aws-sdk/client-ssm": "^3.529.1",
         "@free-log/node-client": "^0.0.7",
-        "@hotwired/turbo": "^8.0.3",
+        "@hotwired/turbo": "^8.0.4",
         "@nanostores/persistent": "^0.9.1",
         "@nanostores/solid": "^0.4.2",
         "@solid-primitives/scheduled": "^1.4.3",
