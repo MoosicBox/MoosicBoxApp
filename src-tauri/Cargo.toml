@@ -47,8 +47,8 @@ log = "0.4.21"
 once_cell = { version = "1.19.0" }
 debounce = "0.2.2"
 atomic_float = "0.1.0"
-strum = "0.26.1"
-strum_macros = "0.26.1"
+strum = "0.26.2"
+strum_macros = "0.26.2"
 ndk-context = { version = "0.1.1", optional = true }
 jni = { version = "0.21.1", optional = true }
 
