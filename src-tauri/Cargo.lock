@@ -2753,6 +2753,7 @@ version = "0.1.0"
 dependencies = [
  "async-recursion",
  "async-trait",
+ "chrono",
  "futures",
  "log",
  "once_cell",
@@ -2777,6 +2778,7 @@ dependencies = [
 name = "moosicbox_json_utils"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "log",
  "moosicbox_database",
  "rusqlite",
@@ -4615,9 +4617,9 @@ dependencies = [
 
 [[package]]
 name = "system-deps"
-version = "6.2.0"
+version = "6.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2a2d580ff6a20c55dfb86be5f9c238f67835d0e81cbdea8bf5680e0897320331"
+checksum = "e8e9199467bcbc77c6a13cc6e32a6af21721ab8c96aa0261856c4fda5a4433f0"
 dependencies = [
  "cfg-expr",
  "heck",
@@ -5038,9 +5040,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-stream"
-version = "0.1.14"
+version = "0.1.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "397c988d37662c7dda6d2208364a706264bf3d6138b11d436cbac0ad38832842"
+checksum = "267ac89e0bec6e691e5813911606935d77c476ff49024f98abcea3e7b15e37af"
 dependencies = [
  "futures-core",
  "pin-project-lite",
