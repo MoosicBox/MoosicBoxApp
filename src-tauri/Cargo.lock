@@ -810,9 +810,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.2"
+version = "4.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b230ab84b0ffdf890d5a10abdbc8b83ae1c4918275daea1ab8801f71536b2651"
+checksum = "949626d00e063efc93b6dca932419ceb5432f99769911c0b995f7e884c778813"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -832,11 +832,11 @@ dependencies = [
 
 [[package]]
 name = "clap_derive"
-version = "4.5.0"
+version = "4.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "307bc0538d5f0f83b8248db3087aa92fe504e4691294d0c96c0eabc33f47ba47"
+checksum = "90239a040c80f5e14809ca132ddc4176ab33d5e17e49691793296e3fcb34d72f"
 dependencies = [
- "heck",
+ "heck 0.5.0",
  "proc-macro2",
  "quote",
  "syn 2.0.52",
@@ -1335,7 +1335,7 @@ version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5ffccbb6966c05b32ef8fbac435df276c4ae4d3dc55a8cd0eb9745e6c12f546a"
 dependencies = [
- "heck",
+ "heck 0.4.1",
  "proc-macro2",
  "quote",
  "syn 2.0.52",
@@ -1827,7 +1827,7 @@ version = "0.18.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0bb0228f477c0900c880fd78c8759b95c7636dbd7842707f49e132378aa2acdc"
 dependencies = [
- "heck",
+ "heck 0.4.1",
  "proc-macro-crate 2.0.2",
  "proc-macro-error",
  "proc-macro2",
@@ -1916,9 +1916,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.24"
+version = "0.3.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb2c4422095b67ee78da96fbb51a4cc413b3b25883c7717ff7ca1ab31022c9c9"
+checksum = "4fbd2820c5e49886948654ab546d0688ff24530286bdcf8fca3cefb16d4618eb"
 dependencies = [
  "bytes",
  "fnv",
@@ -1963,6 +1963,12 @@ name = "heck"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "95505c38b4572b2d910cecb0281560f54b440a19336cbbcb27bf6ce6adc6f5a8"
+
+[[package]]
+name = "heck"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "hermit-abi"
@@ -2932,9 +2938,9 @@ dependencies = [
 
 [[package]]
 name = "new_debug_unreachable"
-version = "1.0.4"
+version = "1.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e4a24736216ec316047a1fc4252e27dabb04218aa4a3f37c6e7ddbf1f9782b54"
+checksum = "650eef8c711430f1a879fdd01d4745a7deea475becfb90269c06775983bbf086"
 
 [[package]]
 name = "nodrop"
@@ -4356,7 +4362,7 @@ version = "0.25.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "23dc1fa9ac9c169a78ba62f0b841814b7abae11bdd047b9c58f893439e309ea0"
 dependencies = [
- "heck",
+ "heck 0.4.1",
  "proc-macro2",
  "quote",
  "rustversion",
@@ -4369,7 +4375,7 @@ version = "0.26.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c6cf59daf282c0a494ba14fd21610a0325f9f90ec9d1231dea26bcb1d696c946"
 dependencies = [
- "heck",
+ "heck 0.4.1",
  "proc-macro2",
  "quote",
  "rustversion",
@@ -4390,7 +4396,7 @@ dependencies = [
 [[package]]
 name = "symphonia"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "lazy_static",
  "symphonia-bundle-flac",
@@ -4412,7 +4418,7 @@ dependencies = [
 [[package]]
 name = "symphonia-bundle-flac"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "log",
  "symphonia-core",
@@ -4423,7 +4429,7 @@ dependencies = [
 [[package]]
 name = "symphonia-bundle-mp3"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "lazy_static",
  "log",
@@ -4434,7 +4440,7 @@ dependencies = [
 [[package]]
 name = "symphonia-codec-aac"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "lazy_static",
  "log",
@@ -4444,7 +4450,7 @@ dependencies = [
 [[package]]
 name = "symphonia-codec-adpcm"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "log",
  "symphonia-core",
@@ -4453,7 +4459,7 @@ dependencies = [
 [[package]]
 name = "symphonia-codec-alac"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "log",
  "symphonia-core",
@@ -4462,7 +4468,7 @@ dependencies = [
 [[package]]
 name = "symphonia-codec-pcm"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "log",
  "symphonia-core",
@@ -4471,7 +4477,7 @@ dependencies = [
 [[package]]
 name = "symphonia-codec-vorbis"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "log",
  "symphonia-core",
@@ -4481,7 +4487,7 @@ dependencies = [
 [[package]]
 name = "symphonia-core"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "arrayvec",
  "bitflags 1.3.2",
@@ -4493,7 +4499,7 @@ dependencies = [
 [[package]]
 name = "symphonia-format-caf"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "log",
  "symphonia-core",
@@ -4503,7 +4509,7 @@ dependencies = [
 [[package]]
 name = "symphonia-format-isomp4"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "encoding_rs",
  "log",
@@ -4515,7 +4521,7 @@ dependencies = [
 [[package]]
 name = "symphonia-format-mkv"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "lazy_static",
  "log",
@@ -4527,7 +4533,7 @@ dependencies = [
 [[package]]
 name = "symphonia-format-ogg"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "log",
  "symphonia-core",
@@ -4538,7 +4544,7 @@ dependencies = [
 [[package]]
 name = "symphonia-format-riff"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "extended",
  "log",
@@ -4549,7 +4555,7 @@ dependencies = [
 [[package]]
 name = "symphonia-metadata"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "encoding_rs",
  "lazy_static",
@@ -4560,7 +4566,7 @@ dependencies = [
 [[package]]
 name = "symphonia-utils-xiph"
 version = "0.5.4"
-source = "git+https://github.com/dedobbin/Symphonia?branch=bug/aac-missing-timeline#367c964a537825b0b05aae3f9565e4001bed656e"
+source = "git+https://github.com/pdeljanov/Symphonia?branch=master#4f41954de75e2447753f3e522cc7345ec414a703"
 dependencies = [
  "symphonia-core",
  "symphonia-metadata",
@@ -4622,7 +4628,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8e9199467bcbc77c6a13cc6e32a6af21721ab8c96aa0261856c4fda5a4433f0"
 dependencies = [
  "cfg-expr",
- "heck",
+ "heck 0.4.1",
  "pkg-config",
  "toml 0.8.2",
  "version-compare",
@@ -4700,7 +4706,7 @@ dependencies = [
  "getrandom 0.2.12",
  "glob",
  "gtk",
- "heck",
+ "heck 0.4.1",
  "http 0.2.12",
  "http-range",
  "jni",
@@ -4744,7 +4750,7 @@ dependencies = [
  "cargo_toml",
  "dirs-next",
  "glob",
- "heck",
+ "heck 0.4.1",
  "json-patch",
  "schemars",
  "semver",
@@ -4789,7 +4795,7 @@ version = "2.0.0-beta.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd7b6bbc2a8a739dc3fd351d864e9f42d83833afbd938f3a2c2d84f6d945dfcc"
 dependencies = [
- "heck",
+ "heck 0.4.1",
  "proc-macro2",
  "quote",
  "syn 2.0.52",
@@ -4850,7 +4856,7 @@ dependencies = [
  "ctor",
  "dunce",
  "glob",
- "heck",
+ "heck 0.4.1",
  "html5ever",
  "infer",
  "json-patch",
