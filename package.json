@@ -26,7 +26,7 @@
     "license": "MIT",
     "dependencies": {
         "@astrojs/check": "^0.5.9",
-        "@astrojs/node": "^8.2.4",
+        "@astrojs/node": "^8.2.5",
         "@astrojs/solid-js": "^4.0.1",
         "@aws-sdk/client-ssm": "^3.535.0",
         "@free-log/node-client": "^0.0.7",
@@ -37,8 +37,8 @@
         "@solid-primitives/storage": "^2.1.4",
         "@solid-primitives/utils": "^6.2.3",
         "@tauri-apps/api": "2.0.0-beta.3",
-        "astro": "^4.5.6",
-        "astro-sst": "^2.41.2",
+        "astro": "^4.5.8",
+        "astro-sst": "^2.41.3",
         "date-fns": "^3.6.0",
         "howler": "^2.2.4",
         "nanostores": "^0.9.5",
@@ -67,8 +67,8 @@
         "prettier-plugin-astro": "^0.13.0",
         "solid-js": "^1.7.11",
         "sst": "2.40.3",
-        "typescript": "^5.4.2",
-        "vite": "^5.1.6",
+        "typescript": "^5.4.3",
+        "vite": "^5.2.2",
         "vitest": "^1.4.0"
     }
 }
