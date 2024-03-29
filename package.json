@@ -37,7 +37,7 @@
         "@solid-primitives/storage": "^2.1.4",
         "@solid-primitives/utils": "^6.2.3",
         "@tauri-apps/api": "2.0.0-beta.3",
-        "astro": "^4.5.10",
+        "astro": "^4.5.12",
         "astro-sst": "^2.41.4",
         "date-fns": "^3.6.0",
         "howler": "^2.2.4",
