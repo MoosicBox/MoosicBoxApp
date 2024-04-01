@@ -4764,7 +4764,7 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
     dependencies:
-      caniuse-lite: 1.0.30001600
+      caniuse-lite: 1.0.30001603
       electron-to-chromium: 1.4.722
       node-releases: 2.0.14
       update-browserslist-db: 1.0.13(browserslist@4.23.0)
@@ -4839,8 +4839,8 @@ packages:
     engines: {node: '>=14.16'}
     dev: false
 
-  /caniuse-lite@1.0.30001600:
-    resolution: {integrity: sha512-+2S9/2JFhYmYaDpZvo0lKkfvuKIglrx68MwOBqMGHhQsNkLjB5xtc/TGoEPs+MxjSyN/72qer2g97nzR641mOQ==}
+  /caniuse-lite@1.0.30001603:
+    resolution: {integrity: sha512-iL2iSS0eDILMb9n5yKQoTBim9jMZ0Yrk8g0N9K7UzYyWnfIKzXBZD5ngpM37ZcL/cv0Mli8XtVMRYMQAfFpi5Q==}
 
   /ccount@2.0.1:
     resolution: {integrity: sha512-eyrF0jiFpY+3drT6383f1qhkbGsLSifNAjA61IUjZjmLCWjItY6LB9ft9YhoDgwfmclB2zhu51Lc7+95b8NRAg==}
@@ -8207,8 +8207,8 @@ packages:
       '@types/nlcst': 1.0.4
     dev: false
 
-  /node-abi@3.56.0:
-    resolution: {integrity: sha512-fZjdhDOeRcaS+rcpve7XuwHBmktS1nS1gzgghwKUQQ8nTy2FdSDr6ZT8k6YhvlJeHmmQMYiT/IH9hfco5zeW2Q==}
+  /node-abi@3.57.0:
+    resolution: {integrity: sha512-Dp+A9JWxRaKuHP35H77I4kCKesDy5HUDEmScia2FyncMTOXASMyg251F5PhFoDA5uqBrDDffiLpbqnrZmNXW+g==}
     engines: {node: '>=10'}
     requiresBuild: true
     dependencies:
@@ -8591,7 +8591,7 @@ packages:
       minimist: 1.2.8
       mkdirp-classic: 0.5.3
       napi-build-utils: 1.0.2
-      node-abi: 3.56.0
+      node-abi: 3.57.0
       pump: 3.0.0
       rc: 1.2.8
       simple-get: 4.0.1
@@ -8947,8 +8947,8 @@ packages:
       unified: 11.0.4
     dev: false
 
-  /remeda@1.56.0:
-    resolution: {integrity: sha512-ZGebbddlHYNIc4P6o6B/LRiUIZyuFvO9/aKxKpzzFjJxb9maUmYk5E72VpvAooh5uFw0rSbfygIV3rc49NW2xg==}
+  /remeda@1.57.0:
+    resolution: {integrity: sha512-guUqXntj7WtPuT1DLmfNCeyMZ2pE5m4ffJnWkOsbVQSvPsGIhNcKeFV94LTxqggOWwaIubUd4FZKTlGIOg2wDw==}
     dev: true
 
   /request-light@0.7.0:
@@ -9456,7 +9456,7 @@ packages:
       openid-client: 5.6.5
       ora: 6.3.1
       react: 18.2.0
-      remeda: 1.56.0
+      remeda: 1.57.0
       sst-aws-cdk: 2.124.0
       tree-kill: 1.2.2
       undici: 5.28.3
