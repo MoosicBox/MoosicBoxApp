@@ -68,9 +68,9 @@ android = ["dep:ndk-context", "dep:jni"]
 
 # Player audio outputs
 cpal = ["moosicbox_player/cpal", "moosicbox_player/oboe-shared-stdcxx"]
-aac = ["moosicbox_core/aac"]
-mp3 = ["moosicbox_core/mp3"]
-opus = ["moosicbox_core/opus"]
+aac = ["moosicbox_core/aac", "moosicbox_player/aac"]
+mp3 = ["moosicbox_core/mp3", "moosicbox_player/mp3"]
+opus = ["moosicbox_core/opus", "moosicbox_player/opus"]
 jack = ["moosicbox_player/jack"]
 asio = ["moosicbox_player/asio"]
 pulseaudio = ["moosicbox_player/pulseaudio"]
