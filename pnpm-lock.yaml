@@ -471,7 +471,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/fetch-http-handler': 2.5.0
@@ -521,7 +521,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/fetch-http-handler': 2.5.0
@@ -569,7 +569,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/fetch-http-handler': 2.5.0
@@ -621,7 +621,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/fetch-http-handler': 2.5.0
       '@smithy/hash-node': 2.2.0
@@ -667,7 +667,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/fetch-http-handler': 2.5.0
@@ -716,7 +716,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/fetch-http-handler': 2.5.0
@@ -765,7 +765,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/fetch-http-handler': 2.5.0
@@ -814,7 +814,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/eventstream-serde-browser': 2.2.0
@@ -867,7 +867,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/fetch-http-handler': 2.5.0
@@ -924,7 +924,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@aws-sdk/xml-builder': 3.535.0
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
@@ -980,7 +980,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/fetch-http-handler': 2.5.0
@@ -1031,7 +1031,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/fetch-http-handler': 2.5.0
@@ -1076,7 +1076,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/fetch-http-handler': 2.5.0
@@ -1124,7 +1124,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@aws-sdk/util-endpoints': 3.540.0
       '@aws-sdk/util-user-agent-browser': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/config-resolver': 2.2.0
       '@smithy/core': 1.4.2
       '@smithy/fetch-http-handler': 2.5.0
@@ -1457,12 +1457,12 @@ packages:
     dependencies:
       '@aws-sdk/signature-v4-multi-region': 3.552.0
       '@aws-sdk/types': 3.535.0
-      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.1)
+      '@aws-sdk/util-user-agent-node': 3.535.0(aws-crt@1.21.2)
       '@smithy/querystring-parser': 2.2.0
       '@smithy/signature-v4': 2.3.0
       '@smithy/types': 2.12.0
       '@smithy/util-middleware': 2.2.0
-      aws-crt: 1.21.1
+      aws-crt: 1.21.2
       tslib: 2.6.2
     transitivePeerDependencies:
       - bufferutil
@@ -1543,7 +1543,7 @@ packages:
       bowser: 2.11.0
       tslib: 2.6.2
 
-  /@aws-sdk/util-user-agent-node@3.535.0(aws-crt@1.21.1):
+  /@aws-sdk/util-user-agent-node@3.535.0(aws-crt@1.21.2):
     resolution: {integrity: sha512-dRek0zUuIT25wOWJlsRm97nTkUlh1NDcLsQZIN2Y8KxhwoXXWtJs5vaDPT+qAg+OpcNj80i1zLR/CirqlFg/TQ==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
@@ -1555,7 +1555,7 @@ packages:
       '@aws-sdk/types': 3.535.0
       '@smithy/node-config-provider': 2.3.0
       '@smithy/types': 2.12.0
-      aws-crt: 1.21.1
+      aws-crt: 1.21.2
       tslib: 2.6.2
 
   /@aws-sdk/util-utf8-browser@3.259.0:
@@ -4546,8 +4546,8 @@ packages:
       - table
       - yaml
 
-  /aws-crt@1.21.1:
-    resolution: {integrity: sha512-pSLf1Xg5P2Owa+n/82hkEXV22q56kbxJOxX4FB5DvvHpTokOygz6nFj+/cS9dnv3tNZgOiUjTvsz0Xk1ldyi0w==}
+  /aws-crt@1.21.2:
+    resolution: {integrity: sha512-/jq5yJwdethIaC+HyqCrgW2ZqxjUURBo/6CIfnD0HbpIE+vLIPQxENW/pp3Atu20Hm2WkjM9diJD4zJycK+olA==}
     requiresBuild: true
     dependencies:
       '@aws-sdk/util-utf8-browser': 3.259.0
@@ -8939,8 +8939,8 @@ packages:
       unified: 11.0.4
     dev: false
 
-  /remeda@1.58.1:
-    resolution: {integrity: sha512-jTLnELfFSIaQxA7A/lkQdgdOSfzrta22OhRvdp5Y7RY3VY2jSBhXsiJRJbZAULfka/IfQUg1Lt/4rW/r6qNC5Q==}
+  /remeda@1.58.3:
+    resolution: {integrity: sha512-/3WVhU9DLFYtPQcoIZ6lIqxiS3VGdQF+k04VzbklZ3zWQafKqCJKlEfsXAjx8k380q9v4K7XPtUDGNE07l5G2g==}
     dev: true
 
   /request-light@0.7.0:
@@ -9448,7 +9448,7 @@ packages:
       openid-client: 5.6.5
       ora: 6.3.1
       react: 18.2.0
-      remeda: 1.58.1
+      remeda: 1.58.3
       sst-aws-cdk: 2.124.0
       tree-kill: 1.2.2
       undici: 5.28.4
