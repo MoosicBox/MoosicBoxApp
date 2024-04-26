@@ -244,12 +244,12 @@ jobs:
               run: |
                   mv MoosicBox ${{ steps.assets_dir.outputs.path }}/MoosicBox_macos_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}
 
-            - name: Add MoosicBox_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg Asset
+            - name: Add MoosicBox_aarch64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg Asset
               if: ${{ matrix.release.os == 'macos-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
               run: |
-                  mv dmg/MoosicBox_${{ steps.package_version.outputs.version }}_x64.dmg \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg
+                  mv dmg/MoosicBox_${{ steps.package_version.outputs.version }}_aarch64.dmg \
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox_aarch64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg
 
             - name: Add MoosicBox_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.exe Asset
               if: ${{ matrix.release.os == 'windows-latest' }}
@@ -312,7 +312,7 @@ jobs:
                   repository: ${{ github.repository }}
                   assets: |
                       MoosicBox_x64_macos${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}_app.zip
-                      MoosicBox_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg
+                      MoosicBox_aarch64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg
 
             - name: Delete Windows Assets
               uses: mknejp/delete-release-assets@v1
