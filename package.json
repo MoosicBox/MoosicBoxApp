@@ -53,8 +53,8 @@
         "@types/testing-library__jest-dom": "^5.14.9",
         "@typescript-eslint/eslint-plugin": "^7.8.0",
         "@typescript-eslint/parser": "^7.8.0",
-        "@vitest/coverage-v8": "^1.5.2",
-        "@vitest/ui": "^1.5.2",
+        "@vitest/coverage-v8": "^1.5.3",
+        "@vitest/ui": "^1.5.3",
         "aws-cdk-lib": "2.124.0",
         "constructs": "10.3.0",
         "eslint": "^8.57.0",
@@ -69,6 +69,6 @@
         "sst": "2.40.3",
         "typescript": "^5.4.5",
         "vite": "^5.2.10",
-        "vitest": "^1.5.2"
+        "vitest": "^1.5.3"
     }
 }
