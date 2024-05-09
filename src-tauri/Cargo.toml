@@ -44,14 +44,14 @@ free_log_client = { git = "https://github.com/BSteffaniak/FreeLog.git" }
 tauri = { version = "2.0.0-beta.18", features = ["protocol-asset"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-reqwest = { version = "0.11.27", default-features = false, features = [
+reqwest = { version = "0.12.4", default-features = false, features = [
   "rustls-tls",
 ] }
 portpicker = "0.1"
 log = "0.4.21"
 once_cell = { version = "1.19.0" }
 debounce = "0.2.2"
-atomic_float = "0.1.0"
+atomic_float = "1.0.0"
 strum = "0.26.2"
 strum_macros = "0.26.2"
 ndk-context = { version = "0.1.1", optional = true }
