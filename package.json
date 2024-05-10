@@ -27,7 +27,7 @@
     "dependencies": {
         "@astrojs/check": "^0.5.10",
         "@astrojs/node": "^8.2.5",
-        "@astrojs/solid-js": "^4.1.0",
+        "@astrojs/solid-js": "^4.2.0",
         "@aws-sdk/client-ssm": "^3.572.0",
         "@free-log/node-client": "^0.0.7",
         "@hotwired/turbo": "^8.0.4",
@@ -37,7 +37,7 @@
         "@solid-primitives/storage": "^2.1.4",
         "@solid-primitives/utils": "^6.2.3",
         "@tauri-apps/api": "2.0.0-beta.3",
-        "astro": "^4.7.1",
+        "astro": "^4.8.2",
         "astro-sst": "^2.41.5",
         "date-fns": "^3.6.0",
         "howler": "^2.2.4",
