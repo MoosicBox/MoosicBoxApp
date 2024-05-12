@@ -37,6 +37,7 @@ tauri-build = { version = "2.0.0-beta.15", features = [] }
 
 [dependencies]
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
+moosicbox_config = { path = "../../MoosicBoxServer/packages/config", default-features = false }
 moosicbox_env_utils = { path = "../../MoosicBoxServer/packages/env_utils", default-features = false }
 moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-features = false }
 

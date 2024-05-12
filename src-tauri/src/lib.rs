@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     env,
+    fs::create_dir_all,
     sync::{Arc, OnceLock, RwLock},
     usize,
 };
@@ -8,6 +9,7 @@ use std::{
 use atomic_float::AtomicF64;
 use free_log_client::FreeLogLayer;
 use log::info;
+use moosicbox_config::get_config_dir_path;
 use moosicbox_core::sqlite::models::{ApiSource, UpdateSession};
 use moosicbox_core::types::PlaybackQuality;
 use moosicbox_env_utils::default_env;
@@ -458,12 +460,31 @@ pub fn run() {
     #[cfg(not(debug_assertions))]
     const DEFAULT_LOG_LEVEL: &str = "moosicbox=info";
 
+    let log_dir = get_config_dir_path()
+        .expect("Failed to get config dir")
+        .join("logs");
+
+    create_dir_all(&log_dir).expect("Failed to create logs directory");
+
     let layer = free_log_client::init(
         free_log_client::LogsConfig::builder()
-            .user_agent("moosicbox_app")
-            .log_writer_api_url("https://logs.moosicbox.com")
-            .log_level(free_log_client::Level::Warn)
-            .env_filter(default_env!("MOOSICBOX_LOG", DEFAULT_LOG_LEVEL)),
+            .with_api_writer(
+                free_log_client::ApiWriterConfig::builder()
+                    .user_agent("moosicbox_app")
+                    .api_url("https://logs.moosicbox.com")
+                    .log_level(free_log_client::Level::Warn),
+            )
+            .expect("Failed to initialize api writer")
+            .with_file_writer(
+                free_log_client::FileWriterConfig::builder()
+                    .file_path(log_dir.join("moosicbox_app.log"))
+                    .log_level(free_log_client::Level::Debug),
+            )
+            .expect("Failed to initialize file writer")
+            .env_filter(default_env!(
+                "MOOSICBOX_LOG",
+                default_env!("RUST_LOG", DEFAULT_LOG_LEVEL)
+            )),
     )
     .expect("Failed to initialize FreeLog");
 
