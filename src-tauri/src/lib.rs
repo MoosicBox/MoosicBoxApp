@@ -478,7 +478,11 @@ pub fn run() {
                         .log_level(free_log_client::Level::Debug),
                 )
                 .expect("Failed to initialize file writer");
+        } else {
+            log::warn!("Could not create directory path for logs files at {log_dir:?}");
         }
+    } else {
+        log::warn!("Could not get config dir to put the logs into");
     }
 
     let layer = free_log_client::init(logs_config.env_filter(default_env!(
