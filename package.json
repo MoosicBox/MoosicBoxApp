@@ -28,7 +28,7 @@
         "@astrojs/check": "^0.5.10",
         "@astrojs/node": "^8.2.5",
         "@astrojs/solid-js": "^4.2.0",
-        "@aws-sdk/client-ssm": "^3.576.0",
+        "@aws-sdk/client-ssm": "^3.577.0",
         "@free-log/node-client": "^0.0.7",
         "@hotwired/turbo": "^8.0.4",
         "@nanostores/persistent": "^0.9.1",
@@ -37,7 +37,7 @@
         "@solid-primitives/storage": "^2.1.4",
         "@solid-primitives/utils": "^6.2.3",
         "@tauri-apps/api": "2.0.0-beta.3",
-        "astro": "^4.8.3",
+        "astro": "^4.8.4",
         "astro-sst": "^2.41.5",
         "date-fns": "^3.6.0",
         "howler": "^2.2.4",
@@ -45,8 +45,8 @@
         "solid-js": "^1.8.17"
     },
     "devDependencies": {
-        "@solidjs/meta": "^0.29.3",
-        "@solidjs/testing-library": "^0.8.7",
+        "@solidjs/meta": "^0.29.4",
+        "@solidjs/testing-library": "^0.8.8",
         "@tauri-apps/cli": "2.0.0-beta.4",
         "@testing-library/jest-dom": "^5.17.0",
         "@types/howler": "^2.2.11",
