@@ -14,7 +14,7 @@ jobs:
     package:
         permissions: write-all
 
-        runs-on: ${{ matrix.release.os }}
+        runs-on: ${{ matrix.release.runner || matrix.release.os }}
 
         strategy:
             fail-fast: false
@@ -68,6 +68,26 @@ jobs:
                       profile: release-lto-no-panic
                       target: desktop
 
+                    - os: macos-latest
+                      runner: self-hosted
+                      profile: debug
+                      target: desktop
+
+                    - os: macos-latest
+                      runner: self-hosted
+                      profile: release
+                      target: desktop
+
+                    - os: macos-latest
+                      runner: self-hosted
+                      profile: release-lto
+                      target: desktop
+
+                    - os: macos-latest
+                      runner: self-hosted
+                      profile: release-lto-no-panic
+                      target: desktop
+
                     - os: ubuntu-latest
                       profile: debug
                       target: android
@@ -77,6 +97,11 @@ jobs:
                       target: android
 
         steps:
+            - name: Clean self-hosted runner
+              if: ${{ matrix.release.runner == 'self-hosted' }}
+              run: |
+                  rm -rf ${{ github.workspace }}
+
             - name: Checkout audiotags
               uses: actions/checkout@v4
               with:
@@ -104,6 +129,7 @@ jobs:
                   echo "version=$VERSION" >> $GITHUB_OUTPUT
 
             - name: ⚡ Cache cargo
+              if: ${{ matrix.release.runner != 'self-hosted' }}
               uses: actions/cache@v4
               with:
                   path: |
@@ -147,6 +173,7 @@ jobs:
                   echo "/home/runner/.android/platform-tools" >> $GITHUB_PATH
 
             - uses: actions/setup-java@v4
+              if: ${{ matrix.release.runner != 'self-hosted' }}
               with:
                   distribution: 'adopt'
                   java-version: '17'
@@ -164,6 +191,7 @@ jobs:
                   ./copy-files.sh
 
             - uses: pnpm/action-setup@v3
+              if: ${{ matrix.release.runner != 'self-hosted' }}
               name: Install pnpm
               with:
                   version: 8
@@ -227,7 +255,7 @@ jobs:
                   mv appimage/moosic-box_${{ steps.package_version.outputs.version }}_amd64.AppImage \
                       ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.AppImage
 
-            - name: Add MoosicBox_x64_macos${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}_app Asset
+            - name: Add MoosicBox${{ matrix.release.runner && '' || '_x64' }}_x64_macos${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}_app Asset
               if: ${{ matrix.release.os == 'macos-latest' }}
               shell: bash
               run: |
@@ -238,13 +266,13 @@ jobs:
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64_macos${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}_app.zip \
                       MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle/macos/MoosicBox.app
 
-            - name: Add MoosicBox_macos_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }} Asset
+            - name: Add MoosicBox_macos${{ matrix.release.runner && '' || '_x64' }}${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }} Asset
               if: ${{ matrix.release.os == 'macos-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}
               run: |
-                  mv MoosicBox ${{ steps.assets_dir.outputs.path }}/MoosicBox_macos_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}
+                  mv MoosicBox ${{ steps.assets_dir.outputs.path }}/MoosicBox_macos${{ matrix.release.runner && '' || '_x64' }}${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}
 
-            - name: Add MoosicBox_aarch64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg Asset
+            - name: Add MoosicBox${{ matrix.release.runner && '' || '_aarch64' }}${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg Asset
               if: ${{ matrix.release.os == 'macos-latest' }}
               working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
               run: |
@@ -380,6 +408,16 @@ jobs:
                       compression_level: 9
                       tar: false
                 asset:
+                    - name: MoosicBox_macos
+                      extension: app
+                      decompress: true
+                      decompress_file: MoosicBox_macos_app.zip
+                      decompress_algorithm: zip
+                    - name: MoosicBox_macos_debug
+                      extension: app
+                      decompress: true
+                      decompress_file: MoosicBox_macos_debug_app.zip
+                      decompress_algorithm: zip
                     - name: MoosicBox_x64_macos
                       extension: app
                       decompress: true
