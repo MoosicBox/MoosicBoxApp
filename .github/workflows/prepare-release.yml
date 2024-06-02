@@ -318,54 +318,6 @@ jobs:
                   mv universal${{ matrix.release.profile == 'release' && 'Release' || 'Debug' }}/app-universal-${{ matrix.release.profile }}.aab \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.profile == 'debug' && '_debug' || '' }}.aab
 
-            - name: Delete Linux Assets
-              uses: mknejp/delete-release-assets@v1
-              if: ${{ matrix.release.os == 'ubuntu-latest' && matrix.release.target == 'desktop' }}
-              with:
-                  fail-if-no-assets: false
-                  token: ${{ github.token }}
-                  tag: ${{ github.event.release.tag_name }}
-                  repository: ${{ github.repository }}
-                  assets: |
-                      MoosicBox_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.deb
-                      MoosicBox_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.AppImage
-
-            - name: Delete Mac Assets
-              uses: mknejp/delete-release-assets@v1
-              if: ${{ matrix.release.os == 'macos-latest' }}
-              with:
-                  fail-if-no-assets: false
-                  token: ${{ github.token }}
-                  tag: ${{ github.event.release.tag_name }}
-                  repository: ${{ github.repository }}
-                  assets: |
-                      MoosicBox_x64_macos${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}_app.zip
-                      MoosicBox_aarch64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg
-
-            - name: Delete Windows Assets
-              uses: mknejp/delete-release-assets@v1
-              if: ${{ matrix.release.os == 'windows-latest' }}
-              with:
-                  fail-if-no-assets: false
-                  token: ${{ github.token }}
-                  tag: ${{ github.event.release.tag_name }}
-                  repository: ${{ github.repository }}
-                  assets: |
-                      MoosicBox_x64-setup${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.exe
-                      MoosicBox_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.msi
-
-            - name: Delete Android Assets
-              uses: mknejp/delete-release-assets@v1
-              if: ${{ matrix.release.target == 'android' }}
-              with:
-                  fail-if-no-assets: false
-                  token: ${{ github.token }}
-                  tag: ${{ github.event.release.tag_name }}
-                  repository: ${{ github.repository }}
-                  assets: |
-                      MoosicBox${{ matrix.release.profile != 'release' && format('_{0}', matrix.release.profile) || '' }}.apk
-                      MoosicBox${{ matrix.release.profile != 'release' && format('_{0}', matrix.release.profile) || '' }}.aab
-
             - name: Upload Assets
               uses: softprops/action-gh-release@master
               with:
