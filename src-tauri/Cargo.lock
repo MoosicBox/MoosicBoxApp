@@ -2757,11 +2757,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "moosicbox_assert"
+version = "0.1.0"
+dependencies = [
+ "moosicbox_env_utils",
+]
+
+[[package]]
 name = "moosicbox_config"
 version = "0.1.0"
 dependencies = [
  "home",
  "log",
+ "moosicbox_assert",
  "thiserror",
 ]
 
@@ -2770,6 +2778,7 @@ name = "moosicbox_converter"
 version = "0.1.0"
 dependencies = [
  "log",
+ "moosicbox_assert",
  "thiserror",
 ]
 
@@ -2784,6 +2793,7 @@ dependencies = [
  "enum-as-inner",
  "futures",
  "log",
+ "moosicbox_assert",
  "moosicbox_database",
  "moosicbox_json_utils",
  "once_cell",
@@ -2804,6 +2814,7 @@ dependencies = [
  "chrono",
  "futures",
  "log",
+ "moosicbox_assert",
  "once_cell",
  "rusqlite",
  "serde",
@@ -2828,6 +2839,7 @@ version = "0.1.0"
 dependencies = [
  "chrono",
  "log",
+ "moosicbox_assert",
  "moosicbox_database",
  "rusqlite",
  "serde",
@@ -2849,6 +2861,7 @@ dependencies = [
  "futures",
  "lazy_static",
  "log",
+ "moosicbox_assert",
  "moosicbox_converter",
  "moosicbox_core",
  "moosicbox_database",
@@ -2875,6 +2888,7 @@ dependencies = [
  "bytes",
  "futures",
  "log",
+ "moosicbox_assert",
  "pin-project",
  "thiserror",
  "tokio",
@@ -2896,6 +2910,7 @@ dependencies = [
  "libpulse-binding",
  "libpulse-simple-binding",
  "log",
+ "moosicbox_assert",
  "moosicbox_converter",
  "moosicbox_env_utils",
  "moosicbox_stream_utils",
