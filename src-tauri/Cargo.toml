@@ -14,10 +14,10 @@ name = "moosicbox_lib"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-beta.17", features = [] }
+tauri-build = { version = "2.0.0-beta.16", features = [] }
 
 [dependencies]
-tauri = { version = "2.0.0-beta.22", features = ["protocol-asset"] }
+tauri = { version = "2.0.0-beta.20", features = ["protocol-asset"] }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem
