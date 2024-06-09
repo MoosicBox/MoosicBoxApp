@@ -1,11 +1,10 @@
 import { defineConfig } from 'astro/config';
 import { searchForWorkspaceRoot } from 'vite';
 import solidJs from '@astrojs/solid-js';
-import render from './render-directive/register';
 
 // https://astro.build/config
 export default defineConfig({
-    integrations: [solidJs(), render()],
+    integrations: [solidJs()],
 
     // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
     //
@@ -18,8 +17,6 @@ export default defineConfig({
         fs: {
             allow: [
                 searchForWorkspaceRoot(process.cwd()),
-                //"node_modules/@moosicbox/moosicbox-ui/src",
-                //"../MoosicBoxUI/src",
             ],
         },
     },
