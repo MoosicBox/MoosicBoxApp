@@ -6,6 +6,13 @@ plugins {
     id("rust")
 }
 
+val keyProperties = Properties().apply {
+    val propFile = rootProject.file("key.properties")
+    if (propFile.exists()) {
+        propFile.inputStream().use { load(it) }
+    }
+}
+
 val tauriProperties = Properties().apply {
     val propFile = file("tauri.properties")
     if (propFile.exists()) {
@@ -27,6 +34,14 @@ android {
             abiFilters += listOf("armeabi-v7a", "arm64a-v8a", "x86", "x86_64")
         }
     }
+    signingConfigs {
+       create("release") {
+           keyAlias = keyProperties["keyAlias"] as String
+           keyPassword = keyProperties["keyPassword"] as String
+           storeFile = file(keyProperties["storeFile"] as String)
+           storePassword = keyProperties["storePassword"] as String
+       }
+    }
     buildTypes {
         getByName("debug") {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
@@ -46,6 +61,7 @@ android {
                     .plus(getDefaultProguardFile("proguard-android-optimize.txt"))
                     .toList().toTypedArray()
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     kotlinOptions {
