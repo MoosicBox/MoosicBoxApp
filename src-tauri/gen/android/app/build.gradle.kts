@@ -1,5 +1,4 @@
 import java.util.Properties
-import java.io.FileInputStream
 
 plugins {
     id("com.android.application")
@@ -7,31 +6,23 @@ plugins {
     id("rust")
 }
 
-val keyPropertiesFile = rootProject.file("key.properties")
-val keyProperties = Properties()
-keyProperties.load(FileInputStream(keyPropertiesFile))
+val tauriProperties = Properties().apply {
+    val propFile = file("tauri.properties")
+    if (propFile.exists()) {
+        propFile.inputStream().use { load(it) }
+    }
+}
 
 android {
-    compileSdk = 33
-    namespace = "com.moosicbox_app"
+    compileSdk = 34
+    namespace = "com.moosicbox"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "com.moosicbox_app"
+        applicationId = "com.moosicbox"
         minSdk = 24
-        targetSdk = 33
-        versionCode = 1
-        versionName = "1.0"
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64a-v8a", "x86", "x86_64")
-        }
-    }
-    signingConfigs {
-       create("release") {
-           keyAlias = keyProperties["keyAlias"] as String
-           keyPassword = keyProperties["keyPassword"] as String
-           storeFile = file(keyProperties["storeFile"] as String)
-           storePassword = keyProperties["storePassword"] as String
-       }
+        targetSdk = 34
+        versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
+        versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
     }
     buildTypes {
         getByName("debug") {
@@ -52,7 +43,6 @@ android {
                     .plus(getDefaultProguardFile("proguard-android-optimize.txt"))
                     .toList().toTypedArray()
             )
-            signingConfig = signingConfigs.getByName("release")
         }
     }
     kotlinOptions {
