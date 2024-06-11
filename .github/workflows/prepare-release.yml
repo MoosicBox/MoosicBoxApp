@@ -68,26 +68,6 @@ jobs:
                       profile: release-lto-no-panic
                       target: desktop
 
-                    - os: macos-latest
-                      runner: self-hosted
-                      profile: debug
-                      target: desktop
-
-                    - os: macos-latest
-                      runner: self-hosted
-                      profile: release
-                      target: desktop
-
-                    - os: macos-latest
-                      runner: self-hosted
-                      profile: release-lto
-                      target: desktop
-
-                    - os: macos-latest
-                      runner: self-hosted
-                      profile: release-lto-no-panic
-                      target: desktop
-
                     - os: ubuntu-latest
                       profile: debug
                       target: android
