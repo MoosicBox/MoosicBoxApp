@@ -14,8 +14,8 @@ use moosicbox_core::sqlite::models::{ApiSource, UpdateSession};
 use moosicbox_core::types::PlaybackQuality;
 use moosicbox_env_utils::default_env;
 use moosicbox_player::player::{
-    Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player, PlayerError,
-    PlayerSource, TrackOrId,
+    local::LocalPlayer, Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player as _,
+    PlayerError, PlayerSource, TrackOrId,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -53,7 +53,7 @@ static SIGNATURE_TOKEN: Lazy<Arc<RwLock<Option<String>>>> =
     Lazy::new(|| Arc::new(RwLock::new(None)));
 static CLIENT_ID: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
 static API_TOKEN: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
-static PLAYER: Lazy<Arc<RwLock<Player>>> = Lazy::new(|| {
+static PLAYER: Lazy<Arc<RwLock<LocalPlayer>>> = Lazy::new(|| {
     Arc::new(RwLock::new(
         new_player().expect("Failed to create new player"),
     ))
@@ -63,7 +63,7 @@ const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOption
     retry_delay: std::time::Duration::from_millis(1000),
 };
 
-fn new_player() -> Result<Player, TauriPlayerError> {
+fn new_player() -> Result<LocalPlayer, TauriPlayerError> {
     let headers = if API_TOKEN.read().unwrap().is_some() {
         let mut headers = HashMap::new();
         headers.insert(
@@ -91,7 +91,7 @@ fn new_player() -> Result<Player, TauriPlayerError> {
         None
     };
 
-    Ok(Player::new(
+    Ok(LocalPlayer::new(
         PlayerSource::Remote {
             host: API_URL
                 .read()
