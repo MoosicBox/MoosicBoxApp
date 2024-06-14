@@ -2,12 +2,14 @@ use std::{
     collections::HashMap,
     env,
     fs::create_dir_all,
-    sync::{Arc, OnceLock, RwLock},
+    sync::{Arc, OnceLock},
     usize,
 };
 
+use async_once::AsyncOnce;
 use atomic_float::AtomicF64;
 use free_log_client::FreeLogLayer;
+use lazy_static::lazy_static;
 use log::info;
 use moosicbox_config::get_config_dir_path;
 use moosicbox_core::sqlite::models::{ApiSource, UpdateSession};
@@ -20,7 +22,7 @@ use moosicbox_player::player::{
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, EnumString};
-use tauri::{AppHandle, Manager};
+use tauri::{async_runtime::RwLock, AppHandle, Manager};
 
 #[cfg(all(feature = "cpal", feature = "android"))]
 #[no_mangle]
@@ -53,38 +55,41 @@ static SIGNATURE_TOKEN: Lazy<Arc<RwLock<Option<String>>>> =
     Lazy::new(|| Arc::new(RwLock::new(None)));
 static CLIENT_ID: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
 static API_TOKEN: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
-static PLAYER: Lazy<Arc<RwLock<LocalPlayer>>> = Lazy::new(|| {
-    Arc::new(RwLock::new(
-        new_player().expect("Failed to create new player"),
-    ))
-});
+
+lazy_static! {
+    static ref PLAYER: AsyncOnce<Arc<RwLock<LocalPlayer>>> = AsyncOnce::new(async {
+        Arc::new(RwLock::new(
+            new_player().await.expect("Failed to create new player"),
+        ))
+    });
+}
+
 const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOptions {
     max_retry_count: 10,
     retry_delay: std::time::Duration::from_millis(1000),
 };
 
-fn new_player() -> Result<LocalPlayer, TauriPlayerError> {
-    let headers = if API_TOKEN.read().unwrap().is_some() {
+async fn new_player() -> Result<LocalPlayer, TauriPlayerError> {
+    let headers = if API_TOKEN.read().await.is_some() {
         let mut headers = HashMap::new();
         headers.insert(
             "Authorization".to_string(),
-            API_TOKEN.read().unwrap().clone().unwrap().to_string(),
+            API_TOKEN.read().await.clone().unwrap().to_string(),
         );
         Some(headers)
     } else {
         None
     };
 
-    let query = if CLIENT_ID.read().unwrap().is_some() && SIGNATURE_TOKEN.read().unwrap().is_some()
-    {
+    let query = if CLIENT_ID.read().await.is_some() && SIGNATURE_TOKEN.read().await.is_some() {
         let mut query = HashMap::new();
         query.insert(
             "clientId".to_string(),
-            CLIENT_ID.read().unwrap().clone().unwrap().to_string(),
+            CLIENT_ID.read().await.clone().unwrap().to_string(),
         );
         query.insert(
             "signature".to_string(),
-            SIGNATURE_TOKEN.read().unwrap().clone().unwrap().to_string(),
+            SIGNATURE_TOKEN.read().await.clone().unwrap().to_string(),
         );
         Some(query)
     } else {
@@ -95,7 +100,7 @@ fn new_player() -> Result<LocalPlayer, TauriPlayerError> {
         PlayerSource::Remote {
             host: API_URL
                 .read()
-                .unwrap()
+                .await
                 .clone()
                 .ok_or(TauriPlayerError {
                     message: "API_URL not set".to_string(),
@@ -115,8 +120,8 @@ async fn show_main_window(window: tauri::Window) {
     window.get_webview_window("main").unwrap().show().unwrap();
 }
 
-fn stop_player() -> Result<(), PlayerError> {
-    if let Err(err) = PLAYER.read().unwrap().stop() {
+async fn stop_player() -> Result<(), PlayerError> {
+    if let Err(err) = PLAYER.get().await.read().await.stop() {
         match err {
             PlayerError::NoPlayersPlaying => {}
             _ => return Err(err),
@@ -152,61 +157,61 @@ async fn set_connection_name(connection_name: String) -> Result<(), TauriPlayerE
 #[tauri::command]
 async fn set_client_id(client_id: String) -> Result<(), TauriPlayerError> {
     log::debug!("Setting CLIENT_ID: {client_id}");
-    let existing = CLIENT_ID.read().as_ref().unwrap().as_ref().cloned();
+    let existing = CLIENT_ID.read().await.as_ref().cloned();
 
     if existing.is_some_and(|x| x == client_id) {
         return Ok(());
     }
 
-    CLIENT_ID.write().unwrap().replace(client_id);
-    let stopped = stop_player();
-    *PLAYER.write().unwrap() = new_player()?;
+    CLIENT_ID.write().await.replace(client_id);
+    let stopped = stop_player().await;
+    *PLAYER.get().await.write().await = new_player().await?;
     Ok(stopped?)
 }
 
 #[tauri::command]
 async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerError> {
     log::debug!("Setting SIGNATURE_TOKEN: {signature_token}");
-    let existing = SIGNATURE_TOKEN.read().as_ref().unwrap().as_ref().cloned();
+    let existing = SIGNATURE_TOKEN.read().await.as_ref().cloned();
 
     if existing.is_some_and(|x| x == signature_token) {
         return Ok(());
     }
 
-    SIGNATURE_TOKEN.write().unwrap().replace(signature_token);
-    let stopped = stop_player();
-    *PLAYER.write().unwrap() = new_player()?;
+    SIGNATURE_TOKEN.write().await.replace(signature_token);
+    let stopped = stop_player().await;
+    *PLAYER.get().await.write().await = new_player().await?;
     Ok(stopped?)
 }
 
 #[tauri::command]
 async fn set_api_token(api_token: String) -> Result<(), TauriPlayerError> {
     log::debug!("Setting API_TOKEN: {api_token}");
-    let existing = API_TOKEN.read().as_ref().unwrap().as_ref().cloned();
+    let existing = API_TOKEN.read().await.as_ref().cloned();
 
     if existing.is_some_and(|x| x == api_token) {
         return Ok(());
     }
 
-    API_TOKEN.write().unwrap().replace(api_token);
-    let stopped = stop_player();
-    *PLAYER.write().unwrap() = new_player()?;
+    API_TOKEN.write().await.replace(api_token);
+    let stopped = stop_player().await;
+    *PLAYER.get().await.write().await = new_player().await?;
     Ok(stopped?)
 }
 
 #[tauri::command]
 async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
     log::debug!("Setting API_URL: {api_url}");
-    let existing = API_URL.read().as_ref().unwrap().as_ref().cloned();
+    let existing = API_URL.read().await.as_ref().cloned();
 
     if existing.is_some_and(|x| x == api_url) {
         return Ok(());
     }
 
-    API_URL.write().unwrap().replace(api_url);
+    API_URL.write().await.replace(api_url);
     let stopped = stop_player();
-    *PLAYER.write().unwrap() = new_player()?;
-    Ok(stopped?)
+    *PLAYER.get().await.write().await = new_player().await?;
+    Ok(stopped.await?)
 }
 
 #[tauri::command]
@@ -233,7 +238,7 @@ async fn player_play(
         Some(session_playlist_id),
     );
 
-    Ok(PLAYER.read().unwrap().play_playback(
+    Ok(PLAYER.get().await.read().await.play_playback(
         playback,
         seek,
         Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
@@ -242,36 +247,42 @@ async fn player_play(
 
 #[tauri::command]
 async fn player_pause() -> Result<PlaybackStatus, TauriPlayerError> {
-    Ok(PLAYER.read().unwrap().pause_playback()?)
+    Ok(PLAYER.get().await.read().await.pause_playback()?)
 }
 
 #[tauri::command]
 async fn player_resume() -> Result<PlaybackStatus, TauriPlayerError> {
     Ok(PLAYER
+        .get()
+        .await
         .read()
-        .unwrap()
+        .await
         .resume_playback(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
 }
 
 #[tauri::command]
 async fn player_next_track() -> Result<PlaybackStatus, TauriPlayerError> {
     Ok(PLAYER
+        .get()
+        .await
         .read()
-        .unwrap()
+        .await
         .next_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
 }
 
 #[tauri::command]
 async fn player_previous_track() -> Result<PlaybackStatus, TauriPlayerError> {
     Ok(PLAYER
+        .get()
+        .await
         .read()
-        .unwrap()
+        .await
         .previous_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
 }
 
 #[tauri::command]
 async fn player_stop_track() -> Result<PlaybackStatus, TauriPlayerError> {
-    Ok(PLAYER.read().unwrap().stop_track()?)
+    Ok(PLAYER.get().await.read().await.stop_track()?)
 }
 
 #[derive(Copy, Debug, Serialize, Deserialize, EnumString, AsRefStr, PartialEq, Clone)]
@@ -302,7 +313,7 @@ pub struct TrackIdWithApiSource {
 
 #[tauri::command]
 #[allow(clippy::too_many_arguments)]
-fn player_update_playback(
+async fn player_update_playback(
     play: Option<bool>,
     stop: Option<bool>,
     playing: Option<bool>,
@@ -317,7 +328,7 @@ fn player_update_playback(
     log::debug!(
         "player_update_playback: play={play:?} stop={stop:?} playing={playing:?} position={position:?}"
     );
-    Ok(PLAYER.read().unwrap().update_playback(
+    Ok(PLAYER.get().await.read().await.update_playback(
         play,
         stop,
         playing,
@@ -341,7 +352,7 @@ fn player_update_playback(
 async fn api_proxy_get(url: String, headers: Option<serde_json::Value>) -> serde_json::Value {
     let url = format!(
         "{}/{url}",
-        API_URL.read().unwrap().clone().expect("API_URL not set")
+        API_URL.read().await.clone().expect("API_URL not set")
     );
     info!("Fetching url from proxy: {url}");
     let client = reqwest::Client::new();
@@ -374,7 +385,7 @@ async fn api_proxy_post(
         "{}/{url}",
         API_URL
             .read()
-            .unwrap()
+            .await
             .clone()
             .unwrap_or_else(|| panic!("API_URL not set ({url})"))
     );
