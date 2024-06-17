@@ -247,7 +247,7 @@ async fn player_play(
 
 #[tauri::command]
 async fn player_pause() -> Result<PlaybackStatus, TauriPlayerError> {
-    Ok(PLAYER.get().await.read().await.pause_playback()?)
+    Ok(PLAYER.get().await.read().await.pause_playback().await?)
 }
 
 #[tauri::command]
@@ -257,7 +257,8 @@ async fn player_resume() -> Result<PlaybackStatus, TauriPlayerError> {
         .await
         .read()
         .await
-        .resume_playback(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+        .resume_playback(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
+        .await?)
 }
 
 #[tauri::command]
@@ -267,7 +268,8 @@ async fn player_next_track() -> Result<PlaybackStatus, TauriPlayerError> {
         .await
         .read()
         .await
-        .next_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+        .next_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
+        .await?)
 }
 
 #[tauri::command]
@@ -277,7 +279,8 @@ async fn player_previous_track() -> Result<PlaybackStatus, TauriPlayerError> {
         .await
         .read()
         .await
-        .previous_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))?)
+        .previous_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
+        .await?)
 }
 
 #[tauri::command]
@@ -328,24 +331,30 @@ async fn player_update_playback(
     log::debug!(
         "player_update_playback: play={play:?} stop={stop:?} playing={playing:?} position={position:?}"
     );
-    Ok(PLAYER.get().await.read().await.update_playback(
-        play,
-        stop,
-        playing,
-        position,
-        seek,
-        volume,
-        tracks.map(|tracks| {
-            tracks
-                .iter()
-                .map(|track| TrackOrId::Id(track.id.into(), track.source))
-                .collect()
-        }),
-        quality,
-        session_id,
-        session_playlist_id,
-        Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
-    )?)
+    Ok(PLAYER
+        .get()
+        .await
+        .read()
+        .await
+        .update_playback(
+            play,
+            stop,
+            playing,
+            position,
+            seek,
+            volume,
+            tracks.map(|tracks| {
+                tracks
+                    .iter()
+                    .map(|track| TrackOrId::Id(track.id.into(), track.source))
+                    .collect()
+            }),
+            quality,
+            session_id,
+            session_playlist_id,
+            Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
+        )
+        .await?)
 }
 
 #[tauri::command]
