@@ -2736,6 +2736,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "local-ip-address"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "136ef34e18462b17bf39a7826f8f3bbc223341f8e83822beb8b77db9a3d49696"
+dependencies = [
+ "libc",
+ "neli",
+ "thiserror",
+ "windows-sys 0.48.0",
+]
+
+[[package]]
 name = "local-waker"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3017,6 +3029,7 @@ dependencies = [
  "crossbeam-channel",
  "futures",
  "lazy_static",
+ "local-ip-address",
  "log",
  "moosicbox_assert",
  "moosicbox_converter",
@@ -3043,12 +3056,16 @@ name = "moosicbox_stream_utils"
 version = "0.1.0"
 dependencies = [
  "bytes",
+ "flume",
  "futures",
+ "lazy_static",
  "log",
  "moosicbox_assert",
  "pin-project",
+ "reqwest 0.12.4",
  "thiserror",
  "tokio",
+ "tokio-util",
 ]
 
 [[package]]
@@ -3161,6 +3178,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c196769dd60fd4f363e11d948139556a344e79d451aeb2fa2fd040738ef7691"
 dependencies = [
  "jni-sys",
+]
+
+[[package]]
+name = "neli"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1100229e06604150b3becd61a4965d5c70f3be1759544ea7274166f4be41ef43"
+dependencies = [
+ "byteorder",
+ "libc",
+ "log",
+ "neli-proc-macros",
+]
+
+[[package]]
+name = "neli-proc-macros"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c168194d373b1e134786274020dae7fc5513d565ea2ebb9bc9ff17ffb69106d4"
+dependencies = [
+ "either",
+ "proc-macro2",
+ "quote",
+ "serde",
+ "syn 1.0.109",
 ]
 
 [[package]]
