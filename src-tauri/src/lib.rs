@@ -121,7 +121,7 @@ async fn show_main_window(window: tauri::Window) {
 }
 
 async fn stop_player() -> Result<(), PlayerError> {
-    if let Err(err) = PLAYER.get().await.read().await.stop() {
+    if let Err(err) = PLAYER.get().await.read().await.stop().await {
         match err {
             PlayerError::NoPlayersPlaying => {}
             _ => return Err(err),
@@ -238,11 +238,13 @@ async fn player_play(
         Some(session_playlist_id),
     );
 
-    Ok(PLAYER.get().await.read().await.play_playback(
-        playback,
-        seek,
-        Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
-    )?)
+    Ok(PLAYER
+        .get()
+        .await
+        .read()
+        .await
+        .play_playback(playback, seek, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
+        .await?)
 }
 
 #[tauri::command]
@@ -285,7 +287,7 @@ async fn player_previous_track() -> Result<PlaybackStatus, TauriPlayerError> {
 
 #[tauri::command]
 async fn player_stop_track() -> Result<PlaybackStatus, TauriPlayerError> {
-    Ok(PLAYER.get().await.read().await.stop_track()?)
+    Ok(PLAYER.get().await.read().await.stop_track().await?)
 }
 
 #[derive(Copy, Debug, Serialize, Deserialize, EnumString, AsRefStr, PartialEq, Clone)]
