@@ -50,7 +50,12 @@ function toTrackIdWithApiSource(track: Track) {
 }
 
 async function updatePlayback(update: player.PlaybackUpdate): Promise<void> {
-    console.debug('Received updatePlayback', update);
+    console.debug(
+        'Received updatePlayback',
+        update,
+        'player.playing():',
+        player.playing(),
+    );
 
     const actions = {
         update: false,
