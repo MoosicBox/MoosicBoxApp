@@ -120,6 +120,7 @@ async fn show_main_window(window: tauri::Window) {
     window.get_webview_window("main").unwrap().show().unwrap();
 }
 
+#[allow(unused)]
 async fn stop_player() -> Result<(), PlayerError> {
     if let Err(err) = PLAYER.get().await.read().await.stop().await {
         match err {
@@ -164,9 +165,8 @@ async fn set_client_id(client_id: String) -> Result<(), TauriPlayerError> {
     }
 
     CLIENT_ID.write().await.replace(client_id);
-    let stopped = stop_player().await;
     *PLAYER.get().await.write().await = new_player().await?;
-    Ok(stopped?)
+    Ok(())
 }
 
 #[tauri::command]
@@ -179,9 +179,8 @@ async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerE
     }
 
     SIGNATURE_TOKEN.write().await.replace(signature_token);
-    let stopped = stop_player().await;
     *PLAYER.get().await.write().await = new_player().await?;
-    Ok(stopped?)
+    Ok(())
 }
 
 #[tauri::command]
@@ -194,9 +193,8 @@ async fn set_api_token(api_token: String) -> Result<(), TauriPlayerError> {
     }
 
     API_TOKEN.write().await.replace(api_token);
-    let stopped = stop_player().await;
     *PLAYER.get().await.write().await = new_player().await?;
-    Ok(stopped?)
+    Ok(())
 }
 
 #[tauri::command]
@@ -209,9 +207,8 @@ async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
     }
 
     API_URL.write().await.replace(api_url);
-    let stopped = stop_player();
     *PLAYER.get().await.write().await = new_player().await?;
-    Ok(stopped.await?)
+    Ok(())
 }
 
 #[tauri::command]
