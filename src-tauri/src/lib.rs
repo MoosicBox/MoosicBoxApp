@@ -122,6 +122,7 @@ async fn show_main_window(window: tauri::Window) {
 
 #[allow(unused)]
 async fn stop_player() -> Result<(), PlayerError> {
+    log::debug!("stop_player");
     if let Err(err) = PLAYER.get().await.read().await.stop().await {
         match err {
             PlayerError::NoPlayersPlaying => {}
@@ -221,7 +222,7 @@ async fn player_play(
     session_playlist_id: usize,
     quality: PlaybackQuality,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
-    info!("Playing Symphonia Player: {track_ids:?}");
+    log::debug!("player_play: {track_ids:?}");
 
     let playback = Playback::new(
         track_ids
@@ -246,11 +247,13 @@ async fn player_play(
 
 #[tauri::command]
 async fn player_pause() -> Result<PlaybackStatus, TauriPlayerError> {
+    log::debug!("player_pause");
     Ok(PLAYER.get().await.read().await.pause_playback().await?)
 }
 
 #[tauri::command]
 async fn player_resume() -> Result<PlaybackStatus, TauriPlayerError> {
+    log::debug!("player_resume");
     Ok(PLAYER
         .get()
         .await
@@ -262,6 +265,7 @@ async fn player_resume() -> Result<PlaybackStatus, TauriPlayerError> {
 
 #[tauri::command]
 async fn player_next_track() -> Result<PlaybackStatus, TauriPlayerError> {
+    log::debug!("player_next_track");
     Ok(PLAYER
         .get()
         .await
@@ -273,6 +277,7 @@ async fn player_next_track() -> Result<PlaybackStatus, TauriPlayerError> {
 
 #[tauri::command]
 async fn player_previous_track() -> Result<PlaybackStatus, TauriPlayerError> {
+    log::debug!("player_previous_track");
     Ok(PLAYER
         .get()
         .await
@@ -284,6 +289,7 @@ async fn player_previous_track() -> Result<PlaybackStatus, TauriPlayerError> {
 
 #[tauri::command]
 async fn player_stop_track() -> Result<PlaybackStatus, TauriPlayerError> {
+    log::debug!("player_stop_track");
     Ok(PLAYER.get().await.read().await.stop_track().await?)
 }
 
