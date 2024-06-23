@@ -342,6 +342,7 @@ async fn player_update_playback(
         .read()
         .await
         .update_playback(
+            true,
             play,
             stop,
             playing,
