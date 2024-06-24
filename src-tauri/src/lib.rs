@@ -64,7 +64,7 @@ lazy_static! {
 }
 
 const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOptions {
-    max_retry_count: 10,
+    max_attempts: 10,
     retry_delay: std::time::Duration::from_millis(1000),
 };
 
@@ -122,7 +122,14 @@ async fn show_main_window(window: tauri::Window) {
 #[allow(unused)]
 async fn stop_player() -> Result<(), PlayerError> {
     log::debug!("stop_player");
-    if let Err(err) = PLAYER.get().await.read().await.stop().await {
+    if let Err(err) = PLAYER
+        .get()
+        .await
+        .read()
+        .await
+        .stop(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
+        .await
+    {
         match err {
             PlayerError::NoPlayersPlaying => {}
             _ => return Err(err),
@@ -235,61 +242,85 @@ async fn player_play(
         Some(session_playlist_id),
     );
 
-    Ok(PLAYER
+    PLAYER
         .get()
         .await
         .read()
         .await
         .play_playback(playback, seek, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
-        .await?)
+        .await?;
+
+    Ok(PlaybackStatus { success: true })
 }
 
 #[tauri::command]
 async fn player_pause() -> Result<PlaybackStatus, TauriPlayerError> {
     log::debug!("player_pause");
-    Ok(PLAYER.get().await.read().await.pause_playback().await?)
+    PLAYER
+        .get()
+        .await
+        .read()
+        .await
+        .pause(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
+        .await?;
+
+    Ok(PlaybackStatus { success: true })
 }
 
 #[tauri::command]
 async fn player_resume() -> Result<PlaybackStatus, TauriPlayerError> {
     log::debug!("player_resume");
-    Ok(PLAYER
+    PLAYER
         .get()
         .await
         .read()
         .await
-        .resume_playback(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
-        .await?)
+        .resume(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
+        .await?;
+
+    Ok(PlaybackStatus { success: true })
 }
 
 #[tauri::command]
 async fn player_next_track() -> Result<PlaybackStatus, TauriPlayerError> {
     log::debug!("player_next_track");
-    Ok(PLAYER
+    PLAYER
         .get()
         .await
         .read()
         .await
         .next_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
-        .await?)
+        .await?;
+
+    Ok(PlaybackStatus { success: true })
 }
 
 #[tauri::command]
 async fn player_previous_track() -> Result<PlaybackStatus, TauriPlayerError> {
     log::debug!("player_previous_track");
-    Ok(PLAYER
+    PLAYER
         .get()
         .await
         .read()
         .await
         .previous_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
-        .await?)
+        .await?;
+
+    Ok(PlaybackStatus { success: true })
 }
 
 #[tauri::command]
 async fn player_stop_track() -> Result<PlaybackStatus, TauriPlayerError> {
     log::debug!("player_stop_track");
-    Ok(PLAYER.get().await.read().await.stop_track().await?)
+    PLAYER
+        .get()
+        .await
+        .read()
+        .await
+        .stop(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
+        .await?;
+
+    Ok(PlaybackStatus { success: true })
 }
 
 #[derive(Copy, Debug, Serialize, Deserialize, EnumString, AsRefStr, PartialEq, Clone)]
@@ -335,7 +366,7 @@ async fn player_update_playback(
     log::debug!(
         "player_update_playback: play={play:?} stop={stop:?} playing={playing:?} position={position:?}"
     );
-    Ok(PLAYER
+    PLAYER
         .get()
         .await
         .read()
@@ -359,7 +390,9 @@ async fn player_update_playback(
             session_playlist_id,
             Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
         )
-        .await?)
+        .await?;
+
+    Ok(PlaybackStatus { success: true })
 }
 
 #[tauri::command]
