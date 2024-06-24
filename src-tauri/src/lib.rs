@@ -3,7 +3,6 @@ use std::{
     env,
     fs::create_dir_all,
     sync::{Arc, OnceLock},
-    usize,
 };
 
 use async_once::AsyncOnce;
