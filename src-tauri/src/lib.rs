@@ -15,7 +15,7 @@ use moosicbox_core::sqlite::models::{ApiSource, UpdateSession};
 use moosicbox_core::types::PlaybackQuality;
 use moosicbox_env_utils::default_env;
 use moosicbox_player::player::{
-    local::LocalPlayer, Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player as _,
+    local::LocalPlayer, Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player,
     PlayerError, PlayerSource, TrackOrId,
 };
 use once_cell::sync::Lazy;
@@ -242,12 +242,12 @@ async fn player_play(
         Some(session_playlist_id),
     );
 
-    PLAYER
-        .get()
-        .await
-        .read()
-        .await
-        .play_playback(playback, seek, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
+    let player = PLAYER.get().await.read().await;
+
+    player.active_playback_write().replace(playback);
+
+    player
+        .play_playback(seek, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
         .await?;
 
     Ok(PlaybackStatus { success: true })
