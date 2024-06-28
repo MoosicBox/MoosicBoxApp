@@ -9,10 +9,8 @@ import {
     ApiType,
     Track,
     api,
-    apiUrl,
-    clientId,
+    connection,
     toSessionPlaylistTrack,
-    token,
     trackId,
 } from '~/services/api';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
@@ -177,8 +175,10 @@ function updateApi(secure: boolean) {
     }
 }
 
-apiUrl.listen((url) => {
-    updateApi(url.toLowerCase().startsWith('https://'));
+connection.listen((con) => {
+    if (!con) return;
+
+    updateApi(con.apiUrl.toLowerCase().startsWith('https://'));
 });
 
 onStartupFirst(async () => {
@@ -194,20 +194,29 @@ onStartupFirst(async () => {
         invoke('set_connection_name', { connectionName: connectionName.get() }),
     ]);
 
-    updateApi(apiUrl.get().toLowerCase().startsWith('https://'));
-    await invoke('set_api_url', { apiUrl: apiUrl.get() });
-    if (clientId.get()) {
-        await invoke('set_client_id', { clientId: clientId.get() });
-    }
-    if (Api.signatureToken()) {
-        await invoke('set_signature_token', {
-            signatureToken: Api.signatureToken(),
-        });
-    }
-    if (token.get()) {
-        await invoke('set_api_token', { apiToken: token.get() });
+    const con = connection.get();
+    if (con) {
+        updateApi(con.apiUrl.toLowerCase().startsWith('https://'));
+        await invoke('set_api_url', { apiUrl: con.apiUrl });
+        if (con.clientId) {
+            await invoke('set_client_id', { clientId: con.clientId });
+        }
+        if (Api.signatureToken()) {
+            await invoke('set_signature_token', {
+                signatureToken: Api.signatureToken(),
+            });
+        }
+        if (con.token) {
+            await invoke('set_api_token', { apiToken: con.token });
+        }
     }
 
+    connection.listen(async (con) => {
+        if (!con) return;
+        await invoke('set_api_url', { apiUrl: con.apiUrl });
+        await invoke('set_api_token', { apiToken: con.token });
+        await invoke('set_client_id', { clientId: con.clientId });
+    });
     connectionId.listen(async (connectionId) => {
         setProperty('connectionId', connectionId);
         await invoke('set_connection_id', { connectionId });
@@ -216,16 +225,7 @@ onStartupFirst(async () => {
         setProperty('connectionName', connectionName);
         await invoke('set_connection_name', { connectionName });
     });
-    clientId.listen(async (clientId) => {
-        await invoke('set_client_id', { clientId });
-    });
     Api.onSignatureTokenUpdated(async (token) => {
         await invoke('set_signature_token', { signatureToken: token });
-    });
-    token.listen(async (token) => {
-        await invoke('set_api_token', { apiToken: token });
-    });
-    apiUrl.listen(async (url) => {
-        await invoke('set_api_url', { apiUrl: url });
     });
 });
