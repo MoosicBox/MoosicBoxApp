@@ -40,7 +40,7 @@
         "date-fns": "^3.6.0",
         "howler": "^2.2.4",
         "nanostores": "^0.9.5",
-        "solid-js": "^1.8.17"
+        "solid-js": "^1.8.18"
     },
     "devDependencies": {
         "@solidjs/meta": "^0.29.4",
