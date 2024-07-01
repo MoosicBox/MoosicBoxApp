@@ -4,7 +4,7 @@ description = "MoosicBox Tauri App"
 edition     = "2021"
 license     = ""
 name        = "moosicbox_app"
-repository  = ""
+repository  = "https://github.com/MoosicBox/MoosicBoxApp"
 version     = "0.2.0"
 
 [lib]
