@@ -175,10 +175,12 @@ function updateApi(secure: boolean) {
     }
 }
 
-connection.listen((con) => {
+connection.listen((con, prev) => {
     if (!con) return;
 
-    updateApi(con.apiUrl.toLowerCase().startsWith('https://'));
+    if (con.apiUrl !== prev?.apiUrl) {
+        updateApi(con.apiUrl.toLowerCase().startsWith('https://'));
+    }
 });
 
 onStartupFirst(async () => {
