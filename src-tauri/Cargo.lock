@@ -2741,13 +2741,12 @@ dependencies = [
  "async_once",
  "atomic_float",
  "debounce",
- "free_log_client",
  "jni",
  "lazy_static",
  "log",
  "moosicbox_config",
  "moosicbox_core",
- "moosicbox_env_utils",
+ "moosicbox_logging",
  "moosicbox_player",
  "ndk-context",
  "once_cell",
@@ -2850,6 +2849,18 @@ dependencies = [
  "rusqlite",
  "serde",
  "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "moosicbox_logging"
+version = "0.1.0"
+dependencies = [
+ "free_log_client",
+ "log",
+ "moosicbox_assert",
+ "moosicbox_config",
+ "moosicbox_env_utils",
  "thiserror",
 ]
 

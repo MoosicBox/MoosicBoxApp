@@ -38,7 +38,7 @@ tauri-build = { version = "2.0.0-beta.18", features = [] }
 [dependencies]
 moosicbox_config = { path = "../../MoosicBoxServer/packages/config", default-features = false }
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
-moosicbox_env_utils = { path = "../../MoosicBoxServer/packages/env_utils", default-features = false }
+moosicbox_logging = { path = "../../MoosicBoxServer/packages/logging", default-features = false }
 moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-features = false, features = [
     "local",
 ] }
@@ -46,7 +46,6 @@ moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-fea
 async_once = "0.2.6"
 atomic_float = "1.0.0"
 debounce = "0.2.2"
-free_log_client = { git = "https://github.com/BSteffaniak/FreeLog.git" }
 jni = { version = "0.21.1", optional = true }
 lazy_static = "1.5.0"
 log = "0.4.22"
