@@ -36,7 +36,7 @@
         "@solid-primitives/storage": "^2.1.4",
         "@solid-primitives/utils": "^6.2.3",
         "@tauri-apps/api": "2.0.0-beta.13",
-        "astro": "^4.11.3",
+        "astro": "^4.11.5",
         "date-fns": "^3.6.0",
         "howler": "^2.2.4",
         "nanostores": "^0.9.5",
@@ -62,7 +62,7 @@
         "prettier": "^3.3.2",
         "prettier-plugin-astro": "^0.13.0",
         "typescript": "^5.5.3",
-        "vite": "^5.3.2",
+        "vite": "^5.3.3",
         "vitest": "^1.6.0"
     }
 }
