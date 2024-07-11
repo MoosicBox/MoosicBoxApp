@@ -8,7 +8,7 @@ use async_once::AsyncOnce;
 use atomic_float::AtomicF64;
 use lazy_static::lazy_static;
 use log::info;
-use moosicbox_core::sqlite::models::{ApiSource, UpdateSession};
+use moosicbox_core::sqlite::models::{ApiSource, Id, UpdateSession};
 use moosicbox_core::types::PlaybackQuality;
 use moosicbox_player::player::{
     local::LocalPlayer, Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player,
@@ -229,7 +229,7 @@ async fn player_play(
     let playback = Playback::new(
         track_ids
             .iter()
-            .map(|id| TrackOrId::Id(*id, ApiSource::Library))
+            .map(|id| TrackOrId::Id(Id::Number(*id as u64), ApiSource::Library))
             .collect(),
         position,
         AtomicF64::new(volume.unwrap_or(1.0)),
@@ -328,12 +328,12 @@ pub enum TrackId {
     Qobuz(u64),
 }
 
-impl From<TrackId> for i32 {
+impl From<TrackId> for Id {
     fn from(value: TrackId) -> Self {
         match value {
-            TrackId::Library(id) => id,
-            TrackId::Tidal(id) => id as i32,
-            TrackId::Qobuz(id) => id as i32,
+            TrackId::Library(id) => Id::Number(id as u64),
+            TrackId::Tidal(id) => Id::Number(id),
+            TrackId::Qobuz(id) => Id::Number(id),
         }
     }
 }
