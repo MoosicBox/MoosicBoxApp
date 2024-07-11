@@ -54,7 +54,7 @@ init({
                 ({ type }) => type == 'LIBRARY',
             );
 
-            const libraryIds = libraryTracks.map(({ id }) => id);
+            const libraryIds = libraryTracks.map(({ id }) => parseInt(id));
 
             const tidalTracks = partialUpdate.playlist.tracks.filter(
                 ({ type }) => type == 'TIDAL',
@@ -63,7 +63,7 @@ init({
             const tracks: Track[] = (
                 await Promise.all([
                     api.getTracks(libraryIds),
-                    ...tidalTracks.map(({ id }) => api.getTidalTrack(id)),
+                    ...tidalTracks.map(({ id }) => api.getTidalTrack(parseInt(id))),
                 ])
             ).flat();
 
@@ -74,7 +74,7 @@ init({
                     ({ id, type }) =>
                         tracks.find(
                             (track) =>
-                                track.type === type && trackId(track) === id,
+                                track.type === type && trackId(track)?.toString() === id,
                         )!,
                 ),
             };
