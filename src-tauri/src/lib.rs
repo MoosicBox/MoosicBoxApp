@@ -12,7 +12,7 @@ use moosicbox_core::sqlite::models::{ApiSource, Id, UpdateSession};
 use moosicbox_core::types::PlaybackQuality;
 use moosicbox_player::player::{
     local::LocalPlayer, Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player,
-    PlayerError, PlayerSource, TrackOrId,
+    PlayerError, PlayerSource, Track,
 };
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
@@ -229,7 +229,11 @@ async fn player_play(
     let playback = Playback::new(
         track_ids
             .iter()
-            .map(|id| TrackOrId::Id(Id::Number(*id as u64), ApiSource::Library))
+            .map(|id| Track {
+                id: id.into(),
+                source: ApiSource::Library,
+                data: None,
+            })
             .collect(),
         position,
         AtomicF64::new(volume.unwrap_or(1.0)),
@@ -378,7 +382,11 @@ async fn player_update_playback(
             tracks.map(|tracks| {
                 tracks
                     .iter()
-                    .map(|track| TrackOrId::Id(track.id.into(), track.source))
+                    .map(|track| Track {
+                        id: track.id.into(),
+                        source: track.source,
+                        data: None,
+                    })
                     .collect()
             }),
             quality,
