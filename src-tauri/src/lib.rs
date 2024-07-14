@@ -17,7 +17,7 @@ use moosicbox_player::player::{
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, EnumString};
-use tauri::{async_runtime::RwLock, AppHandle, Manager};
+use tauri::{async_runtime::RwLock, AppHandle, Emitter, Manager};
 
 #[cfg(all(feature = "cpal", feature = "android"))]
 #[no_mangle]
