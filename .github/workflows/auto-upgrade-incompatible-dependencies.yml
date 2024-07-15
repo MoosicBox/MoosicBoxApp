@@ -1,0 +1,101 @@
+name: Auto-upgrade Incompatible Dependencies
+
+on:
+    workflow_dispatch:
+    schedule:
+        - cron: '0 5 * * *'
+
+env:
+    CARGO_TERM_COLOR: always
+    AWS_REGION: us-east-1
+
+jobs:
+    upgrade:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout audiotags
+              uses: actions/checkout@v4
+              with:
+                  repository: BSteffaniak/audiotags
+                  ref: feat/add-full-date-capabilities
+                  path: audiotags
+
+            - name: Checkout MoosicBoxServer
+              uses: actions/checkout@v4
+              with:
+                  repository: MoosicBox/MoosicBoxServer
+                  path: MoosicBoxServer
+
+            - uses: actions/checkout@v4
+              with:
+                  token: ${{ secrets.MOOSICBOX_BOT_UPGRADES_TOKEN }}
+                  path: MoosicBoxApp
+
+            - name: Install cargo-edit
+              shell: bash
+              run: |
+                  cargo install \
+                      -f cargo-edit \
+                      --git https://github.com/BSteffaniak/cargo-edit \
+                      --branch add-skip-git-dependencies
+
+            - name: Upgrade
+              working-directory: MoosicBoxApp/src-tauri
+              id: upgrade
+              shell: bash
+              run: |
+                  cargo upgrade \
+                      --skip-git-dependencies \
+                      --exclude moosicbox_core \
+                      --exclude moosicbox_player \
+                      --incompatible
+                  cargo update
+                  if [ -n "$(git status --porcelain)" ]; then
+                      echo "Found upgrades"
+                      echo "upgraded=true" >> "$GITHUB_OUTPUT"
+                  else
+                      echo "No upgrades"
+                      echo "upgraded=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Install Dependencies
+              run: |
+                  sudo apt update
+                  sudo apt install libwebkit2gtk-4.1-dev \
+                      build-essential \
+                      curl \
+                      wget \
+                      file \
+                      libssl-dev \
+                      libgtk-3-dev \
+                      libayatana-appindicator3-dev \
+                      librsvg2-dev \
+                      libasound2-dev \
+                      libsoup-3.0-dev
+
+            - name: Build
+              if: ${{ steps.upgrade.outputs.upgraded == 'true'}}
+              working-directory: MoosicBoxApp/src-tauri
+              shell: bash
+              run: |
+                  cargo build
+
+            - name: Test
+              if: ${{ steps.upgrade.outputs.upgraded == 'true'}}
+              working-directory: MoosicBoxApp/src-tauri
+              shell: bash
+              run: |
+                  cargo test
+
+            - name: Commit
+              if: ${{ steps.upgrade.outputs.upgraded == 'true'}}
+              working-directory: MoosicBoxApp
+              shell: bash
+              run: |
+                  git config user.name "MoosicBoxBot"
+                  git config user.email "MoosicBoxBot@gmail.com"
+                  git add .
+                  git commit --message "Upgrade Incompatible Dependencies"
+                  echo "Pushing upgrades"
+                  git push origin master
