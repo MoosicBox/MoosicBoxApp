@@ -141,8 +141,7 @@ async fn set_connection_id(connection_id: String) -> Result<(), TauriPlayerError
 
     LOG_LAYER
         .get()
-        .unwrap()
-        .set_property("connectionId", connection_id.into());
+        .map(|x| x.set_property("connectionId", connection_id.into()));
 
     Ok(())
 }
@@ -153,8 +152,7 @@ async fn set_connection_name(connection_name: String) -> Result<(), TauriPlayerE
 
     LOG_LAYER
         .get()
-        .unwrap()
-        .set_property("connectionName", connection_name.into());
+        .map(|x| x.set_property("connectionName", connection_name.into()));
 
     Ok(())
 }
@@ -518,9 +516,13 @@ fn track_event(handler: &tauri::AppHandle, name: &str, props: Option<serde_json:
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let layer = moosicbox_logging::init("moosicbox_app.log").expect("Failed to initialize FreeLog");
-
-    LOG_LAYER.set(layer).expect("Failed to set LOG_LAYER");
+    if std::env::var("TOKIO_CONSOLE") == Ok("1".to_string()) {
+        console_subscriber::init();
+    } else {
+        let layer =
+            moosicbox_logging::init("moosicbox_app.log").expect("Failed to initialize FreeLog");
+        LOG_LAYER.set(layer).expect("Failed to set LOG_LAYER");
+    }
 
     moosicbox_player::player::on_playback_event(crate::on_playback_event);
 
