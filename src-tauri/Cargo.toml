@@ -42,6 +42,7 @@ moosicbox_logging = { path = "../../MoosicBoxServer/packages/logging", default-f
 moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-features = false, features = [
     "local",
 ] }
+moosicbox_session = { path = "../../MoosicBoxServer/packages/session", default-features = false }
 
 async_once = "0.2.6"
 atomic_float = "1.0.0"
@@ -62,7 +63,7 @@ strum_macros = "0.26.4"
 tauri = { version = "2.0.0-beta.24", features = ["protocol-asset"] }
 
 [features]
-default = ["aac", "cpal", "mp3", "opus"]
+default = ["cpal"]
 
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
@@ -71,12 +72,9 @@ custom-protocol = ["tauri/custom-protocol"]
 android = ["dep:jni", "dep:ndk-context"]
 
 # Player audio outputs
-aac                 = ["moosicbox_core/aac"]
 asio                = ["moosicbox_player/asio"]
 cpal                = ["moosicbox_player/cpal", "moosicbox_player/oboe-shared-stdcxx"]
 jack                = ["moosicbox_player/jack"]
-mp3                 = ["moosicbox_core/mp3"]
-opus                = ["moosicbox_core/opus"]
 pulseaudio          = ["moosicbox_player/pulseaudio"]
 pulseaudio-simple   = ["moosicbox_player/pulseaudio-simple"]
 pulseaudio-standard = ["moosicbox_player/pulseaudio-standard"]
