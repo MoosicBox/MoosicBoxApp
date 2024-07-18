@@ -65,7 +65,7 @@ strum_macros = "0.26.4"
 tauri = { version = "2.0.0-beta.24", features = ["protocol-asset"] }
 
 [features]
-default = ["aac", "cpal", "flac", "mp3", "opus"]
+default = ["aac", "cpal", "flac", "mp3"]
 
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
@@ -84,4 +84,3 @@ pulseaudio-standard = ["moosicbox_player/pulseaudio-standard"]
 aac  = ["moosicbox_core/aac", "moosicbox_library/aac"]
 flac = ["moosicbox_core/flac", "moosicbox_library/flac"]
 mp3  = ["moosicbox_core/mp3", "moosicbox_library/mp3"]
-opus = ["moosicbox_core/opus", "moosicbox_library/opus"]
