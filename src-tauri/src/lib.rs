@@ -8,12 +8,13 @@ use async_once::AsyncOnce;
 use atomic_float::AtomicF64;
 use lazy_static::lazy_static;
 use log::info;
-use moosicbox_core::sqlite::models::{ApiSource, Id, UpdateSession};
+use moosicbox_core::sqlite::models::{ApiSource, Id};
 use moosicbox_core::types::PlaybackQuality;
 use moosicbox_player::player::{
     local::LocalPlayer, Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player,
     PlayerError, PlayerSource, Track,
 };
+use moosicbox_session::models::UpdateSession;
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, EnumString};
