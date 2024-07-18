@@ -38,6 +38,7 @@ tauri-build = { version = "2.0.0-beta.19", features = [] }
 [dependencies]
 moosicbox_config = { path = "../../MoosicBoxServer/packages/config", default-features = false }
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
+moosicbox_library = { path = "../../MoosicBoxServer/packages/library", default-features = false }
 moosicbox_logging = { path = "../../MoosicBoxServer/packages/logging", default-features = false }
 moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-features = false, features = [
     "local",
@@ -46,6 +47,7 @@ moosicbox_session = { path = "../../MoosicBoxServer/packages/session", default-f
 
 async_once = "0.2.6"
 atomic_float = "1.0.0"
+console-subscriber = "0.3.0"
 debounce = "0.2.2"
 jni = { version = "0.21.1", optional = true }
 lazy_static = "1.5.0"
@@ -56,7 +58,6 @@ portpicker = "0.1"
 reqwest = { version = "0.12.5", default-features = false, features = [
     "rustls-tls",
 ] }
-console-subscriber = "0.3.0"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 strum = "0.26.3"
@@ -64,7 +65,7 @@ strum_macros = "0.26.4"
 tauri = { version = "2.0.0-beta.24", features = ["protocol-asset"] }
 
 [features]
-default = ["cpal"]
+default = ["aac", "cpal", "flac", "mp3", "opus"]
 
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
@@ -79,3 +80,8 @@ jack                = ["moosicbox_player/jack"]
 pulseaudio          = ["moosicbox_player/pulseaudio"]
 pulseaudio-simple   = ["moosicbox_player/pulseaudio-simple"]
 pulseaudio-standard = ["moosicbox_player/pulseaudio-standard"]
+
+aac  = ["moosicbox_core/aac", "moosicbox_library/aac"]
+flac = ["moosicbox_core/flac", "moosicbox_library/flac"]
+mp3  = ["moosicbox_core/mp3", "moosicbox_library/mp3"]
+opus = ["moosicbox_core/opus", "moosicbox_library/opus"]
