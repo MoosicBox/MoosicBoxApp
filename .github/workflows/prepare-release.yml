@@ -9,6 +9,7 @@ env:
     ANDROID_HOME: /home/runner/.android
     ANDROID_SDK_ROOT: /home/runner/.android
     NDK_HOME: /home/runner/.android/ndk/25.0.8775105
+    RUSTFLAGS: --cfg tokio_unstable
 
 jobs:
     package:
