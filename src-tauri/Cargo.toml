@@ -38,7 +38,6 @@ tauri-build = { version = "2.0.0-beta.19", features = [] }
 [dependencies]
 moosicbox_config = { path = "../../MoosicBoxServer/packages/config", default-features = false }
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
-moosicbox_library = { path = "../../MoosicBoxServer/packages/library", default-features = false }
 moosicbox_logging = { path = "../../MoosicBoxServer/packages/logging", default-features = false }
 moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-features = false, features = [
     "local",
@@ -81,6 +80,6 @@ pulseaudio          = ["moosicbox_player/pulseaudio"]
 pulseaudio-simple   = ["moosicbox_player/pulseaudio-simple"]
 pulseaudio-standard = ["moosicbox_player/pulseaudio-standard"]
 
-aac  = ["moosicbox_core/aac", "moosicbox_library/aac"]
-flac = ["moosicbox_core/flac", "moosicbox_library/flac"]
-mp3  = ["moosicbox_core/mp3", "moosicbox_library/mp3"]
+aac  = ["moosicbox_core/aac"]
+flac = ["moosicbox_core/flac"]
+mp3  = ["moosicbox_core/mp3"]
