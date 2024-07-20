@@ -17,7 +17,7 @@ enum PlayerAction {
 }
 
 type TrackIdWithApiSource = {
-    id: number;
+    id: string | number;
     source: TrackType;
 };
 
