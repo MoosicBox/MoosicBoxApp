@@ -10,7 +10,7 @@ use lazy_static::lazy_static;
 use log::info;
 use moosicbox_core::sqlite::models::{ApiSource, Id};
 use moosicbox_core::types::PlaybackQuality;
-use moosicbox_player::player::{
+use moosicbox_player::{
     local::LocalPlayer, Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player,
     PlayerError, PlayerSource, Track,
 };
@@ -524,7 +524,7 @@ pub fn run() {
         LOG_LAYER.set(layer).expect("Failed to set LOG_LAYER");
     }
 
-    moosicbox_player::player::on_playback_event(crate::on_playback_event);
+    moosicbox_player::on_playback_event(crate::on_playback_event);
 
     let app_builder = tauri::Builder::default()
         .setup(|app| {
