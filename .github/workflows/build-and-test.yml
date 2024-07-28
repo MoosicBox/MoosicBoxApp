@@ -36,6 +36,8 @@ jobs:
               with:
                   path: MoosicBoxApp
 
+            - uses: dtolnay/rust-toolchain@stable
+
             - name: ⚡ Cache cargo
               uses: actions/cache@v4
               with:
