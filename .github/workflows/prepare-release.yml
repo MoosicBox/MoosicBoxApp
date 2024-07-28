@@ -99,6 +99,8 @@ jobs:
               with:
                   path: MoosicBoxApp
 
+            - uses: dtolnay/rust-toolchain@stable
+
             - name: Get package version
               id: package_version
               working-directory: MoosicBoxApp/src-tauri

@@ -32,6 +32,8 @@ jobs:
                   token: ${{ secrets.MOOSICBOX_BOT_UPGRADES_TOKEN }}
                   path: MoosicBoxApp
 
+            - uses: dtolnay/rust-toolchain@stable
+
             - name: Install cargo-edit
               shell: bash
               run: |
