@@ -36,6 +36,7 @@ panic    = "abort"
 tauri-build = { version = "2.0.0-beta.19", features = [] }
 
 [dependencies]
+moosicbox_audio_output = { path = "../../MoosicBoxServer/packages/audio_output", default-features = false }
 moosicbox_config = { path = "../../MoosicBoxServer/packages/config", default-features = false }
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
 moosicbox_logging = { path = "../../MoosicBoxServer/packages/logging", default-features = false }
@@ -43,6 +44,7 @@ moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-fea
     "local",
 ] }
 moosicbox_session = { path = "../../MoosicBoxServer/packages/session", default-features = false }
+moosicbox_task = { path = "../../MoosicBoxServer/packages/task", default-features = false }
 
 async_once = "0.2.6"
 atomic_float = "1.0.0"

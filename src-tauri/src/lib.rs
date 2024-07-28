@@ -92,7 +92,7 @@ async fn new_player() -> Result<LocalPlayer, TauriPlayerError> {
         None
     };
 
-    Ok(LocalPlayer::new(
+    LocalPlayer::new(
         PlayerSource::Remote {
             host: API_URL
                 .read()
@@ -106,7 +106,11 @@ async fn new_player() -> Result<LocalPlayer, TauriPlayerError> {
             query,
         },
         Some(PlaybackType::Stream),
-    ))
+    )
+    .await
+    .map_err(|e| TauriPlayerError {
+        message: format!("Failed to initialize new local player: {e:?}"),
+    })
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -523,6 +527,8 @@ pub fn run() {
             moosicbox_logging::init("moosicbox_app.log").expect("Failed to initialize FreeLog");
         LOG_LAYER.set(layer).expect("Failed to set LOG_LAYER");
     }
+
+    tauri::async_runtime::spawn(moosicbox_audio_output::scan_outputs());
 
     moosicbox_player::on_playback_event(crate::on_playback_event);
 
