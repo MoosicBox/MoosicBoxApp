@@ -83,3 +83,5 @@ pulseaudio-standard = ["moosicbox_player/pulseaudio-standard"]
 aac  = ["moosicbox_core/aac"]
 flac = ["moosicbox_core/flac"]
 mp3  = ["moosicbox_core/mp3"]
+
+aptabase = []
