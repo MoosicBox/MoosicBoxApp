@@ -219,12 +219,12 @@ async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
 
 #[tauri::command]
 async fn player_play(
-    track_ids: Vec<i32>,
+    track_ids: Vec<u64>,
     position: Option<u16>,
     seek: Option<f64>,
     volume: Option<f64>,
-    session_id: usize,
-    session_playlist_id: usize,
+    session_id: u64,
+    session_playlist_id: u64,
     quality: PlaybackQuality,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
     log::debug!("player_play: {track_ids:?}");
@@ -330,7 +330,7 @@ async fn player_stop_track() -> Result<PlaybackStatus, TauriPlayerError> {
 #[strum(serialize_all = "SCREAMING_SNAKE_CASE")]
 #[serde(untagged)]
 pub enum TrackId {
-    Library(i32),
+    Library(u64),
     Tidal(u64),
     Qobuz(u64),
 }
@@ -363,8 +363,8 @@ async fn player_update_playback(
     volume: Option<f64>,
     tracks: Option<Vec<TrackIdWithApiSource>>,
     quality: Option<PlaybackQuality>,
-    session_id: Option<usize>,
-    session_playlist_id: Option<usize>,
+    session_id: Option<u64>,
+    session_playlist_id: Option<u64>,
 ) -> Result<PlaybackStatus, TauriPlayerError> {
     log::debug!(
         "player_update_playback: play={play:?} stop={stop:?} playing={playing:?} position={position:?}"
