@@ -48,7 +48,7 @@ moosicbox_task = { path = "../../MoosicBoxServer/packages/task", default-feature
 
 async_once = "0.2.6"
 atomic_float = "1.0.0"
-console-subscriber = "0.3.0"
+console-subscriber = "0.4.0"
 debounce = "0.2.2"
 jni = { version = "0.21.1", optional = true }
 lazy_static = "1.5.0"
