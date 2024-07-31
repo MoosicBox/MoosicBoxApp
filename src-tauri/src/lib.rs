@@ -21,7 +21,7 @@ use moosicbox_ws::models::{InboundPayload, OutboundPayload, UpdateSessionPayload
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, EnumString};
-use tauri::{async_runtime::RwLock, AppHandle, Manager};
+use tauri::{async_runtime::RwLock, AppHandle};
 use thiserror::Error;
 use tokio_util::sync::CancellationToken;
 
@@ -131,6 +131,8 @@ async fn new_player(audio_output_id: &str) -> Result<LocalPlayer, TauriPlayerErr
 #[cfg(not(all(target_os = "android")))]
 #[tauri::command]
 async fn show_main_window(window: tauri::Window) {
+    use tauri::Manager as _;
+
     window.get_webview_window("main").unwrap().show().unwrap();
 }
 
