@@ -1,36 +1,19 @@
 // @refresh reload
 import { init, setProperty } from '@free-log/node-client';
-import { produce } from 'solid-js/store';
 import { invoke } from '@tauri-apps/api/core';
-import { listen } from '@tauri-apps/api/event';
 import { appState, onStartupFirst } from '~/services/app';
-import {
-    Api,
-    ApiType,
-    Track,
-    api,
-    connection,
-    toSessionPlaylistTrack,
-    trackId,
-} from '~/services/api';
+import { Api, ApiType, api, connection } from '~/services/api';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
-import { createPlayer as createSymphoniaPlayer } from '~/symphonia-player';
-import {
-    registerPlayer,
-    setPlayerState,
-    updateSessionPartial,
-} from '~/services/player';
-import * as player from '~/services/player';
+import { registerPlayer } from '~/services/player';
 import {
     InboundMessageType,
+    SessionsMessage,
     connectionId,
     connectionName,
     onConnect,
     onMessage,
     registerConnection,
-    updateSession,
 } from '~/services/ws';
-import { PartialUpdateSession } from '~/services/types';
 
 init({
     logWriterApiUrl: 'https://logs.moosicbox.com',
@@ -38,109 +21,45 @@ init({
     logLevel: 'WARN',
 });
 
-(async () => {
-    await listen('UPDATE_SESSION', async (event) => {
-        console.debug('Received UPDATE_SESSION', event);
-        const partialUpdate = event.payload as Api.UpdatePlaybackSession;
-
-        const updatePlaybackSession: PartialUpdateSession = {
-            ...partialUpdate,
-            sessionId: partialUpdate.sessionId,
-            playlist: undefined,
-        };
-
-        if (partialUpdate.playlist) {
-            const libraryTracks = partialUpdate.playlist.tracks.filter(
-                ({ type }) => type == 'LIBRARY',
-            );
-
-            const libraryIds = libraryTracks.map(({ id }) => parseInt(id));
-
-            const tidalTracks = partialUpdate.playlist.tracks.filter(
-                ({ type }) => type == 'TIDAL',
-            );
-
-            const tracks: Track[] = (
-                await Promise.all([
-                    api.getTracks(libraryIds),
-                    ...tidalTracks.map(({ id }) =>
-                        api.getTidalTrack(parseInt(id)),
-                    ),
-                ])
-            ).flat();
-
-            updatePlaybackSession.playlist = {
-                ...partialUpdate.playlist,
-                sessionPlaylistId: partialUpdate.playlist.sessionPlaylistId,
-                tracks: partialUpdate.playlist.tracks.map(
-                    ({ id, type }) =>
-                        tracks.find(
-                            (track) =>
-                                track.type === type &&
-                                trackId(track)?.toString() === id,
-                        )!,
-                ),
-            };
-
-            partialUpdate.playlist.tracks =
-                updatePlaybackSession.playlist.tracks.map(
-                    toSessionPlaylistTrack,
-                );
-
-            const matchingSession = player.playerState.playbackSessions.find(
-                (s) => s.sessionId === updatePlaybackSession.sessionId,
-            );
-
-            if (!matchingSession) {
-                throw new Error(
-                    `Could not find matching session with id ${updatePlaybackSession.sessionId}`,
-                );
-            }
-
-            updatePlaybackSession.playlist.sessionPlaylistId =
-                matchingSession.playlist.sessionPlaylistId;
-        } else {
-            delete updatePlaybackSession.playlist;
-        }
-
-        setPlayerState(
-            produce((state) => {
-                updateSessionPartial(state, updatePlaybackSession);
-            }),
-        );
-        updateSession(partialUpdate);
-    });
-})();
-
-function updatePlayers() {
+async function updatePlayers() {
     const connection = appState.connections.find(
         (c) => c.connectionId === connectionId.get(),
     );
 
-    connection?.players.forEach((player) => {
-        const type = player.type as Api.PlayerType | AppPlayerType;
-        switch (type) {
-            case AppPlayerType.SYMPHONIA:
-                registerPlayer(createSymphoniaPlayer(player.playerId));
-                break;
-            case Api.PlayerType.HOWLER:
+    if (connection?.players) {
+        await invoke('set_players', { players: connection.players });
+
+        connection.players
+            .filter((player) => player.audioOutputId === 'HOWLER')
+            .forEach((player) => {
                 registerPlayer(createHowlerPlayer(player.playerId));
-                break;
-        }
-    });
+            });
+    }
 }
 
-onMessage((data) => {
+onMessage(async (data) => {
     switch (data.type) {
-        case InboundMessageType.CONNECTIONS:
-            updatePlayers();
+        case InboundMessageType.CONNECTIONS: {
+            await updatePlayers();
             break;
+        }
+        case InboundMessageType.SESSIONS: {
+            const message = data as SessionsMessage;
+            console.debug('Received sessions message', message);
+
+            await Promise.all(
+                message.payload.map((session) => {
+                    return invoke('set_session_active_players', {
+                        sessionId: session.sessionId,
+                        players: session.activePlayers,
+                    });
+                }),
+            );
+
+            break;
+        }
     }
 });
-
-export enum AppPlayerType {
-    SYMPHONIA = 'SYMPHONIA',
-}
 
 function updateConnection(connectionId: string, name: string) {
     registerConnection({
@@ -148,12 +67,8 @@ function updateConnection(connectionId: string, name: string) {
         name,
         players: [
             {
-                type: Api.PlayerType.HOWLER,
+                audioOutputId: 'HOWLER',
                 name: 'Web Player',
-            },
-            {
-                type: AppPlayerType.SYMPHONIA as unknown as Api.PlayerType,
-                name: 'Symphonia Player',
             },
         ],
     });
