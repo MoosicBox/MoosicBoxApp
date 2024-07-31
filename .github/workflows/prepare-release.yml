@@ -258,6 +258,8 @@ jobs:
               if: ${{ matrix.release.os == 'macos-latest' }}
               working-directory: MoosicBoxApp/target/${{ matrix.release.profile }}/bundle
               run: |
+                  pwd
+                  ls
                   mv dmg/MoosicBox_${{ steps.package_version.outputs.version }}_aarch64.dmg \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.runner != 'self-hosted' && '_x64' || '' }}${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg
 
