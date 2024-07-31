@@ -106,7 +106,7 @@ jobs:
               working-directory: MoosicBoxApp/src-tauri
               shell: bash
               run: |
-                  VERSION="$(cargo metadata --format-version=1 --no-deps | jq --raw-output '.packages[0].version')"
+                  VERSION="$(cargo metadata --format-version=1 --no-deps | jq --raw-output '.packages[] | select(.name == "moosicbox_app")')"
                   echo "version: $VERSION"
                   echo "version=$VERSION" >> $GITHUB_OUTPUT
 
@@ -219,20 +219,20 @@ jobs:
 
             - name: Add moosicbox_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.deb Asset
               if: ${{ matrix.release.os == 'ubuntu-latest' && matrix.release.target == 'desktop' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
+              working-directory: MoosicBoxApp/target/${{ matrix.release.profile }}/bundle
               run: |
                   mv deb/MoosicBox_${{ steps.package_version.outputs.version }}_amd64.deb \
                       ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.deb
 
             - name: Add MoosicBox_linux_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }} Asset
               if: ${{ matrix.release.os == 'ubuntu-latest' && matrix.release.target == 'desktop' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}
+              working-directory: MoosicBoxApp/target/${{ matrix.release.profile }}
               run: |
                   mv moosicbox_app ${{ steps.assets_dir.outputs.path }}/moosicbox_linux_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}
 
             - name: Add MoosicBox_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.AppImage Asset
               if: ${{ matrix.release.os == 'ubuntu-latest' && matrix.release.target == 'desktop' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
+              working-directory: MoosicBoxApp/target/${{ matrix.release.profile }}/bundle
               run: |
                   mv appimage/MoosicBox_${{ steps.package_version.outputs.version }}_amd64.AppImage \
                       ${{ steps.assets_dir.outputs.path }}/moosicbox_amd64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.AppImage
@@ -246,31 +246,31 @@ jobs:
                       -mx=9 \
                       -tzip \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.runner != 'self-hosted' && '_x64' || '' }}_macos${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}_app.zip \
-                      MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle/macos/MoosicBox.app
+                      MoosicBoxApp/target/${{ matrix.release.profile }}/bundle/macos/MoosicBox.app
 
             - name: Add MoosicBox_macos${{ matrix.release.runner != 'self-hosted' && '_x64' || '' }}${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }} Asset
               if: ${{ matrix.release.os == 'macos-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}
+              working-directory: MoosicBoxApp/target/${{ matrix.release.profile }}
               run: |
                   mv moosicbox_app ${{ steps.assets_dir.outputs.path }}/MoosicBox_macos${{ matrix.release.runner != 'self-hosted' && '_x64' || '' }}${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}
 
             - name: Add MoosicBox${{ matrix.release.runner != 'self-hosted' && '_x64' || '' }}${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg Asset
               if: ${{ matrix.release.os == 'macos-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
+              working-directory: MoosicBoxApp/target/${{ matrix.release.profile }}/bundle
               run: |
                   mv dmg/MoosicBox_${{ steps.package_version.outputs.version }}_aarch64.dmg \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.runner != 'self-hosted' && '_x64' || '' }}${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.dmg
 
             - name: Add MoosicBox${{ matrix.release.runner != 'self-hosted' && '_x64' || '' }}${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.exe Asset
               if: ${{ matrix.release.os == 'windows-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}
+              working-directory: MoosicBoxApp/target/${{ matrix.release.profile }}
               shell: bash
               run: |
                   mv moosicbox_app.exe ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.runner != 'self-hosted' && '_x64' || '' }}${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.exe
 
             - name: Add MoosicBox_x64-setup${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.exe Asset
               if: ${{ matrix.release.os == 'windows-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
+              working-directory: MoosicBoxApp/target/${{ matrix.release.profile }}/bundle
               shell: bash
               run: |
                   mv nsis/MoosicBox_${{ steps.package_version.outputs.version }}_x64-setup.exe \
@@ -278,7 +278,7 @@ jobs:
 
             - name: Add MoosicBox_x64${{ matrix.release.profile != 'release-lto' && format('_{0}', matrix.release.profile) || '' }}.msi Asset
               if: ${{ matrix.release.os == 'windows-latest' }}
-              working-directory: MoosicBoxApp/src-tauri/target/${{ matrix.release.profile }}/bundle
+              working-directory: MoosicBoxApp/target/${{ matrix.release.profile }}/bundle
               shell: bash
               run: |
                   mv msi/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi \

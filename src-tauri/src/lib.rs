@@ -5,20 +5,25 @@ use std::{
 };
 
 use async_once::AsyncOnce;
-use atomic_float::AtomicF64;
 use lazy_static::lazy_static;
 use log::info;
+use moosicbox_app_ws::{WebsocketSender as _, WsClient, WsHandle, WsMessage};
+use moosicbox_audio_output::AudioOutputScannerError;
 use moosicbox_core::sqlite::models::{ApiSource, Id};
-use moosicbox_core::types::PlaybackQuality;
 use moosicbox_player::{
-    local::LocalPlayer, Playback, PlaybackRetryOptions, PlaybackStatus, PlaybackType, Player,
-    PlayerError, PlayerSource, Track,
+    local::LocalPlayer, Playback, PlaybackRetryOptions, PlaybackType, Player, PlayerError,
+    PlayerSource, Track,
 };
-use moosicbox_session::models::UpdateSession;
+use moosicbox_session::models::{
+    ApiPlayer, ApiUpdateSession, RegisterPlayer, UpdateSession, UpdateSessionPlaylistTrack,
+};
+use moosicbox_ws::models::{InboundPayload, OutboundPayload, UpdateSessionPayload};
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, EnumString};
-use tauri::{async_runtime::RwLock, AppHandle, Emitter, Manager};
+use tauri::{async_runtime::RwLock, AppHandle, Manager};
+use thiserror::Error;
+use tokio_util::sync::CancellationToken;
 
 #[cfg(all(feature = "cpal", feature = "android"))]
 #[no_mangle]
@@ -30,16 +35,15 @@ pub extern "C" fn JNI_OnLoad(vm: jni::JavaVM, res: *mut std::os::raw::c_void) ->
     jni::JNIVersion::V6.into()
 }
 
-#[derive(Debug, Serialize)]
-pub struct TauriPlayerError {
-    message: String,
+#[derive(Debug, Error, Serialize)]
+pub enum TauriPlayerError {
+    #[error("Unknown({0})")]
+    Unknown(String),
 }
 
 impl From<PlayerError> for TauriPlayerError {
     fn from(err: PlayerError) -> Self {
-        TauriPlayerError {
-            message: err.to_string(),
-        }
+        TauriPlayerError::Unknown(err.to_string())
     }
 }
 
@@ -47,17 +51,20 @@ static APP: OnceLock<AppHandle> = OnceLock::new();
 static LOG_LAYER: OnceLock<moosicbox_logging::free_log_client::FreeLogLayer> = OnceLock::new();
 
 static API_URL: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
+static CONNECTION_ID: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
 static SIGNATURE_TOKEN: Lazy<Arc<RwLock<Option<String>>>> =
     Lazy::new(|| Arc::new(RwLock::new(None)));
 static CLIENT_ID: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
 static API_TOKEN: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
+static WS_TOKEN: Lazy<Arc<RwLock<Option<CancellationToken>>>> =
+    Lazy::new(|| Arc::new(RwLock::new(None)));
+static WS_HANDLE: Lazy<Arc<RwLock<Option<WsHandle>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
 
 lazy_static! {
-    static ref PLAYER: AsyncOnce<Arc<RwLock<LocalPlayer>>> = AsyncOnce::new(async {
-        Arc::new(RwLock::new(
-            new_player().await.expect("Failed to create new player"),
-        ))
-    });
+    static ref PLAYERS: AsyncOnce<Arc<RwLock<HashMap<String, LocalPlayer>>>> =
+        AsyncOnce::new(async { Arc::new(RwLock::new(HashMap::new())) });
+    static ref SESSION_ACTIVE_PLAYERS: AsyncOnce<Arc<RwLock<HashMap<u64, LocalPlayer>>>> =
+        AsyncOnce::new(async { Arc::new(RwLock::new(HashMap::new())) });
 }
 
 const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOptions {
@@ -65,7 +72,7 @@ const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOption
     retry_delay: std::time::Duration::from_millis(1000),
 };
 
-async fn new_player() -> Result<LocalPlayer, TauriPlayerError> {
+async fn new_player(audio_output_id: &str) -> Result<LocalPlayer, TauriPlayerError> {
     let headers = if API_TOKEN.read().await.is_some() {
         let mut headers = HashMap::new();
         headers.insert(
@@ -92,15 +99,19 @@ async fn new_player() -> Result<LocalPlayer, TauriPlayerError> {
         None
     };
 
-    LocalPlayer::new(
+    let output = moosicbox_audio_output::output_factories()
+        .await
+        .into_iter()
+        .find(|x| x.id.as_str() == audio_output_id)
+        .ok_or_else(|| TauriPlayerError::Unknown("No outputs available".into()))?;
+
+    let player = LocalPlayer::new(
         PlayerSource::Remote {
             host: API_URL
                 .read()
                 .await
                 .clone()
-                .ok_or(TauriPlayerError {
-                    message: "API_URL not set".to_string(),
-                })?
+                .ok_or(TauriPlayerError::Unknown("API_URL not set".to_string()))?
                 .to_string(),
             headers,
             query,
@@ -108,9 +119,12 @@ async fn new_player() -> Result<LocalPlayer, TauriPlayerError> {
         Some(PlaybackType::Stream),
     )
     .await
-    .map_err(|e| TauriPlayerError {
-        message: format!("Failed to initialize new local player: {e:?}"),
-    })
+    .map_err(|e| {
+        TauriPlayerError::Unknown(format!("Failed to initialize new local player: {e:?}"))
+    })?
+    .with_output(output);
+
+    Ok(player)
 }
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
@@ -120,32 +134,18 @@ async fn show_main_window(window: tauri::Window) {
     window.get_webview_window("main").unwrap().show().unwrap();
 }
 
-#[allow(unused)]
-async fn stop_player() -> Result<(), PlayerError> {
-    log::debug!("stop_player");
-    if let Err(err) = PLAYER
-        .get()
-        .await
-        .read()
-        .await
-        .stop(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
-        .await
-    {
-        match err {
-            PlayerError::NoPlayersPlaying => {}
-            _ => return Err(err),
-        }
-    }
-    Ok(())
-}
-
 #[tauri::command]
 async fn set_connection_id(connection_id: String) -> Result<(), TauriPlayerError> {
     log::debug!("Setting CONNECTION_ID: {connection_id}");
 
+    CONNECTION_ID.write().await.replace(connection_id.clone());
     LOG_LAYER
         .get()
         .map(|x| x.set_property("connectionId", connection_id.into()));
+
+    scan_outputs()
+        .await
+        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
 
     Ok(())
 }
@@ -171,7 +171,15 @@ async fn set_client_id(client_id: String) -> Result<(), TauriPlayerError> {
     }
 
     CLIENT_ID.write().await.replace(client_id);
-    *PLAYER.get().await.write().await = new_player().await?;
+
+    init_ws_connection()
+        .await
+        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+
+    scan_outputs()
+        .await
+        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+
     Ok(())
 }
 
@@ -185,7 +193,11 @@ async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerE
     }
 
     SIGNATURE_TOKEN.write().await.replace(signature_token);
-    *PLAYER.get().await.write().await = new_player().await?;
+
+    scan_outputs()
+        .await
+        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+
     Ok(())
 }
 
@@ -199,7 +211,15 @@ async fn set_api_token(api_token: String) -> Result<(), TauriPlayerError> {
     }
 
     API_TOKEN.write().await.replace(api_token);
-    *PLAYER.get().await.write().await = new_player().await?;
+
+    init_ws_connection()
+        .await
+        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+
+    scan_outputs()
+        .await
+        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+
     Ok(())
 }
 
@@ -213,117 +233,73 @@ async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
     }
 
     API_URL.write().await.replace(api_url);
-    *PLAYER.get().await.write().await = new_player().await?;
+
+    init_ws_connection()
+        .await
+        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+
+    scan_outputs()
+        .await
+        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+
     Ok(())
 }
 
 #[tauri::command]
-async fn player_play(
-    track_ids: Vec<u64>,
-    position: Option<u16>,
-    seek: Option<f64>,
-    volume: Option<f64>,
+async fn set_session_active_players(
     session_id: u64,
-    session_playlist_id: u64,
-    quality: PlaybackQuality,
-) -> Result<PlaybackStatus, TauriPlayerError> {
-    log::debug!("player_play: {track_ids:?}");
+    players: Vec<ApiPlayer>,
+) -> Result<(), TauriPlayerError> {
+    log::debug!("Setting session active players: session_id={session_id} {players:?}");
 
-    let playback = Playback::new(
-        track_ids
-            .iter()
-            .map(|id| Track {
-                id: id.into(),
-                source: ApiSource::Library,
-                data: None,
-            })
-            .collect(),
-        position,
-        AtomicF64::new(volume.unwrap_or(1.0)),
-        quality,
-        Some(session_id),
-        Some(session_playlist_id),
-    );
+    {
+        let mut players_map = SESSION_ACTIVE_PLAYERS.get().await.write().await;
+        for player in players.iter() {
+            if let Some(existing) = players_map.get(&session_id) {
+                if existing
+                    .output
+                    .as_ref()
+                    .is_some_and(|output| output.lock().unwrap().id == player.audio_output_id)
+                {
+                    log::debug!(
+                        "Skipping existing player for session_id={session_id} audio_output_id={}",
+                        player.audio_output_id
+                    );
+                    continue;
+                }
+            }
+            players_map.insert(session_id, new_player(&player.audio_output_id).await?);
+        }
+    }
 
-    let player = PLAYER.get().await.read().await;
-
-    player.active_playback_write().replace(playback);
-
-    player
-        .play_playback(seek, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
-        .await?;
-
-    Ok(PlaybackStatus { success: true })
+    Ok(())
 }
 
 #[tauri::command]
-async fn player_pause() -> Result<PlaybackStatus, TauriPlayerError> {
-    log::debug!("player_pause");
-    PLAYER
-        .get()
-        .await
-        .read()
-        .await
-        .pause(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
-        .await?;
+async fn set_players(players: Vec<ApiPlayer>) -> Result<(), TauriPlayerError> {
+    log::debug!("Setting players: {players:?}");
 
-    Ok(PlaybackStatus { success: true })
+    {
+        let mut players_map = PLAYERS.get().await.write().await;
+        for player in players.iter() {
+            players_map.insert(
+                player.audio_output_id.clone(),
+                new_player(&player.audio_output_id).await?,
+            );
+        }
+    }
+
+    Ok(())
 }
 
-#[tauri::command]
-async fn player_resume() -> Result<PlaybackStatus, TauriPlayerError> {
-    log::debug!("player_resume");
-    PLAYER
-        .get()
-        .await
-        .read()
-        .await
-        .resume(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
-        .await?;
+async fn get_players(session_id: u64) -> Vec<LocalPlayer> {
+    let players = SESSION_ACTIVE_PLAYERS.get().await.read().await;
 
-    Ok(PlaybackStatus { success: true })
-}
-
-#[tauri::command]
-async fn player_next_track() -> Result<PlaybackStatus, TauriPlayerError> {
-    log::debug!("player_next_track");
-    PLAYER
-        .get()
-        .await
-        .read()
-        .await
-        .next_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
-        .await?;
-
-    Ok(PlaybackStatus { success: true })
-}
-
-#[tauri::command]
-async fn player_previous_track() -> Result<PlaybackStatus, TauriPlayerError> {
-    log::debug!("player_previous_track");
-    PLAYER
-        .get()
-        .await
-        .read()
-        .await
-        .previous_track(None, Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
-        .await?;
-
-    Ok(PlaybackStatus { success: true })
-}
-
-#[tauri::command]
-async fn player_stop_track() -> Result<PlaybackStatus, TauriPlayerError> {
-    log::debug!("player_stop_track");
-    PLAYER
-        .get()
-        .await
-        .read()
-        .await
-        .stop(Some(DEFAULT_PLAYBACK_RETRY_OPTIONS))
-        .await?;
-
-    Ok(PlaybackStatus { success: true })
+    players
+        .iter()
+        .filter(|(sess, _)| **sess == session_id)
+        .map(|(_, player)| player.clone())
+        .collect()
 }
 
 #[derive(Copy, Debug, Serialize, Deserialize, EnumString, AsRefStr, PartialEq, Clone)]
@@ -338,7 +314,7 @@ pub enum TrackId {
 impl From<TrackId> for Id {
     fn from(value: TrackId) -> Self {
         match value {
-            TrackId::Library(id) => Id::Number(id as u64),
+            TrackId::Library(id) => Id::Number(id),
             TrackId::Tidal(id) => Id::Number(id),
             TrackId::Qobuz(id) => Id::Number(id),
         }
@@ -352,54 +328,14 @@ pub struct TrackIdWithApiSource {
     source: ApiSource,
 }
 
-#[tauri::command]
-#[allow(clippy::too_many_arguments)]
-async fn player_update_playback(
-    play: Option<bool>,
-    stop: Option<bool>,
-    playing: Option<bool>,
-    position: Option<u16>,
-    seek: Option<f64>,
-    volume: Option<f64>,
-    tracks: Option<Vec<TrackIdWithApiSource>>,
-    quality: Option<PlaybackQuality>,
-    session_id: Option<u64>,
-    session_playlist_id: Option<u64>,
-) -> Result<PlaybackStatus, TauriPlayerError> {
-    log::debug!(
-        "player_update_playback: play={play:?} stop={stop:?} playing={playing:?} position={position:?}"
-    );
-    PLAYER
-        .get()
-        .await
-        .read()
-        .await
-        .update_playback(
-            true,
-            play,
-            stop,
-            playing,
-            position,
-            seek,
-            volume,
-            tracks.map(|tracks| {
-                tracks
-                    .iter()
-                    .map(|track| Track {
-                        id: track.id.into(),
-                        source: track.source,
-                        data: None,
-                    })
-                    .collect()
-            }),
-            quality,
-            session_id,
-            session_playlist_id,
-            Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
-        )
-        .await?;
-
-    Ok(PlaybackStatus { success: true })
+impl From<TrackIdWithApiSource> for UpdateSessionPlaylistTrack {
+    fn from(value: TrackIdWithApiSource) -> Self {
+        Self {
+            id: value.id.as_ref().to_string(),
+            r#type: value.source,
+            data: None,
+        }
+    }
 }
 
 #[tauri::command]
@@ -458,18 +394,33 @@ async fn api_proxy_post(
         builder = builder.json(&body);
     }
 
-    builder.send().await.unwrap().json().await.unwrap()
+    match builder.send().await {
+        Ok(resp) => resp.json().await.unwrap(),
+        Err(e) => {
+            log::error!("Failed to send request: {e:?}");
+            serde_json::json!({"success": false})
+        }
+    }
 }
 
-pub fn on_playback_event(update: &UpdateSession, current: &Playback) {
-    if log::log_enabled!(log::Level::Trace) {
-        log::debug!("Emitting UPDATE_SESSION: update={update:?} current={current:?}");
-    } else {
-        log::debug!("Emitting UPDATE_SESSION");
-    }
-    if let Err(err) = APP.get().unwrap().emit("UPDATE_SESSION", update) {
-        log::error!("Failed to update session: {err:?}");
-    }
+pub fn on_playback_event(update: &UpdateSession, _current: &Playback) {
+    let update = update.to_owned();
+
+    tauri::async_runtime::spawn(async move {
+        if let Some(handle) = WS_HANDLE.read().await.as_ref() {
+            log::debug!("on_playback_event: Sending update session: update={update:?}");
+            let message =
+                serde_json::to_string(&InboundPayload::UpdateSession(UpdateSessionPayload {
+                    payload: update,
+                }))
+                .map_err(|e| e.to_string())?;
+            handle.send(&message).await.map_err(|e| e.to_string())?;
+        } else {
+            log::debug!("on_playback_event: No WS_HANDLE to send update to");
+        }
+
+        Ok::<_, String>(())
+    });
 }
 
 #[cfg(feature = "aptabase")]
@@ -518,6 +469,213 @@ fn track_event(handler: &tauri::AppHandle, name: &str, props: Option<serde_json:
     handler.track_event(name, props);
 }
 
+#[derive(Debug, Error)]
+pub enum ScanOutputsError {
+    #[error(transparent)]
+    AudioOutputScanner(#[from] AudioOutputScannerError),
+    #[error(transparent)]
+    Serde(#[from] serde_json::Error),
+    #[error(transparent)]
+    TauriPlayer(#[from] TauriPlayerError),
+}
+
+async fn scan_outputs() -> Result<(), ScanOutputsError> {
+    log::debug!("scan_outputs: attempting to scan outputs");
+    {
+        if API_URL.as_ref().read().await.is_none() || CONNECTION_ID.as_ref().read().await.is_none()
+        {
+            log::debug!("scan_outputs: missing API_URL or CONNECTION_ID, not scanning");
+            return Ok(());
+        }
+    }
+
+    moosicbox_audio_output::scan_outputs().await?;
+    let outputs = moosicbox_audio_output::output_factories().await;
+    log::debug!("scan_outputs: scanned outputs={outputs:?}");
+
+    let players = outputs
+        .into_iter()
+        .map(|x| RegisterPlayer {
+            audio_output_id: x.id,
+            name: x.name,
+        })
+        .collect::<Vec<_>>();
+
+    let connection_id = CONNECTION_ID.read().await.clone().unwrap();
+
+    api_proxy_post(
+        format!("session/register-players?connectionId={connection_id}",),
+        Some(serde_json::to_value(players)?),
+        None,
+    )
+    .await;
+
+    Ok(())
+}
+
+async fn handle_playback_update(update: ApiUpdateSession) -> Result<(), HandleWsMessageError> {
+    log::debug!("handle_playback_update: {update:?}");
+    for player in get_players(update.session_id).await {
+        player
+            .update_playback(
+                true,
+                update.play,
+                update.stop,
+                update.playing,
+                update.position,
+                update.seek,
+                update.volume,
+                update.playlist.clone().map(|x| {
+                    x.tracks
+                        .iter()
+                        .map(|track| Track {
+                            id: track.track_id(),
+                            source: track.api_source(),
+                            data: None,
+                        })
+                        .collect()
+                }),
+                update.quality,
+                Some(update.session_id),
+                None,
+                false,
+                Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
+            )
+            .await?;
+    }
+    Ok(())
+}
+
+#[derive(Debug, Error)]
+pub enum HandleWsMessageError {
+    #[error(transparent)]
+    Serde(#[from] serde_json::Error),
+    #[error(transparent)]
+    Player(#[from] PlayerError),
+}
+
+async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessageError> {
+    match message {
+        OutboundPayload::SessionUpdated(payload) => handle_playback_update(payload.payload).await?,
+        OutboundPayload::SetSeek(payload) => {
+            handle_playback_update(ApiUpdateSession {
+                session_id: payload.payload.session_id,
+                play: None,
+                stop: None,
+                name: None,
+                active: None,
+                playing: None,
+                position: None,
+                seek: Some(payload.payload.seek as f64),
+                volume: None,
+                playlist: None,
+                quality: None,
+            })
+            .await?
+        }
+        _ => {}
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, Error)]
+pub enum InitWsError {
+    #[error(transparent)]
+    AudioOutputScanner(#[from] AudioOutputScannerError),
+    #[error(transparent)]
+    Serde(#[from] serde_json::Error),
+    #[error(transparent)]
+    TauriPlayer(#[from] TauriPlayerError),
+}
+
+async fn init_ws_connection() -> Result<(), InitWsError> {
+    log::debug!("init_ws_connection: attempting to connect to ws");
+    {
+        if API_URL.as_ref().read().await.is_none() {
+            log::debug!("init_ws_connection: missing API_URL");
+            return Ok(());
+        }
+    }
+    {
+        if let Some(token) = WS_TOKEN.read().await.as_ref() {
+            token.cancel();
+        }
+    }
+    let token = {
+        let token = CancellationToken::new();
+        WS_TOKEN.write().await.replace(token.clone());
+        token
+    };
+
+    let api_url = API_URL.read().await.clone().unwrap();
+
+    let (client_id, signature_token) = {
+        if let Some(client_id) = CLIENT_ID.read().await.clone() {
+            if let Some(api_token) = API_TOKEN.as_ref().read().await.clone() {
+                tokio::select! {
+                    api_token = api_proxy_post(
+                        format!("auth/signature-token?clientId={client_id}"),
+                        None,
+                        Some(serde_json::json!({"Authorization": format!("bearer {api_token}")})),
+                    ) => (Some(client_id), api_token.get("token").and_then(|x| x.as_str()).map(|x| x.to_string())),
+                    _ = token.cancelled() => {
+                        log::debug!("init_ws_connection: cancelled");
+                        return Ok(());
+                    }
+                }
+            } else {
+                (None, None)
+            }
+        } else {
+            (None, None)
+        }
+    };
+
+    let ws_url = format!("ws{}/ws", &api_url[4..]);
+    let (client, handle) = WsClient::new(ws_url);
+
+    WS_HANDLE.write().await.replace(handle.clone());
+
+    let mut client = client.with_cancellation_token(token.clone());
+
+    moosicbox_task::spawn("moosicbox_app: ws", async move {
+        let mut rx = client.start(client_id, signature_token);
+
+        while let Some(m) = tokio::select! {
+            resp = rx.recv() => {
+                resp
+            }
+            _ = token.cancelled() => {
+                None
+            }
+        } {
+            match m {
+                WsMessage::Message(bytes) => match String::from_utf8(bytes.into()) {
+                    Ok(message) => {
+                        if let Ok(message) = serde_json::from_str::<OutboundPayload>(&message) {
+                            if let Err(e) = handle_ws_message(message).await {
+                                log::error!("Failed to handle_ws_message: {e:?}");
+                            }
+                        } else {
+                            log::error!("got invalid message: {message}");
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Failed to read ws message: {e:?}");
+                    }
+                },
+                WsMessage::Ping => {
+                    log::debug!("got ping");
+                }
+            }
+        }
+        log::debug!("Exiting ws message loop");
+    });
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     if std::env::var("TOKIO_CONSOLE") == Ok("1".to_string()) {
@@ -527,8 +685,6 @@ pub fn run() {
             moosicbox_logging::init("moosicbox_app.log").expect("Failed to initialize FreeLog");
         LOG_LAYER.set(layer).expect("Failed to set LOG_LAYER");
     }
-
-    tauri::async_runtime::spawn(moosicbox_audio_output::scan_outputs());
 
     moosicbox_player::on_playback_event(crate::on_playback_event);
 
@@ -546,13 +702,8 @@ pub fn run() {
             set_signature_token,
             set_api_token,
             set_api_url,
-            player_play,
-            player_pause,
-            player_resume,
-            player_next_track,
-            player_previous_track,
-            player_stop_track,
-            player_update_playback,
+            set_players,
+            set_session_active_players,
             api_proxy_get,
             api_proxy_post,
         ]);

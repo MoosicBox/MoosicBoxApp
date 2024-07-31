@@ -11,31 +11,12 @@ version     = "0.2.0"
 crate-type = ["cdylib", "rlib", "staticlib"]
 name       = "moosicbox_lib"
 
-[profile.release]
-codegen-units = 1
-lto           = false
-opt-level     = 3
-strip         = "symbols"
-
-[profile.debug-release]
-debug    = true
-inherits = "release"
-strip    = "none"
-
-[profile.release-lto]
-inherits = "release"
-lto      = "fat"
-
-[profile.release-lto-no-panic]
-inherits = "release-lto"
-panic    = "abort"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [build-dependencies]
 tauri-build = { workspace = true, features = [] }
 
 [dependencies]
+moosicbox_app_ws = { path = "../packages/ws", default-features = false }
+
 moosicbox_audio_output = { path = "../../MoosicBoxServer/packages/audio_output", default-features = false }
 moosicbox_config = { path = "../../MoosicBoxServer/packages/config", default-features = false }
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
@@ -45,11 +26,12 @@ moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-fea
 ] }
 moosicbox_session = { path = "../../MoosicBoxServer/packages/session", default-features = false }
 moosicbox_task = { path = "../../MoosicBoxServer/packages/task", default-features = false }
+moosicbox_ws = { path = "../../MoosicBoxServer/packages/ws", default-features = false }
 
 async_once = { workspace = true }
 atomic_float = { workspace = true }
 console-subscriber = { workspace = true }
-debounce = { workspace = true }
+debounce = { workspace = true, optional = true }
 jni = { workspace = true, optional = true }
 lazy_static = { workspace = true }
 log = { workspace = true }
@@ -65,9 +47,11 @@ strum = { workspace = true }
 strum_macros = { workspace = true }
 tauri = { workspace = true, features = ["protocol-asset"] }
 thiserror = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+tokio-util = { workspace = true }
 
 [features]
-default = ["aac", "flac", "mp3", "pulseaudio-simple"]
+default = ["aac", "cpal", "flac", "mp3"]
 
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
@@ -87,4 +71,4 @@ aac  = ["moosicbox_core/aac"]
 flac = ["moosicbox_core/flac"]
 mp3  = ["moosicbox_core/mp3"]
 
-aptabase = []
+aptabase = ["dep:debounce"]
