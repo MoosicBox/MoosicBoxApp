@@ -4,6 +4,5 @@ dist/
 .astro/settings.json
 /src/*
 !/src/startup.ts
-!/src/symphonia-player.ts
 /public/
 /target/
