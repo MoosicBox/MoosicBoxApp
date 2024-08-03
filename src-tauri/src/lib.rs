@@ -4,8 +4,6 @@ use std::{
     sync::{Arc, LazyLock, OnceLock},
 };
 
-use async_once::AsyncOnce;
-use lazy_static::lazy_static;
 use log::info;
 use moosicbox_app_ws::{WebsocketSender as _, WsClient, WsHandle, WsMessage};
 use moosicbox_audio_output::AudioOutputScannerError;
@@ -74,11 +72,6 @@ static SESSION_ACTIVE_PLAYERS: LazyLock<Arc<RwLock<HashMap<u64, LocalPlayer>>>> 
     LazyLock::new(|| Arc::new(RwLock::new(HashMap::new())));
 static PLAYBACK_QUALITY: LazyLock<Arc<RwLock<Option<PlaybackQuality>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
-
-lazy_static! {
-    static ref PLAYERS: AsyncOnce<Arc<RwLock<HashMap<String, LocalPlayer>>>> =
-        AsyncOnce::new(async { Arc::new(RwLock::new(HashMap::new())) });
-}
 
 const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOptions {
     max_attempts: 10,
