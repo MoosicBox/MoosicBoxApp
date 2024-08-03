@@ -27,8 +27,6 @@ async function updatePlayers() {
     );
 
     if (connection?.players) {
-        await invoke('set_players', { players: connection.players });
-
         connection.players
             .filter((player) => player.audioOutputId === 'HOWLER')
             .forEach((player) => {
