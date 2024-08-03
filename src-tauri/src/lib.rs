@@ -415,6 +415,29 @@ async fn set_playback_quality(quality: PlaybackQuality) -> Result<(), TauriPlaye
 
     PLAYBACK_QUALITY.write().await.replace(quality);
 
+    let binding = SESSION_ACTIVE_PLAYERS.read().await;
+    let players = binding.iter();
+
+    for (session_id, player) in players {
+        player
+            .update_playback(
+                false,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+                *PLAYBACK_QUALITY.read().await,
+                Some(*session_id),
+                None,
+                false,
+                None,
+            )
+            .await?;
+    }
+
     Ok(())
 }
 
