@@ -1,7 +1,7 @@
 use std::{
     collections::HashMap,
     env,
-    sync::{Arc, OnceLock},
+    sync::{Arc, LazyLock, OnceLock},
 };
 
 use async_once::AsyncOnce;
@@ -9,7 +9,10 @@ use lazy_static::lazy_static;
 use log::info;
 use moosicbox_app_ws::{WebsocketSender as _, WsClient, WsHandle, WsMessage};
 use moosicbox_audio_output::AudioOutputScannerError;
-use moosicbox_core::sqlite::models::{ApiSource, Id};
+use moosicbox_core::{
+    sqlite::models::{ApiSource, Id},
+    types::PlaybackQuality,
+};
 use moosicbox_player::{
     local::LocalPlayer, Playback, PlaybackRetryOptions, PlaybackType, Player, PlayerError,
     PlayerSource, Track,
@@ -18,7 +21,6 @@ use moosicbox_session::models::{
     ApiPlayer, ApiUpdateSession, RegisterPlayer, UpdateSession, UpdateSessionPlaylistTrack,
 };
 use moosicbox_ws::models::{InboundPayload, OutboundPayload, UpdateSessionPayload};
-use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, EnumString};
 use tauri::{async_runtime::RwLock, AppHandle};
@@ -50,20 +52,31 @@ impl From<PlayerError> for TauriPlayerError {
 static APP: OnceLock<AppHandle> = OnceLock::new();
 static LOG_LAYER: OnceLock<moosicbox_logging::free_log_client::FreeLogLayer> = OnceLock::new();
 
-static API_URL: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
-static CONNECTION_ID: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
-static SIGNATURE_TOKEN: Lazy<Arc<RwLock<Option<String>>>> =
-    Lazy::new(|| Arc::new(RwLock::new(None)));
-static CLIENT_ID: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
-static API_TOKEN: Lazy<Arc<RwLock<Option<String>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
-static WS_TOKEN: Lazy<Arc<RwLock<Option<CancellationToken>>>> =
-    Lazy::new(|| Arc::new(RwLock::new(None)));
-static WS_HANDLE: Lazy<Arc<RwLock<Option<WsHandle>>>> = Lazy::new(|| Arc::new(RwLock::new(None)));
+type ApiPlayersMap = HashMap<u64, Vec<ApiPlayer>>;
+
+static API_URL: LazyLock<Arc<RwLock<Option<String>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
+static CONNECTION_ID: LazyLock<Arc<RwLock<Option<String>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
+static SIGNATURE_TOKEN: LazyLock<Arc<RwLock<Option<String>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
+static CLIENT_ID: LazyLock<Arc<RwLock<Option<String>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
+static API_TOKEN: LazyLock<Arc<RwLock<Option<String>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
+static WS_TOKEN: LazyLock<Arc<RwLock<Option<CancellationToken>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
+static WS_HANDLE: LazyLock<Arc<RwLock<Option<WsHandle>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
+static SESSION_ACTIVE_API_PLAYERS: LazyLock<Arc<RwLock<ApiPlayersMap>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(HashMap::new())));
+static SESSION_ACTIVE_PLAYERS: LazyLock<Arc<RwLock<HashMap<u64, LocalPlayer>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(HashMap::new())));
+static PLAYBACK_QUALITY: LazyLock<Arc<RwLock<Option<PlaybackQuality>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
 
 lazy_static! {
     static ref PLAYERS: AsyncOnce<Arc<RwLock<HashMap<String, LocalPlayer>>>> =
-        AsyncOnce::new(async { Arc::new(RwLock::new(HashMap::new())) });
-    static ref SESSION_ACTIVE_PLAYERS: AsyncOnce<Arc<RwLock<HashMap<u64, LocalPlayer>>>> =
         AsyncOnce::new(async { Arc::new(RwLock::new(HashMap::new())) });
 }
 
@@ -72,7 +85,10 @@ const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOption
     retry_delay: std::time::Duration::from_millis(1000),
 };
 
-async fn new_player(audio_output_id: &str) -> Result<LocalPlayer, TauriPlayerError> {
+async fn new_player(
+    session_id: u64,
+    audio_output_id: &str,
+) -> Result<LocalPlayer, TauriPlayerError> {
     let headers = if API_TOKEN.read().await.is_some() {
         let mut headers = HashMap::new();
         headers.insert(
@@ -124,6 +140,24 @@ async fn new_player(audio_output_id: &str) -> Result<LocalPlayer, TauriPlayerErr
     })?
     .with_output(output);
 
+    player
+        .update_playback(
+            false,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            *PLAYBACK_QUALITY.read().await,
+            Some(session_id),
+            None,
+            false,
+            None,
+        )
+        .await?;
+
     Ok(player)
 }
 
@@ -174,6 +208,8 @@ async fn set_client_id(client_id: String) -> Result<(), TauriPlayerError> {
 
     CLIENT_ID.write().await.replace(client_id);
 
+    reinit_players().await?;
+
     init_ws_connection()
         .await
         .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
@@ -196,6 +232,8 @@ async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerE
 
     SIGNATURE_TOKEN.write().await.replace(signature_token);
 
+    reinit_players().await?;
+
     scan_outputs()
         .await
         .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
@@ -213,6 +251,8 @@ async fn set_api_token(api_token: String) -> Result<(), TauriPlayerError> {
     }
 
     API_TOKEN.write().await.replace(api_token);
+
+    reinit_players().await?;
 
     init_ws_connection()
         .await
@@ -236,6 +276,8 @@ async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
 
     API_URL.write().await.replace(api_url);
 
+    reinit_players().await?;
+
     init_ws_connection()
         .await
         .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
@@ -247,6 +289,47 @@ async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
     Ok(())
 }
 
+async fn reinit_players() -> Result<(), TauriPlayerError> {
+    let mut players_map = SESSION_ACTIVE_PLAYERS.write().await;
+    let ids = {
+        players_map
+            .iter()
+            .map(|(session_id, player)| (*session_id, player.clone()))
+            .collect::<Vec<_>>()
+    };
+
+    for (session_id, player) in ids {
+        let output_id = player.output.as_ref().unwrap().lock().unwrap().id.clone();
+        let created_player = new_player(session_id, &output_id).await?;
+
+        let playback = player.active_playback.read().unwrap().as_ref().cloned();
+
+        if let Some(playback) = playback {
+            created_player
+                .update_playback(
+                    false,
+                    None,
+                    None,
+                    Some(playback.playing),
+                    Some(playback.position),
+                    Some(playback.progress),
+                    Some(playback.volume.load(std::sync::atomic::Ordering::SeqCst)),
+                    Some(playback.tracks.clone()),
+                    Some(playback.quality),
+                    Some(session_id),
+                    None,
+                    false,
+                    None,
+                )
+                .await?;
+        }
+
+        players_map.insert(session_id, created_player);
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 async fn set_session_active_players(
     session_id: u64,
@@ -254,8 +337,11 @@ async fn set_session_active_players(
 ) -> Result<(), TauriPlayerError> {
     log::debug!("Setting session active players: session_id={session_id} {players:?}");
 
+    let mut api_players_map = SESSION_ACTIVE_API_PLAYERS.write().await;
+    api_players_map.insert(session_id, players.clone());
+
     {
-        let mut players_map = SESSION_ACTIVE_PLAYERS.get().await.write().await;
+        let mut players_map = SESSION_ACTIVE_PLAYERS.write().await;
         for player in players.iter() {
             if let Some(existing) = players_map.get(&session_id) {
                 if existing
@@ -270,23 +356,9 @@ async fn set_session_active_players(
                     continue;
                 }
             }
-            players_map.insert(session_id, new_player(&player.audio_output_id).await?);
-        }
-    }
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_players(players: Vec<ApiPlayer>) -> Result<(), TauriPlayerError> {
-    log::debug!("Setting players: {players:?}");
-
-    {
-        let mut players_map = PLAYERS.get().await.write().await;
-        for player in players.iter() {
             players_map.insert(
-                player.audio_output_id.clone(),
-                new_player(&player.audio_output_id).await?,
+                session_id,
+                new_player(session_id, &player.audio_output_id).await?,
             );
         }
     }
@@ -295,7 +367,7 @@ async fn set_players(players: Vec<ApiPlayer>) -> Result<(), TauriPlayerError> {
 }
 
 async fn get_players(session_id: u64) -> Vec<LocalPlayer> {
-    let players = SESSION_ACTIVE_PLAYERS.get().await.read().await;
+    let players = SESSION_ACTIVE_PLAYERS.read().await;
 
     players
         .iter()
@@ -338,6 +410,15 @@ impl From<TrackIdWithApiSource> for UpdateSessionPlaylistTrack {
             data: None,
         }
     }
+}
+
+#[tauri::command]
+async fn set_playback_quality(quality: PlaybackQuality) -> Result<(), TauriPlayerError> {
+    log::debug!("Setting playback quality: {quality:?}");
+
+    PLAYBACK_QUALITY.write().await.replace(quality);
+
+    Ok(())
 }
 
 #[tauri::command]
@@ -397,7 +478,13 @@ async fn api_proxy_post(
     }
 
     match builder.send().await {
-        Ok(resp) => resp.json().await.unwrap(),
+        Ok(resp) => match resp.json().await {
+            Ok(resp) => resp,
+            Err(e) => {
+                log::error!("Failed to parse request response: {e:?}");
+                serde_json::json!({"success": false})
+            }
+        },
         Err(e) => {
             log::error!("Failed to send request: {e:?}");
             serde_json::json!({"success": false})
@@ -406,9 +493,11 @@ async fn api_proxy_post(
 }
 
 pub fn on_playback_event(update: &UpdateSession, _current: &Playback) {
+    log::debug!("on_playback_event: received update, spawning task to handle update={update:?}");
+
     let update = update.to_owned();
 
-    tauri::async_runtime::spawn(async move {
+    moosicbox_task::spawn("moosicbox_app: on_playback_event", async move {
         if let Some(handle) = WS_HANDLE.read().await.as_ref() {
             log::debug!("on_playback_event: Sending update session: update={update:?}");
             let message =
@@ -504,11 +593,18 @@ async fn scan_outputs() -> Result<(), ScanOutputsError> {
         .collect::<Vec<_>>();
 
     let connection_id = CONNECTION_ID.read().await.clone().unwrap();
+    let api_token = API_TOKEN.read().await.clone();
+    let client_id = CLIENT_ID
+        .read()
+        .await
+        .clone()
+        .map(|x| format!("&clientId={x}"))
+        .unwrap_or_default();
 
     api_proxy_post(
-        format!("session/register-players?connectionId={connection_id}",),
+        format!("session/register-players?connectionId={connection_id}{client_id}",),
         Some(serde_json::to_value(players)?),
-        None,
+        api_token.map(|token| serde_json::json!({"Authorization": format!("bearer {token}")})),
     )
     .await;
 
@@ -518,6 +614,9 @@ async fn scan_outputs() -> Result<(), ScanOutputsError> {
 async fn handle_playback_update(update: ApiUpdateSession) -> Result<(), HandleWsMessageError> {
     log::debug!("handle_playback_update: {update:?}");
     for player in get_players(update.session_id).await {
+        if let Some(quality) = update.quality {
+            PLAYBACK_QUALITY.write().await.replace(quality);
+        }
         player
             .update_playback(
                 true,
@@ -612,27 +711,8 @@ async fn init_ws_connection() -> Result<(), InitWsError> {
 
     let api_url = API_URL.read().await.clone().unwrap();
 
-    let (client_id, signature_token) = {
-        if let Some(client_id) = CLIENT_ID.read().await.clone() {
-            if let Some(api_token) = API_TOKEN.as_ref().read().await.clone() {
-                tokio::select! {
-                    api_token = api_proxy_post(
-                        format!("auth/signature-token?clientId={client_id}"),
-                        None,
-                        Some(serde_json::json!({"Authorization": format!("bearer {api_token}")})),
-                    ) => (Some(client_id), api_token.get("token").and_then(|x| x.as_str()).map(|x| x.to_string())),
-                    _ = token.cancelled() => {
-                        log::debug!("init_ws_connection: cancelled");
-                        return Ok(());
-                    }
-                }
-            } else {
-                (None, None)
-            }
-        } else {
-            (None, None)
-        }
-    };
+    let client_id = CLIENT_ID.read().await.clone();
+    let signature_token = SIGNATURE_TOKEN.read().await.clone();
 
     let ws_url = format!("ws{}/ws", &api_url[4..]);
     let (client, handle) = WsClient::new(ws_url);
@@ -713,7 +793,7 @@ pub fn run() {
             set_signature_token,
             set_api_token,
             set_api_url,
-            set_players,
+            set_playback_quality,
             set_session_active_players,
             api_proxy_get,
             api_proxy_post,
