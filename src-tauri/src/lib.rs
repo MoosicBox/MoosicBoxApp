@@ -234,6 +234,10 @@ async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerE
 
     reinit_players().await?;
 
+    init_ws_connection()
+        .await
+        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+
     scan_outputs()
         .await
         .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
