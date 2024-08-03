@@ -32,6 +32,7 @@ pub enum SendMessageError {
 }
 
 pub enum WsMessage {
+    TextMessage(String),
     Message(Bytes),
     Ping,
 }
@@ -79,7 +80,7 @@ impl WebsocketSender for WsHandle {
     async fn send(&self, data: &str) -> Result<(), WebsocketSendError> {
         if let Some(sender) = self.sender.read().unwrap().as_ref() {
             sender
-                .unbounded_send(WsMessage::Message(data.as_bytes().to_vec().into()))
+                .unbounded_send(WsMessage::TextMessage(data.to_string()))
                 .map_err(|e| WebsocketSendError::Unknown(e.to_string()))?;
         }
         Ok(())
@@ -93,21 +94,6 @@ impl WebsocketSender for WsHandle {
         }
         Ok(())
     }
-}
-
-pub struct TunnelResponsePacket {
-    pub request_id: usize,
-    pub packet_id: u32,
-    pub message: Message,
-    pub broadcast: bool,
-    pub except_id: Option<usize>,
-    pub only_id: Option<usize>,
-}
-
-pub struct TunnelResponseWs {
-    pub message: Message,
-    pub exclude_connection_ids: Option<Vec<usize>>,
-    pub to_connection_ids: Option<Vec<usize>>,
 }
 
 #[derive(Clone)]
@@ -145,9 +131,9 @@ impl WsClient {
         tx: Sender<WsMessage>,
         m: Message,
     ) -> Result<(), SendError<WsMessage>> {
-        log::trace!("Message from tunnel ws server: {m:?}");
+        log::trace!("Message from ws server: {m:?}");
         tx.send(match m {
-            Message::Text(m) => WsMessage::Message(Bytes::from(m.as_bytes().to_vec())),
+            Message::Text(m) => WsMessage::TextMessage(m),
             Message::Binary(m) => WsMessage::Message(Bytes::from(m)),
             Message::Ping(_m) => WsMessage::Ping,
             Message::Pong(_m) => {
@@ -186,7 +172,6 @@ impl WsClient {
 
         moosicbox_task::spawn("ws", async move {
             let mut just_retried = false;
-            log::debug!("Fetching signature token...");
 
             loop {
                 let close_token = CancellationToken::new();
@@ -196,7 +181,7 @@ impl WsClient {
                 sender_arc.write().unwrap().replace(txf.clone());
 
                 let client_id_param = if let Some(id) = &client_id {
-                    format!("?client_id={id}")
+                    format!("?clientId={id}")
                 } else {
                     "".to_string()
                 };
@@ -225,6 +210,10 @@ impl WsClient {
 
                         let ws_writer = rxf
                             .map(|message| match message {
+                                WsMessage::TextMessage(message) => {
+                                    log::debug!("Sending text packet from request",);
+                                    Ok(Message::Text(message))
+                                }
                                 WsMessage::Message(bytes) => {
                                     log::debug!("Sending packet from request",);
                                     Ok(Message::Binary(bytes.to_vec()))
@@ -328,19 +317,5 @@ impl WsClient {
         });
 
         rx
-    }
-
-    pub fn send_bytes(&self, bytes: Bytes) -> Result<(), SendBytesError> {
-        if let Some(sender) = self.sender.read().unwrap().as_ref() {
-            sender
-                .unbounded_send(WsMessage::Message(bytes))
-                .map_err(|err| SendBytesError::Unknown(format!("Failed to send_bytes: {err:?}")))?;
-        } else {
-            return Err(SendBytesError::Unknown(
-                "Failed to get sender for send_bytes".into(),
-            ));
-        }
-
-        Ok(())
     }
 }
