@@ -28,12 +28,10 @@ moosicbox_session = { path = "../../MoosicBoxServer/packages/session", default-f
 moosicbox_task = { path = "../../MoosicBoxServer/packages/task", default-features = false }
 moosicbox_ws = { path = "../../MoosicBoxServer/packages/ws", default-features = false }
 
-async_once = { workspace = true }
 atomic_float = { workspace = true }
 console-subscriber = { workspace = true }
 debounce = { workspace = true, optional = true }
 jni = { workspace = true, optional = true }
-lazy_static = { workspace = true }
 log = { workspace = true }
 ndk-context = { workspace = true, optional = true }
 once_cell = { workspace = true }
