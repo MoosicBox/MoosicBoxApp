@@ -653,6 +653,15 @@ async fn init_ws_connection() -> Result<(), InitWsError> {
             }
         } {
             match m {
+                WsMessage::TextMessage(message) => {
+                    if let Ok(message) = serde_json::from_str::<OutboundPayload>(&message) {
+                        if let Err(e) = handle_ws_message(message).await {
+                            log::error!("Failed to handle_ws_message: {e:?}");
+                        }
+                    } else {
+                        log::error!("got invalid message: {message}");
+                    }
+                }
                 WsMessage::Message(bytes) => match String::from_utf8(bytes.into()) {
                     Ok(message) => {
                         if let Ok(message) = serde_json::from_str::<OutboundPayload>(&message) {
