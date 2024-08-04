@@ -43,7 +43,7 @@ jobs:
                       --branch add-skip-git-dependencies
 
             - name: Upgrade
-              working-directory: MoosicBoxApp/src-tauri
+              working-directory: MoosicBoxApp
               id: upgrade
               shell: bash
               run: |
@@ -78,14 +78,14 @@ jobs:
 
             - name: Build
               if: ${{ steps.upgrade.outputs.upgraded == 'true'}}
-              working-directory: MoosicBoxApp/src-tauri
+              working-directory: MoosicBoxApp
               shell: bash
               run: |
                   cargo build
 
             - name: Test
               if: ${{ steps.upgrade.outputs.upgraded == 'true'}}
-              working-directory: MoosicBoxApp/src-tauri
+              working-directory: MoosicBoxApp
               shell: bash
               run: |
                   cargo test
