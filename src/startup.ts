@@ -12,14 +12,17 @@ import {
     connectionName,
     onConnect,
     onMessage,
-    registerConnection,
+    wsService,
 } from '~/services/ws';
+import { override } from './ws';
 
 init({
     logWriterApiUrl: 'https://logs.moosicbox.com',
     shimConsole: true,
     logLevel: 'WARN',
 });
+
+override();
 
 async function updatePlayers() {
     const connection = appState.connections.find(
@@ -60,7 +63,7 @@ onMessage(async (data) => {
 });
 
 function updateConnection(connectionId: string, name: string) {
-    registerConnection({
+    wsService.registerConnection({
         connectionId,
         name,
         players: [

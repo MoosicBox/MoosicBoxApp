@@ -150,8 +150,9 @@ impl WsClient {
         &mut self,
         client_id: Option<String>,
         signature_token: Option<String>,
+        on_start: impl Fn() + Send + 'static,
     ) -> Receiver<WsMessage> {
-        self.start_handler(client_id, signature_token, Self::message_handler)
+        self.start_handler(client_id, signature_token, Self::message_handler, on_start)
     }
 
     fn start_handler<T, O>(
@@ -159,6 +160,7 @@ impl WsClient {
         client_id: Option<String>,
         signature_token: Option<String>,
         handler: fn(sender: Sender<T>, m: Message) -> O,
+        on_start: impl Fn() + Send + 'static,
     ) -> Receiver<T>
     where
         T: Send + 'static,
@@ -200,6 +202,7 @@ impl WsClient {
                 ) {
                     Ok((ws_stream, _)) => {
                         log::debug!("WebSocket handshake has been successfully completed");
+                        on_start();
 
                         if just_retried {
                             log::info!("WebSocket successfully reconnected");
