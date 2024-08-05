@@ -5,10 +5,10 @@ use std::{
 };
 
 use log::info;
-use moosicbox_app_ws::{WebsocketSender as _, WsClient, WsHandle, WsMessage};
+use moosicbox_app_ws::{WebsocketSendError, WebsocketSender as _, WsClient, WsHandle, WsMessage};
 use moosicbox_audio_output::AudioOutputScannerError;
 use moosicbox_core::{
-    sqlite::models::{ApiSource, Id},
+    sqlite::models::{ApiSource, Id, ToApi},
     types::PlaybackQuality,
 };
 use moosicbox_player::{
@@ -18,10 +18,12 @@ use moosicbox_player::{
 use moosicbox_session::models::{
     ApiPlayer, ApiUpdateSession, RegisterPlayer, UpdateSession, UpdateSessionPlaylistTrack,
 };
-use moosicbox_ws::models::{InboundPayload, OutboundPayload, UpdateSessionPayload};
+use moosicbox_ws::models::{
+    EmptyPayload, InboundPayload, OutboundPayload, SessionUpdatedPayload, UpdateSessionPayload,
+};
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, EnumString};
-use tauri::{async_runtime::RwLock, AppHandle};
+use tauri::{async_runtime::RwLock, AppHandle, Emitter};
 use thiserror::Error;
 use tokio_util::sync::CancellationToken;
 
@@ -72,6 +74,8 @@ static SESSION_ACTIVE_PLAYERS: LazyLock<Arc<RwLock<HashMap<u64, LocalPlayer>>>> 
     LazyLock::new(|| Arc::new(RwLock::new(HashMap::new())));
 static PLAYBACK_QUALITY: LazyLock<Arc<RwLock<Option<PlaybackQuality>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
+static WS_MESSAGE_BUFFER: LazyLock<Arc<RwLock<Vec<InboundPayload>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(vec![])));
 
 const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOptions {
     max_attempts: 10,
@@ -441,6 +445,86 @@ async fn set_playback_quality(quality: PlaybackQuality) -> Result<(), TauriPlaye
     Ok(())
 }
 
+#[derive(Debug, Error)]
+pub enum SendWsMessageError {
+    #[error(transparent)]
+    WebsocketSend(#[from] WebsocketSendError),
+    #[error(transparent)]
+    HandleWsMessage(#[from] HandleWsMessageError),
+}
+
+async fn send_ws_message(
+    handle: &WsHandle,
+    message: InboundPayload,
+    handle_update: bool,
+) -> Result<(), SendWsMessageError> {
+    if handle_update {
+        match &message {
+            InboundPayload::UpdateSession(payload) => {
+                handle_playback_update(&payload.payload.clone().to_api()).await?;
+            }
+            InboundPayload::SetSeek(payload) => {
+                handle_playback_update(&ApiUpdateSession {
+                    session_id: payload.payload.session_id,
+                    play: None,
+                    stop: None,
+                    name: None,
+                    active: None,
+                    playing: None,
+                    position: None,
+                    seek: Some(payload.payload.seek as f64),
+                    volume: None,
+                    playlist: None,
+                    quality: None,
+                })
+                .await?;
+            }
+            _ => {}
+        }
+    }
+
+    handle
+        .send(&serde_json::to_string(&message).unwrap())
+        .await?;
+
+    Ok(())
+}
+
+async fn flush_ws_message_buffer() -> Result<(), SendWsMessageError> {
+    if let Some(handle) = WS_HANDLE.read().await.as_ref() {
+        let mut binding = WS_MESSAGE_BUFFER.write().await;
+        log::debug!(
+            "flush_ws_message_buffer: Flushing {} ws messages from buffer",
+            binding.len()
+        );
+
+        let messages = binding.drain(..);
+
+        for message in messages {
+            send_ws_message(handle, message, true).await?;
+        }
+    } else {
+        log::debug!("flush_ws_message_buffer: No WS_HANDLE");
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+async fn propagate_ws_message(message: InboundPayload) -> Result<(), TauriPlayerError> {
+    log::debug!("Received ws message from frontend: {message}");
+
+    if let Some(handle) = WS_HANDLE.read().await.as_ref() {
+        send_ws_message(handle, message, true)
+            .await
+            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+    } else {
+        WS_MESSAGE_BUFFER.write().await.push(message);
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 async fn api_proxy_get(url: String, headers: Option<serde_json::Value>) -> serde_json::Value {
     let url = format!(
@@ -520,12 +604,24 @@ pub fn on_playback_event(update: &UpdateSession, _current: &Playback) {
     moosicbox_task::spawn("moosicbox_app: on_playback_event", async move {
         if let Some(handle) = WS_HANDLE.read().await.as_ref() {
             log::debug!("on_playback_event: Sending update session: update={update:?}");
-            let message =
-                serde_json::to_string(&InboundPayload::UpdateSession(UpdateSessionPayload {
-                    payload: update,
-                }))
+
+            APP.get()
+                .unwrap()
+                .emit(
+                    "ws-message",
+                    OutboundPayload::SessionUpdated(SessionUpdatedPayload {
+                        payload: update.clone().to_api(),
+                    }),
+                )
                 .map_err(|e| e.to_string())?;
-            handle.send(&message).await.map_err(|e| e.to_string())?;
+
+            send_ws_message(
+                handle,
+                InboundPayload::UpdateSession(UpdateSessionPayload { payload: update }),
+                false,
+            )
+            .await
+            .map_err(|e| e.to_string())?;
         } else {
             log::debug!("on_playback_event: No WS_HANDLE to send update to");
         }
@@ -631,7 +727,7 @@ async fn scan_outputs() -> Result<(), ScanOutputsError> {
     Ok(())
 }
 
-async fn handle_playback_update(update: ApiUpdateSession) -> Result<(), HandleWsMessageError> {
+async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleWsMessageError> {
     log::debug!("handle_playback_update: {update:?}");
     for player in get_players(update.session_id).await {
         if let Some(quality) = update.quality {
@@ -673,13 +769,17 @@ pub enum HandleWsMessageError {
     Serde(#[from] serde_json::Error),
     #[error(transparent)]
     Player(#[from] PlayerError),
+    #[error(transparent)]
+    Emit(#[from] tauri::Error),
 }
 
 async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessageError> {
-    match message {
-        OutboundPayload::SessionUpdated(payload) => handle_playback_update(payload.payload).await?,
+    match &message {
+        OutboundPayload::SessionUpdated(payload) => {
+            handle_playback_update(&payload.payload).await?
+        }
         OutboundPayload::SetSeek(payload) => {
-            handle_playback_update(ApiUpdateSession {
+            handle_playback_update(&ApiUpdateSession {
                 session_id: payload.payload.session_id,
                 play: None,
                 stop: None,
@@ -694,8 +794,15 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
             })
             .await?
         }
+        OutboundPayload::ConnectionId(payload) => {
+            APP.get()
+                .unwrap()
+                .emit("on-connect", payload.connection_id.to_owned())?;
+        }
         _ => {}
     }
+
+    APP.get().unwrap().emit("ws-message", message)?;
 
     Ok(())
 }
@@ -742,7 +849,28 @@ async fn init_ws_connection() -> Result<(), InitWsError> {
     let mut client = client.with_cancellation_token(token.clone());
 
     moosicbox_task::spawn("moosicbox_app: ws", async move {
-        let mut rx = client.start(client_id, signature_token);
+        let mut rx = client.start(client_id, signature_token, {
+            let handle = handle.clone();
+            move || {
+                tauri::async_runtime::spawn({
+                    let handle = handle.clone();
+                    async move {
+                        if let Err(e) = send_ws_message(
+                            &handle,
+                            InboundPayload::GetConnectionId(EmptyPayload {}),
+                            true,
+                        )
+                        .await
+                        {
+                            log::error!("Failed to send GetConnectionId WS message: {e:?}");
+                        }
+                        if let Err(e) = flush_ws_message_buffer().await {
+                            log::error!("Failed to flush WS message buffer: {e:?}");
+                        }
+                    }
+                });
+            }
+        });
 
         while let Some(m) = tokio::select! {
             resp = rx.recv() => {
@@ -815,6 +943,7 @@ pub fn run() {
             set_api_url,
             set_playback_quality,
             set_session_active_players,
+            propagate_ws_message,
             api_proxy_get,
             api_proxy_post,
         ]);
