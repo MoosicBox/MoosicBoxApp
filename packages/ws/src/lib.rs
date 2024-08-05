@@ -187,8 +187,12 @@ impl WsClient {
                 } else {
                     "".to_string()
                 };
-                let signature_token_param = if let Some(token) = &signature_token {
-                    format!("&signature={token}")
+                let signature_token_param = if client_id.is_some() {
+                    if let Some(token) = &signature_token {
+                        format!("&signature={token}")
+                    } else {
+                        "".to_string()
+                    }
                 } else {
                     "".to_string()
                 };
