@@ -753,7 +753,7 @@ async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleW
                         .map(|track| Track {
                             id: track.track_id(),
                             source: track.api_source(),
-                            data: None,
+                            data: track.data(),
                         })
                         .collect()
                 }),
