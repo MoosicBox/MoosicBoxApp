@@ -3115,6 +3115,7 @@ dependencies = [
  "log",
  "moosicbox_app_ws",
  "moosicbox_audio_output",
+ "moosicbox_audio_zone",
  "moosicbox_config",
  "moosicbox_core",
  "moosicbox_logging",
@@ -3240,6 +3241,25 @@ dependencies = [
  "moosicbox_task",
  "rb",
  "symphonia",
+ "thiserror",
+ "tokio",
+ "tokio-util",
+]
+
+[[package]]
+name = "moosicbox_audio_zone"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "bytes",
+ "log",
+ "moosicbox_assert",
+ "moosicbox_audio_output",
+ "moosicbox_core",
+ "moosicbox_database",
+ "moosicbox_json_utils",
+ "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "tokio-util",
@@ -3486,6 +3506,7 @@ dependencies = [
  "moosicbox_audio_decoder",
  "moosicbox_audio_encoder",
  "moosicbox_audio_output",
+ "moosicbox_audio_zone",
  "moosicbox_core",
  "moosicbox_database",
  "moosicbox_json_utils",
@@ -3546,6 +3567,7 @@ dependencies = [
  "async-trait",
  "log",
  "moosicbox_assert",
+ "moosicbox_audio_zone",
  "moosicbox_core",
  "moosicbox_database",
  "moosicbox_json_utils",
@@ -3588,8 +3610,10 @@ name = "moosicbox_ws"
 version = "0.1.0"
 dependencies = [
  "moosicbox_assert",
+ "moosicbox_audio_zone",
  "moosicbox_core",
  "moosicbox_database",
+ "moosicbox_json_utils",
  "moosicbox_session",
  "rusqlite",
  "serde",

@@ -7,8 +7,9 @@ use std::{
 use log::info;
 use moosicbox_app_ws::{WebsocketSendError, WebsocketSender as _, WsClient, WsHandle, WsMessage};
 use moosicbox_audio_output::AudioOutputScannerError;
+use moosicbox_audio_zone::models::ApiPlayer;
 use moosicbox_core::{
-    sqlite::models::{ApiSource, Id, ToApi},
+    sqlite::models::{ApiSource, Id},
     types::PlaybackQuality,
 };
 use moosicbox_player::{
@@ -16,7 +17,7 @@ use moosicbox_player::{
     PlayerSource, Track,
 };
 use moosicbox_session::models::{
-    ApiPlayer, ApiUpdateSession, RegisterPlayer, UpdateSession, UpdateSessionPlaylistTrack,
+    ApiUpdateSession, RegisterPlayer, UpdateSession, UpdateSessionPlaylistTrack,
 };
 use moosicbox_ws::models::{
     EmptyPayload, InboundPayload, OutboundPayload, SessionUpdatedPayload, UpdateSessionPayload,
@@ -149,6 +150,7 @@ async fn new_player(
             None,
             *PLAYBACK_QUALITY.read().await,
             Some(session_id),
+            None,
             None,
             false,
             None,
@@ -319,6 +321,7 @@ async fn reinit_players() -> Result<(), TauriPlayerError> {
                     Some(playback.quality),
                     Some(session_id),
                     None,
+                    None,
                     false,
                     None,
                 )
@@ -436,6 +439,7 @@ async fn set_playback_quality(quality: PlaybackQuality) -> Result<(), TauriPlaye
                 *PLAYBACK_QUALITY.read().await,
                 Some(*session_id),
                 None,
+                None,
                 false,
                 None,
             )
@@ -461,7 +465,7 @@ async fn send_ws_message(
     if handle_update {
         match &message {
             InboundPayload::UpdateSession(payload) => {
-                handle_playback_update(&payload.payload.clone().to_api()).await?;
+                handle_playback_update(&payload.payload.clone().into()).await?;
             }
             InboundPayload::SetSeek(payload) => {
                 handle_playback_update(&ApiUpdateSession {
@@ -474,6 +478,7 @@ async fn send_ws_message(
                     position: None,
                     seek: Some(payload.payload.seek as f64),
                     volume: None,
+                    audio_zone_id: None,
                     playlist: None,
                     quality: None,
                 })
@@ -610,7 +615,7 @@ pub fn on_playback_event(update: &UpdateSession, _current: &Playback) {
                 .emit(
                     "ws-message",
                     OutboundPayload::SessionUpdated(SessionUpdatedPayload {
-                        payload: update.clone().to_api(),
+                        payload: update.clone().into(),
                     }),
                 )
                 .map_err(|e| e.to_string())?;
@@ -755,6 +760,7 @@ async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleW
                 update.quality,
                 Some(update.session_id),
                 None,
+                update.audio_zone_id,
                 false,
                 Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
             )
@@ -789,6 +795,7 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
                 position: None,
                 seek: Some(payload.payload.seek as f64),
                 volume: None,
+                audio_zone_id: None,
                 playlist: None,
                 quality: None,
             })
