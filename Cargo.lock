@@ -3119,6 +3119,7 @@ dependencies = [
  "moosicbox_config",
  "moosicbox_core",
  "moosicbox_logging",
+ "moosicbox_paging",
  "moosicbox_player",
  "moosicbox_session",
  "moosicbox_task",

@@ -4,7 +4,11 @@ import { invoke } from '@tauri-apps/api/core';
 import { appState, onStartupFirst } from '~/services/app';
 import { Api, ApiType, api, connection } from '~/services/api';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
-import { registerPlayer } from '~/services/player';
+import {
+    onCurrentAudioZoneIdChanged,
+    playerState,
+    registerPlayer,
+} from '~/services/player';
 import {
     InboundMessageType,
     connectionId,
@@ -59,6 +63,10 @@ function updateConnection(connectionId: string, name: string) {
     });
 }
 
+onCurrentAudioZoneIdChanged(async (audioZoneId) => {
+    await invoke('set_current_audio_zone_id', { audioZoneId });
+});
+
 onConnect(() => {
     updateConnection(connectionId.get()!, connectionName.get());
 });
@@ -93,6 +101,14 @@ onStartupFirst(async () => {
 
     setProperty('connectionId', connectionId.get());
     setProperty('connectionName', connectionName.get());
+
+    let setCurrentAudioZoneId = Promise.resolve();
+
+    if (typeof playerState.currentAudioZone?.id === 'number') {
+        setCurrentAudioZoneId = invoke<void>('set_current_audio_zone_id', {
+            audioZoneId: playerState.currentAudioZone.id,
+        });
+    }
 
     await Promise.all([
         invoke('set_connection_id', { connectionId: connectionId.get() }),

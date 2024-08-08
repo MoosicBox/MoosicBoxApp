@@ -22,6 +22,7 @@ moosicbox_audio_zone = { path = "../../MoosicBoxServer/packages/audio_zone", def
 moosicbox_config = { path = "../../MoosicBoxServer/packages/config", default-features = false }
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
 moosicbox_logging = { path = "../../MoosicBoxServer/packages/logging", default-features = false }
+moosicbox_paging = { path = "../../MoosicBoxServer/packages/paging", default-features = false }
 moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-features = false, features = [
     "local",
 ] }
