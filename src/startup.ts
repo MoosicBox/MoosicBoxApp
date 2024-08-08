@@ -7,7 +7,6 @@ import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
 import { registerPlayer } from '~/services/player';
 import {
     InboundMessageType,
-    SessionsMessage,
     connectionId,
     connectionName,
     onConnect,
@@ -42,21 +41,6 @@ onMessage(async (data) => {
     switch (data.type) {
         case InboundMessageType.CONNECTIONS: {
             await updatePlayers();
-            break;
-        }
-        case InboundMessageType.SESSIONS: {
-            const message = data as SessionsMessage;
-            console.debug('Received sessions message', message);
-
-            await Promise.all(
-                message.payload.map((session) => {
-                    return invoke('set_session_active_players', {
-                        sessionId: session.sessionId,
-                        players: session.activePlayers,
-                    });
-                }),
-            );
-
             break;
         }
     }
