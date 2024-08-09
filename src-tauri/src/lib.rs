@@ -24,6 +24,7 @@ use moosicbox_session::models::{
 use moosicbox_ws::models::{
     EmptyPayload, InboundPayload, OutboundPayload, SessionUpdatedPayload, UpdateSessionPayload,
 };
+use reqwest::RequestBuilder;
 use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, EnumString};
 use tauri::{async_runtime::RwLock, AppHandle, Emitter};
@@ -40,7 +41,7 @@ pub extern "C" fn JNI_OnLoad(vm: jni::JavaVM, res: *mut std::os::raw::c_void) ->
     jni::JNIVersion::V6.into()
 }
 
-#[derive(Debug, Error, Serialize)]
+#[derive(Debug, Error, Serialize, Deserialize)]
 pub enum TauriPlayerError {
     #[error("Unknown({0})")]
     Unknown(String),
@@ -601,8 +602,52 @@ async fn propagate_ws_message(message: InboundPayload) -> Result<(), TauriPlayer
     Ok(())
 }
 
+async fn send_request_builder(
+    builder: RequestBuilder,
+) -> Result<serde_json::Value, TauriPlayerError> {
+    log::debug!("send_request_builder: Sending request");
+    match builder.send().await {
+        Ok(resp) => {
+            log::debug!("send_request_builder: status_code={}", resp.status());
+            let success = resp.status().is_success();
+            match resp.text().await {
+                Ok(text) => {
+                    if success {
+                        match serde_json::from_str(&text) {
+                            Ok(resp) => {
+                                log::debug!("Got post response: {resp:?}");
+                                Ok(resp)
+                            }
+                            Err(e) => {
+                                log::error!("Failed to parse request response: {e:?} ({text:?})");
+                                Err(TauriPlayerError::Unknown(format!("Json failed: {e:?}")))
+                            }
+                        }
+                    } else {
+                        log::error!("Failure response: ({text:?})");
+                        Err(TauriPlayerError::Unknown(format!(
+                            "Request failed: {text:?}"
+                        )))
+                    }
+                }
+                Err(e) => {
+                    log::error!("Failed to parse request response: {e:?}");
+                    Err(TauriPlayerError::Unknown(format!("Json failed: {e:?}")))
+                }
+            }
+        }
+        Err(e) => {
+            log::error!("Failed to send request: {e:?}");
+            Err(TauriPlayerError::Unknown(format!("Json failed: {e:?}")))
+        }
+    }
+}
+
 #[tauri::command]
-async fn api_proxy_get(url: String, headers: Option<serde_json::Value>) -> serde_json::Value {
+async fn api_proxy_get(
+    url: String,
+    headers: Option<serde_json::Value>,
+) -> Result<serde_json::Value, TauriPlayerError> {
     let url = format!(
         "{}/{url}",
         API_URL.read().await.clone().expect("API_URL not set")
@@ -618,14 +663,7 @@ async fn api_proxy_get(url: String, headers: Option<serde_json::Value>) -> serde
         }
     }
 
-    let resp = builder.send().await.expect("Failed to get response");
-
-    match resp.json().await {
-        Ok(json) => json,
-        Err(err) => {
-            panic!("Json failed: {err:?}");
-        }
-    }
+    send_request_builder(builder).await
 }
 
 #[tauri::command]
@@ -633,7 +671,7 @@ async fn api_proxy_post(
     url: String,
     body: Option<serde_json::Value>,
     headers: Option<serde_json::Value>,
-) -> serde_json::Value {
+) -> Result<serde_json::Value, TauriPlayerError> {
     let url = format!(
         "{}/{url}",
         API_URL
@@ -657,19 +695,7 @@ async fn api_proxy_post(
         builder = builder.json(&body);
     }
 
-    match builder.send().await {
-        Ok(resp) => match resp.json().await {
-            Ok(resp) => resp,
-            Err(e) => {
-                log::error!("Failed to parse request response: {e:?}");
-                serde_json::json!({"success": false})
-            }
-        },
-        Err(e) => {
-            log::error!("Failed to send request: {e:?}");
-            serde_json::json!({"success": false})
-        }
-    }
+    send_request_builder(builder).await
 }
 
 pub fn on_playback_event(update: &UpdateSession, _current: &Playback) {
@@ -763,10 +789,6 @@ pub enum ScanOutputsError {
 }
 
 async fn scan_outputs() -> Result<(), ScanOutputsError> {
-    if !moosicbox_audio_output::output_factories().await.is_empty() {
-        return Ok(());
-    }
-
     log::debug!("scan_outputs: attempting to scan outputs");
     {
         if API_URL.as_ref().read().await.is_none() || CONNECTION_ID.as_ref().read().await.is_none()
@@ -776,7 +798,10 @@ async fn scan_outputs() -> Result<(), ScanOutputsError> {
         }
     }
 
-    moosicbox_audio_output::scan_outputs().await?;
+    if moosicbox_audio_output::output_factories().await.is_empty() {
+        moosicbox_audio_output::scan_outputs().await?;
+    }
+
     let outputs = moosicbox_audio_output::output_factories().await;
     log::debug!("scan_outputs: scanned outputs={outputs:?}");
 
@@ -802,7 +827,7 @@ async fn scan_outputs() -> Result<(), ScanOutputsError> {
         Some(serde_json::to_value(players)?),
         api_token.map(|token| serde_json::json!({"Authorization": format!("bearer {token}")})),
     )
-    .await;
+    .await?;
 
     let players: Vec<ApiPlayer> = serde_json::from_value(response)?;
 
@@ -836,7 +861,7 @@ async fn fetch_audio_zones() -> Result<(), FetchAudioZonesError> {
         format!("audio-zone{client_id}",),
         api_token.map(|token| serde_json::json!({"Authorization": format!("bearer {token}")})),
     )
-    .await;
+    .await?;
 
     log::debug!("fetch_audio_zones: audio_zones={response}");
 
