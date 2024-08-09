@@ -1,6 +1,6 @@
 // @refresh reload
 import { init, setProperty } from '@free-log/node-client';
-import { invoke } from '@tauri-apps/api/core';
+import { invoke, InvokeArgs } from '@tauri-apps/api/core';
 import { appState, onStartupFirst } from '~/services/app';
 import { Api, ApiType, api, connection } from '~/services/api';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
@@ -26,6 +26,16 @@ init({
 });
 
 override();
+
+function tryInvoke(event: string, payload?: InvokeArgs) {
+    (async () => {
+        try {
+            invoke(event, payload);
+        } catch (e) {
+            console.error(`Failed to invoke '${event}':`, e);
+        }
+    })();
+}
 
 async function updatePlayers() {
     const connection = appState.connections.find(
@@ -63,10 +73,8 @@ function updateConnection(connectionId: string, name: string) {
     });
 }
 
-onCurrentAudioZoneIdChanged(async (audioZoneId) => {
-    try {
-        await invoke('set_current_audio_zone_id', { audioZoneId });
-    } catch {}
+onCurrentAudioZoneIdChanged((audioZoneId) => {
+    tryInvoke('set_current_audio_zone_id', { audioZoneId });
 });
 
 onConnect(() => {
@@ -97,104 +105,54 @@ connection.listen((con, prev) => {
 });
 
 onStartupFirst(async () => {
-    try {
-        await invoke('show_main_window');
-    } catch {}
+    tryInvoke('show_main_window');
 
     setProperty('connectionId', connectionId.get());
     setProperty('connectionName', connectionName.get());
 
-    let setCurrentAudioZoneId = Promise.resolve();
-
     if (typeof playerState.currentAudioZone?.id === 'number') {
-        try {
-            setCurrentAudioZoneId = invoke<void>('set_current_audio_zone_id', {
-                audioZoneId: playerState.currentAudioZone.id,
-            });
-        } catch {}
+        tryInvoke('set_current_audio_zone_id', {
+            audioZoneId: playerState.currentAudioZone.id,
+        });
     }
 
-    try {
-        await Promise.all([
-            invoke('set_connection_id', { connectionId: connectionId.get() }),
-            invoke('set_connection_name', {
-                connectionName: connectionName.get(),
-            }),
-        ]);
-    } catch {}
+    tryInvoke('set_connection_id', { connectionId: connectionId.get() });
+    tryInvoke('set_connection_name', {
+        connectionName: connectionName.get(),
+    });
 
     const con = connection.get();
     if (con) {
         updateApi(con.apiUrl.toLowerCase().startsWith('https://'));
-        try {
-            await invoke('set_api_url', { apiUrl: con.apiUrl });
-        } catch (e) {
-            console.error('Failed to set_api_url:', e);
-        }
+        tryInvoke('set_api_url', { apiUrl: con.apiUrl });
         if (con.clientId) {
-            try {
-                await invoke('set_client_id', { clientId: con.clientId });
-            } catch (e) {
-                console.error('Failed to set_client_id:', e);
-            }
+            tryInvoke('set_client_id', { clientId: con.clientId });
         }
         if (Api.signatureToken()) {
-            try {
-                await invoke('set_signature_token', {
-                    signatureToken: Api.signatureToken(),
-                });
-            } catch (e) {
-                console.error('Failed to set_signature_token:', e);
-            }
+            tryInvoke('set_signature_token', {
+                signatureToken: Api.signatureToken(),
+            });
         }
         if (con.token) {
-            try {
-                await invoke('set_api_token', { apiToken: con.token });
-            } catch (e) {
-                console.error('Failed to set_api_token:', e);
-            }
+            tryInvoke('set_api_token', { apiToken: con.token });
         }
     }
 
     connection.listen(async (con) => {
         if (!con) return;
-        try {
-            await invoke('set_api_url', { apiUrl: con.apiUrl });
-        } catch (e) {
-            console.error('Failed to set_api_url:', e);
-        }
-        try {
-            await invoke('set_api_token', { apiToken: con.token });
-        } catch (e) {
-            console.error('Failed to set_api_token:', e);
-        }
-        try {
-            await invoke('set_client_id', { clientId: con.clientId });
-        } catch (e) {
-            console.error('Failed to set_client_id:', e);
-        }
+        tryInvoke('set_api_url', { apiUrl: con.apiUrl });
+        tryInvoke('set_api_token', { apiToken: con.token });
+        tryInvoke('set_client_id', { clientId: con.clientId });
     });
     connectionId.listen(async (connectionId) => {
         setProperty('connectionId', connectionId);
-        try {
-            await invoke('set_connection_id', { connectionId });
-        } catch (e) {
-            console.error('Failed to set_connection_id:', e);
-        }
+        tryInvoke('set_connection_id', { connectionId });
     });
     connectionName.listen(async (connectionName) => {
         setProperty('connectionName', connectionName);
-        try {
-            await invoke('set_connection_name', { connectionName });
-        } catch (e) {
-            console.error('Failed to set_connection_name:', e);
-        }
+        tryInvoke('set_connection_name', { connectionName });
     });
     Api.onSignatureTokenUpdated(async (token) => {
-        try {
-            await invoke('set_signature_token', { signatureToken: token });
-        } catch (e) {
-            console.error('Failed to set_signature_token:', e);
-        }
+        tryInvoke('set_signature_token', { signatureToken: token });
     });
 });
