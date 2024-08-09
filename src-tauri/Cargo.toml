@@ -51,13 +51,20 @@ tokio = { workspace = true, features = ["macros"] }
 tokio-util = { workspace = true }
 
 [features]
-default = ["aac", "cpal", "flac", "mp3"]
+default = ["all-encoders", "cpal"]
 
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
 
 android = ["dep:jni", "dep:ndk-context"]
+
+all-encoders = ["aac", "flac", "mp3"]
+
+# Encoders
+aac  = ["moosicbox_core/aac"]
+flac = ["moosicbox_core/flac"]
+mp3  = ["moosicbox_core/mp3"]
 
 # Player audio outputs
 asio                = ["moosicbox_player/asio"]
@@ -67,8 +74,6 @@ pulseaudio          = ["moosicbox_player/pulseaudio"]
 pulseaudio-simple   = ["moosicbox_player/pulseaudio-simple"]
 pulseaudio-standard = ["moosicbox_player/pulseaudio-standard"]
 
-aac  = ["moosicbox_core/aac"]
-flac = ["moosicbox_core/flac"]
-mp3  = ["moosicbox_core/mp3"]
-
 aptabase = ["dep:debounce"]
+
+devtools = ["tauri/devtools"]
