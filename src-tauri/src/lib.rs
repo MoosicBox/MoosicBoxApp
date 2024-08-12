@@ -7,7 +7,7 @@ use std::{
 use log::info;
 use moosicbox_app_ws::{WebsocketSendError, WebsocketSender as _, WsClient, WsHandle, WsMessage};
 use moosicbox_audio_output::AudioOutputScannerError;
-use moosicbox_audio_zone::models::{ApiAudioZone, ApiPlayer};
+use moosicbox_audio_zone::models::{ApiAudioZoneWithSession, ApiPlayer};
 use moosicbox_core::{
     sqlite::models::{ApiSource, Id},
     types::PlaybackQuality,
@@ -18,8 +18,8 @@ use moosicbox_player::{
     PlayerSource, Track,
 };
 use moosicbox_session::models::{
-    ApiConnection, ApiSession, ApiUpdateSession, RegisterPlayer, UpdateSession,
-    UpdateSessionPlaylistTrack,
+    ApiConnection, ApiSession, ApiUpdateSession, ApiUpdateSessionPlaylist, RegisterPlayer,
+    UpdateSession, UpdateSessionPlaylistTrack,
 };
 use moosicbox_ws::models::{
     EmptyPayload, InboundPayload, OutboundPayload, SessionUpdatedPayload, UpdateSessionPayload,
@@ -58,6 +58,12 @@ static LOG_LAYER: OnceLock<moosicbox_logging::free_log_client::FreeLogLayer> = O
 
 type ApiPlayersMap = HashMap<u64, Vec<ApiPlayer>>;
 
+struct AudioZoneSessionPlayer {
+    audio_zone_id: u64,
+    session_id: u64,
+    player: LocalPlayer,
+}
+
 static API_URL: LazyLock<Arc<RwLock<Option<String>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
 static CONNECTION_ID: LazyLock<Arc<RwLock<Option<String>>>> =
@@ -74,8 +80,8 @@ static WS_HANDLE: LazyLock<Arc<RwLock<Option<WsHandle>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
 static AUDIO_ZONE_ACTIVE_API_PLAYERS: LazyLock<Arc<RwLock<ApiPlayersMap>>> =
     LazyLock::new(|| Arc::new(RwLock::new(HashMap::new())));
-static AUDIO_ZONE_ACTIVE_PLAYERS: LazyLock<Arc<RwLock<HashMap<u64, LocalPlayer>>>> =
-    LazyLock::new(|| Arc::new(RwLock::new(HashMap::new())));
+static AUDIO_ZONE_ACTIVE_PLAYERS: LazyLock<Arc<RwLock<Vec<AudioZoneSessionPlayer>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(vec![])));
 static PLAYBACK_QUALITY: LazyLock<Arc<RwLock<Option<PlaybackQuality>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
 static WS_MESSAGE_BUFFER: LazyLock<Arc<RwLock<Vec<InboundPayload>>>> =
@@ -84,9 +90,11 @@ static CURRENT_AUDIO_ZONE_ID: LazyLock<Arc<RwLock<Option<u64>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
 static CURRENT_CONNECTIONS: LazyLock<Arc<RwLock<Vec<ApiConnection>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(vec![])));
+static PENDING_PLAYER_SESSIONS: LazyLock<Arc<RwLock<HashMap<u64, u64>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(HashMap::new())));
 static CURRENT_SESSIONS: LazyLock<Arc<RwLock<Vec<ApiSession>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(vec![])));
-static CURRENT_AUDIO_ZONES: LazyLock<Arc<RwLock<Vec<ApiAudioZone>>>> =
+static CURRENT_AUDIO_ZONES: LazyLock<Arc<RwLock<Vec<ApiAudioZoneWithSession>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(vec![])));
 static CURRENT_PLAYERS: LazyLock<Arc<RwLock<Vec<ApiPlayer>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(vec![])));
@@ -97,6 +105,7 @@ const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOption
 };
 
 async fn new_player(
+    session_id: u64,
     audio_zone_id: u64,
     audio_output_id: &str,
 ) -> Result<LocalPlayer, TauriPlayerError> {
@@ -151,6 +160,26 @@ async fn new_player(
     })?
     .with_output(output);
 
+    let session = CURRENT_SESSIONS
+        .read()
+        .await
+        .iter()
+        .find(|x| x.session_id == session_id)
+        .cloned();
+
+    if let Some(session) = session {
+        log::debug!("new_player: init_from_api_session session={session:?}");
+        if let Err(e) = player.init_from_api_session(session).await {
+            log::error!("Failed to init player from api session: {e:?}");
+        }
+    } else {
+        log::debug!("new_player: No session info available for player yet");
+        PENDING_PLAYER_SESSIONS
+            .write()
+            .await
+            .insert(player.id as u64, session_id);
+    }
+
     player
         .update_playback(
             false,
@@ -162,7 +191,7 @@ async fn new_player(
             None,
             None,
             *PLAYBACK_QUALITY.read().await,
-            None,
+            Some(session_id),
             Some(audio_zone_id),
             false,
             None,
@@ -325,13 +354,14 @@ async fn reinit_players() -> Result<(), TauriPlayerError> {
     let ids = {
         players_map
             .iter()
-            .map(|(audio_zone_id, player)| (*audio_zone_id, player.clone()))
+            .map(|x| (x.audio_zone_id, x.session_id, x.player.clone()))
             .collect::<Vec<_>>()
     };
 
-    for (audio_zone_id, player) in ids {
+    for (i, (audio_zone_id, session_id, player)) in ids.into_iter().enumerate() {
         let output_id = player.output.as_ref().unwrap().lock().unwrap().id.clone();
-        let created_player = new_player(audio_zone_id, &output_id).await?;
+        log::debug!("reinit_players: audio_zone_id={audio_zone_id} session_id={session_id} output_id={output_id}");
+        let created_player = new_player(session_id, audio_zone_id, &output_id).await?;
 
         let playback = player.active_playback.read().unwrap().as_ref().cloned();
 
@@ -355,7 +385,11 @@ async fn reinit_players() -> Result<(), TauriPlayerError> {
                 .await?;
         }
 
-        players_map.insert(audio_zone_id, created_player);
+        players_map[i] = AudioZoneSessionPlayer {
+            audio_zone_id,
+            session_id,
+            player: created_player,
+        };
     }
 
     Ok(())
@@ -363,10 +397,11 @@ async fn reinit_players() -> Result<(), TauriPlayerError> {
 
 #[tauri::command]
 async fn set_audio_zone_active_players(
+    session_id: u64,
     audio_zone_id: u64,
     players: Vec<ApiPlayer>,
 ) -> Result<(), TauriPlayerError> {
-    log::debug!("Setting audio_zone active players: audio_zone_id={audio_zone_id} {players:?}");
+    log::debug!("Setting audio_zone active players: session_id={session_id} audio_zone_id={audio_zone_id} {players:?}");
 
     let mut api_players_map = AUDIO_ZONE_ACTIVE_API_PLAYERS.write().await;
     api_players_map.insert(audio_zone_id, players.clone());
@@ -374,12 +409,28 @@ async fn set_audio_zone_active_players(
     {
         let mut players_map = AUDIO_ZONE_ACTIVE_PLAYERS.write().await;
         for player in players.iter() {
-            if let Some(existing) = players_map.get(&audio_zone_id) {
-                if existing
-                    .output
-                    .as_ref()
-                    .is_some_and(|output| output.lock().unwrap().id == player.audio_output_id)
-                {
+            if let Some(existing) = players_map
+                .iter()
+                .find(|x| x.audio_zone_id == audio_zone_id)
+            {
+                let different_session = {
+                    !existing
+                        .player
+                        .active_playback
+                        .read()
+                        .unwrap()
+                        .as_ref()
+                        .is_some_and(|p| p.session_id.is_some_and(|s| s == session_id))
+                };
+
+                let same_output =
+                    {
+                        existing.player.output.as_ref().is_some_and(|output| {
+                            output.lock().unwrap().id == player.audio_output_id
+                        })
+                    };
+
+                if !different_session && same_output {
                     log::debug!(
                         "Skipping existing player for audio_zone_id={audio_zone_id} audio_output_id={}",
                         player.audio_output_id
@@ -387,10 +438,25 @@ async fn set_audio_zone_active_players(
                     continue;
                 }
             }
-            players_map.insert(
-                audio_zone_id,
-                new_player(audio_zone_id, &player.audio_output_id).await?,
+
+            let player = new_player(session_id, audio_zone_id, &player.audio_output_id).await?;
+            log::debug!(
+                "set_audio_zone_active_players: audio_zone_id={audio_zone_id} session_id={session_id:?}"
             );
+            let audio_zone_session_player = AudioZoneSessionPlayer {
+                audio_zone_id,
+                session_id,
+                player,
+            };
+            if let Some((i, _)) = players_map
+                .iter()
+                .enumerate()
+                .find(|(_, x)| x.audio_zone_id == audio_zone_id && x.session_id == session_id)
+            {
+                players_map[i] = audio_zone_session_player;
+            } else {
+                players_map.push(audio_zone_session_player);
+            }
         }
     }
 
@@ -399,7 +465,7 @@ async fn set_audio_zone_active_players(
 
 async fn update_audio_zones() -> Result<(), TauriPlayerError> {
     let audio_zones_binding = CURRENT_AUDIO_ZONES.read().await;
-    let audio_zones: &[ApiAudioZone] = audio_zones_binding.as_ref();
+    let audio_zones: &[ApiAudioZoneWithSession] = audio_zones_binding.as_ref();
     let players_binding = CURRENT_PLAYERS.read().await;
     let players: &[ApiPlayer] = players_binding.as_ref();
     let sessions_binding = CURRENT_SESSIONS.read().await;
@@ -423,24 +489,41 @@ async fn update_audio_zones() -> Result<(), TauriPlayerError> {
             .collect::<Vec<_>>();
 
         if !players.is_empty() {
-            set_audio_zone_active_players(audio_zone.id, players).await?;
+            set_audio_zone_active_players(audio_zone.session_id, audio_zone.id, players).await?;
         }
     }
     Ok(())
 }
 
-async fn get_players(audio_zone_id: u64) -> Vec<LocalPlayer> {
+async fn get_players(session_id: u64, audio_zone_id: u64) -> Vec<LocalPlayer> {
     let players = AUDIO_ZONE_ACTIVE_PLAYERS.read().await;
 
     players
         .iter()
-        .filter(|(zone_id, _)| {
+        .filter(|x| {
+            let zone_id = x.audio_zone_id;
             log::trace!(
-                "get_players: Checking if player is in zone: zone_id={zone_id} player_zone_id={audio_zone_id}",
+                "get_players: Checking if player is in session: zone_id={zone_id} session_id={session_id} player_zone_id={audio_zone_id}",
             );
-            **zone_id == audio_zone_id
+            x.player.active_playback
+                .read()
+                .unwrap()
+                .as_ref()
+                .is_some_and(|p| p.session_id.is_some_and(|s| {
+                    log::trace!(
+                        "get_players: player playback.session_id={s} target session_id={session_id}",
+                    );
+                    s == session_id
+                }))
         })
-        .map(|(_, player)| player.clone())
+        .filter(|x| {
+            let zone_id = x.audio_zone_id;
+            log::trace!(
+                "get_players: Checking if player is in zone: zone_id={zone_id} session_id={session_id} player_zone_id={audio_zone_id}",
+            );
+            zone_id == audio_zone_id
+        })
+        .map(|x| x.player.clone())
         .collect()
 }
 
@@ -498,8 +581,8 @@ async fn set_playback_quality(quality: PlaybackQuality) -> Result<(), TauriPlaye
     let binding = AUDIO_ZONE_ACTIVE_PLAYERS.read().await;
     let players = binding.iter();
 
-    for (audio_zone_id, player) in players {
-        player
+    for x in players {
+        x.player
             .update_playback(
                 false,
                 None,
@@ -510,8 +593,8 @@ async fn set_playback_quality(quality: PlaybackQuality) -> Result<(), TauriPlaye
                 None,
                 None,
                 *PLAYBACK_QUALITY.read().await,
-                None,
-                Some(*audio_zone_id),
+                Some(x.session_id),
+                Some(x.audio_zone_id),
                 false,
                 None,
             )
@@ -854,18 +937,19 @@ async fn fetch_audio_zones() -> Result<(), FetchAudioZonesError> {
         .read()
         .await
         .clone()
+        .filter(|x| !x.is_empty())
         .map(|x| format!("?clientId={x}"))
         .unwrap_or_default();
 
     let response = api_proxy_get(
-        format!("audio-zone{client_id}",),
+        format!("audio-zone/with-session{client_id}",),
         api_token.map(|token| serde_json::json!({"Authorization": format!("bearer {token}")})),
     )
     .await?;
 
     log::debug!("fetch_audio_zones: audio_zones={response}");
 
-    let zones: Page<ApiAudioZone> = serde_json::from_value(response)?;
+    let zones: Page<ApiAudioZoneWithSession> = serde_json::from_value(response)?;
 
     *CURRENT_AUDIO_ZONES.write().await = zones.items();
 
@@ -874,9 +958,60 @@ async fn fetch_audio_zones() -> Result<(), FetchAudioZonesError> {
     Ok(())
 }
 
+async fn get_session_playback_for_player(
+    mut update: ApiUpdateSession,
+    player: &LocalPlayer,
+) -> ApiUpdateSession {
+    let session_id = {
+        player
+            .active_playback
+            .read()
+            .unwrap()
+            .as_ref()
+            .and_then(|x| x.session_id)
+    };
+
+    if let Some(session_id) = session_id {
+        if session_id != update.session_id {
+            let session = {
+                CURRENT_SESSIONS
+                    .read()
+                    .await
+                    .iter()
+                    .find(|s| s.session_id == session_id)
+                    .cloned()
+            };
+
+            if let Some(session) = session {
+                update.session_id = session_id;
+
+                if update.position.is_none() {
+                    update.position = session.position;
+                }
+                if update.seek.is_none() {
+                    update.seek = session.seek.map(|x| x as f64);
+                }
+                if update.volume.is_none() {
+                    update.volume = session.volume;
+                }
+                if update.playlist.is_none() {
+                    update.playlist = Some(ApiUpdateSessionPlaylist {
+                        session_playlist_id: session.playlist.session_playlist_id,
+                        tracks: session.playlist.tracks.clone(),
+                    });
+                }
+            }
+        }
+    }
+
+    update
+}
+
 async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleWsMessageError> {
     log::debug!("handle_playback_update: {update:?}");
-    for player in get_players(update.audio_zone_id).await {
+    for player in get_players(update.session_id, update.audio_zone_id).await {
+        let update = get_session_playback_for_player(update.to_owned(), &player).await;
+
         log::debug!("handle_playback_update: player={}", player.id);
 
         if let Some(quality) = update.quality {
@@ -892,7 +1027,7 @@ async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleW
                 update.position,
                 update.seek,
                 update.volume,
-                update.playlist.clone().map(|x| {
+                update.playlist.map(|x| {
                     x.tracks
                         .iter()
                         .map(|track| Track {
@@ -934,6 +1069,7 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
             handle_playback_update(&ApiUpdateSession {
                 session_id: payload.payload.session_id,
                 audio_zone_id: payload.payload.audio_zone_id,
+
                 play: None,
                 stop: None,
                 name: None,
@@ -958,6 +1094,45 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
             update_audio_zones().await?;
         }
         OutboundPayload::Sessions(payload) => {
+            let player_ids = {
+                let mut player_ids = vec![];
+                let player_sessions = PENDING_PLAYER_SESSIONS
+                    .read()
+                    .await
+                    .iter()
+                    .map(|(x, y)| (*x, *y))
+                    .collect::<Vec<_>>();
+
+                for (player_id, session_id) in player_sessions {
+                    if let Some(session) =
+                        payload.payload.iter().find(|x| x.session_id == session_id)
+                    {
+                        if let Some(player) = AUDIO_ZONE_ACTIVE_PLAYERS
+                            .read()
+                            .await
+                            .iter()
+                            .find(|x| x.player.id as u64 == player_id)
+                            .map(|x| &x.player)
+                        {
+                            log::debug!(
+                                "handle_ws_message: init_from_api_session session={session:?}"
+                            );
+                            if let Err(e) = player.init_from_api_session(session.clone()).await {
+                                log::error!("Failed to init player from api session: {e:?}");
+                            }
+                            player_ids.push(player_id);
+                        }
+                    }
+                }
+
+                player_ids
+            };
+            {
+                PENDING_PLAYER_SESSIONS
+                    .write()
+                    .await
+                    .retain(|id, _| !player_ids.contains(id));
+            }
             *CURRENT_SESSIONS.write().await = payload.payload.clone();
 
             update_audio_zones().await?;
