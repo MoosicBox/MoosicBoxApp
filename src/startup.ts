@@ -2,7 +2,7 @@
 import { init, setProperty } from '@free-log/node-client';
 import { invoke, InvokeArgs } from '@tauri-apps/api/core';
 import { appState, onStartupFirst } from '~/services/app';
-import { Api, ApiType, api, connection } from '~/services/api';
+import { Api, ApiType, Connection, api, connection } from '~/services/api';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
 import {
     onCurrentAudioZoneIdChanged,
@@ -74,7 +74,7 @@ function updateConnection(connectionId: string, name: string) {
 }
 
 onCurrentAudioZoneIdChanged((audioZoneId) => {
-    tryInvoke('set_current_audio_zone_id', { audioZoneId });
+    updateStateForConnection(connection.get(), { audioZoneId });
 });
 
 onConnect(() => {
@@ -104,55 +104,59 @@ connection.listen((con, prev) => {
     }
 });
 
+type State = {
+    connectionId?: string | undefined;
+    connectionName?: string | undefined;
+    apiUrl?: string | undefined;
+    clientId?: string | undefined;
+    signatureToken?: string | undefined;
+    apiToken?: string | undefined;
+    audioZoneId?: number | undefined;
+};
+
+function updateStateForConnection(con: Connection | null, overrides?: State) {
+    if (con?.apiUrl) {
+        updateApi(con.apiUrl.toLowerCase().startsWith('https://'));
+    }
+
+    const state: State = {
+        connectionId: connectionId.get(),
+        connectionName: con?.name,
+        apiUrl: con?.apiUrl,
+        clientId: con?.clientId,
+        signatureToken: Api.signatureToken(),
+        apiToken: con?.token,
+        audioZoneId:
+            typeof playerState.currentAudioZone?.id === 'number'
+                ? playerState.currentAudioZone.id
+                : undefined,
+    };
+
+    Object.assign(state, overrides);
+
+    console.debug('Setting state', state);
+
+    tryInvoke('set_state', { state });
+}
+
 onStartupFirst(async () => {
     tryInvoke('show_main_window');
 
     setProperty('connectionId', connectionId.get());
     setProperty('connectionName', connectionName.get());
 
-    if (typeof playerState.currentAudioZone?.id === 'number') {
-        tryInvoke('set_current_audio_zone_id', {
-            audioZoneId: playerState.currentAudioZone.id,
-        });
-    }
-
-    tryInvoke('set_connection_id', { connectionId: connectionId.get() });
-    tryInvoke('set_connection_name', {
-        connectionName: connectionName.get(),
-    });
-
-    const con = connection.get();
-    if (con) {
-        updateApi(con.apiUrl.toLowerCase().startsWith('https://'));
-        tryInvoke('set_api_url', { apiUrl: con.apiUrl });
-        if (con.clientId) {
-            tryInvoke('set_client_id', { clientId: con.clientId });
-        }
-        if (Api.signatureToken()) {
-            tryInvoke('set_signature_token', {
-                signatureToken: Api.signatureToken(),
-            });
-        }
-        if (con.token) {
-            tryInvoke('set_api_token', { apiToken: con.token });
-        }
-    }
+    updateStateForConnection(connection.get());
 
     connection.listen(async (con) => {
-        if (!con) return;
-        tryInvoke('set_api_url', { apiUrl: con.apiUrl });
-        tryInvoke('set_api_token', { apiToken: con.token });
-        tryInvoke('set_client_id', { clientId: con.clientId });
+        updateStateForConnection(con);
     });
     connectionId.listen(async (connectionId) => {
         setProperty('connectionId', connectionId);
-        tryInvoke('set_connection_id', { connectionId });
     });
     connectionName.listen(async (connectionName) => {
         setProperty('connectionName', connectionName);
-        tryInvoke('set_connection_name', { connectionName });
     });
-    Api.onSignatureTokenUpdated(async (token) => {
-        tryInvoke('set_signature_token', { signatureToken: token });
+    Api.onSignatureTokenUpdated(async () => {
+        updateStateForConnection(connection.get());
     });
 });

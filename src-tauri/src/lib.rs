@@ -210,141 +210,133 @@ async fn show_main_window(window: tauri::Window) {
     window.get_webview_window("main").unwrap().show().unwrap();
 }
 
-#[tauri::command]
-async fn set_connection_id(connection_id: String) -> Result<(), TauriPlayerError> {
-    log::debug!("Setting CONNECTION_ID: {connection_id}");
+#[derive(Debug, Error, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AppState {
+    connection_id: Option<String>,
+    connection_name: Option<String>,
+    api_url: Option<String>,
+    client_id: Option<String>,
+    signature_token: Option<String>,
+    api_token: Option<String>,
+    audio_zone_id: Option<u64>,
+}
 
-    CONNECTION_ID.write().await.replace(connection_id.clone());
-    LOG_LAYER
-        .get()
-        .map(|x| x.set_property("connectionId", connection_id.into()));
-
-    scan_outputs()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
-
-    Ok(())
+impl std::fmt::Display for AppState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{self:?}"))
+    }
 }
 
 #[tauri::command]
-async fn set_connection_name(connection_name: String) -> Result<(), TauriPlayerError> {
-    log::debug!("Setting CONNECTION_NAME: {connection_name}");
+async fn set_state(state: AppState) -> Result<(), TauriPlayerError> {
+    log::debug!("set_state: state={state:?}");
 
-    LOG_LAYER
-        .get()
-        .map(|x| x.set_property("connectionName", connection_name.into()));
+    let mut updated_connection_details = false;
 
-    Ok(())
-}
+    {
+        if let Some(connection_id) = &state.connection_id {
+            LOG_LAYER
+                .get()
+                .map(|x| x.set_property("connectionId", connection_id.to_owned().into()));
+        } else {
+            LOG_LAYER.get().map(|x| x.remove_property("connectionId"));
+        }
 
-#[tauri::command]
-async fn set_client_id(client_id: String) -> Result<(), TauriPlayerError> {
-    log::debug!("Setting CLIENT_ID: {client_id}");
-    let existing = CLIENT_ID.read().await.as_ref().cloned();
+        let mut connection_id = CONNECTION_ID.write().await;
 
-    if existing.is_some_and(|x| x == client_id) {
-        return Ok(());
+        if connection_id.as_ref() != state.connection_id.as_ref() {
+            updated_connection_details = true;
+        }
+
+        *connection_id = state.connection_id;
     }
 
-    CLIENT_ID.write().await.replace(client_id);
-
-    scan_outputs()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
-
-    reinit_players().await?;
-
-    fetch_audio_zones()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
-
-    init_ws_connection()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_signature_token(signature_token: String) -> Result<(), TauriPlayerError> {
-    log::debug!("Setting SIGNATURE_TOKEN: {signature_token}");
-    let existing = SIGNATURE_TOKEN.read().await.as_ref().cloned();
-
-    if existing.is_some_and(|x| x == signature_token) {
-        return Ok(());
+    {
+        if let Some(connection_name) = &state.connection_name {
+            LOG_LAYER
+                .get()
+                .map(|x| x.set_property("connectionName", connection_name.to_owned().into()));
+        } else {
+            LOG_LAYER.get().map(|x| x.remove_property("connectionName"));
+        }
     }
 
-    SIGNATURE_TOKEN.write().await.replace(signature_token);
+    {
+        if let Some(client_id) = &state.client_id {
+            LOG_LAYER
+                .get()
+                .map(|x| x.set_property("clientId", client_id.to_owned().into()));
+        } else {
+            LOG_LAYER.get().map(|x| x.remove_property("clientId"));
+        }
 
-    scan_outputs()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        let mut client_id = CLIENT_ID.write().await;
 
-    reinit_players().await?;
+        if client_id.as_ref() != state.client_id.as_ref() {
+            updated_connection_details = true;
+        }
 
-    fetch_audio_zones()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
-
-    init_ws_connection()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_api_token(api_token: String) -> Result<(), TauriPlayerError> {
-    log::debug!("Setting API_TOKEN: {api_token}");
-    let existing = API_TOKEN.read().await.as_ref().cloned();
-
-    if existing.is_some_and(|x| x == api_token) {
-        return Ok(());
+        *client_id = state.client_id;
     }
 
-    API_TOKEN.write().await.replace(api_token);
+    {
+        let mut signature_token = SIGNATURE_TOKEN.write().await;
 
-    scan_outputs()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        if signature_token.as_ref() != state.signature_token.as_ref() {
+            updated_connection_details = true;
+        }
 
-    reinit_players().await?;
-
-    fetch_audio_zones()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
-
-    init_ws_connection()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
-
-    Ok(())
-}
-
-#[tauri::command]
-async fn set_api_url(api_url: String) -> Result<(), TauriPlayerError> {
-    log::debug!("Setting API_URL: {api_url}");
-    let existing = API_URL.read().await.as_ref().cloned();
-
-    if existing.is_some_and(|x| x == api_url) {
-        return Ok(());
+        *signature_token = state.signature_token;
     }
 
-    API_URL.write().await.replace(api_url);
+    {
+        let mut api_token = API_TOKEN.write().await;
 
-    scan_outputs()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        if api_token.as_ref() != state.api_token.as_ref() {
+            updated_connection_details = true;
+        }
 
-    reinit_players().await?;
+        *api_token = state.api_token;
+    }
 
-    fetch_audio_zones()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+    {
+        if let Some(api_url) = &state.api_url {
+            LOG_LAYER
+                .get()
+                .map(|x| x.set_property("apiUrl", api_url.to_owned().into()));
+        } else {
+            LOG_LAYER.get().map(|x| x.remove_property("apiUrl"));
+        }
 
-    init_ws_connection()
-        .await
-        .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        let mut api_url = API_URL.write().await;
+
+        if api_url.as_ref() != state.api_url.as_ref() {
+            updated_connection_details = true;
+        }
+
+        *api_url = state.api_url;
+    }
+
+    {
+        *CURRENT_AUDIO_ZONE_ID.write().await = state.audio_zone_id;
+    }
+
+    if updated_connection_details {
+        scan_outputs()
+            .await
+            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+
+        reinit_players().await?;
+
+        fetch_audio_zones()
+            .await
+            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+
+        init_ws_connection()
+            .await
+            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+    }
 
     Ok(())
 }
@@ -561,15 +553,6 @@ impl From<TrackIdWithApiSource> for UpdateSessionPlaylistTrack {
             data: None,
         }
     }
-}
-
-#[tauri::command]
-async fn set_current_audio_zone_id(audio_zone_id: u64) -> Result<(), TauriPlayerError> {
-    log::debug!("Setting CURRENT_AUDIO_ZONE_ID: {audio_zone_id}");
-
-    CURRENT_AUDIO_ZONE_ID.write().await.replace(audio_zone_id);
-
-    Ok(())
 }
 
 #[tauri::command]
@@ -1274,15 +1257,9 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             #[cfg(not(all(target_os = "android")))]
             show_main_window,
-            set_connection_id,
-            set_connection_name,
-            set_client_id,
-            set_signature_token,
-            set_api_token,
-            set_api_url,
-            set_current_audio_zone_id,
             set_playback_quality,
             set_audio_zone_active_players,
+            set_state,
             propagate_ws_message,
             api_proxy_get,
             api_proxy_post,
