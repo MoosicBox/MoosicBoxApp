@@ -1120,6 +1120,12 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
 
             update_audio_zones().await?;
         }
+
+        OutboundPayload::AudioZoneWithSessions(payload) => {
+            *CURRENT_AUDIO_ZONES.write().await = payload.payload.clone();
+
+            update_audio_zones().await?;
+        }
         _ => {}
     }
 
