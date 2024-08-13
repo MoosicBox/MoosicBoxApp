@@ -5,8 +5,8 @@ import { appState, onStartupFirst } from '~/services/app';
 import { Api, ApiType, Connection, api, connection } from '~/services/api';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
 import {
-    onCurrentAudioZoneIdChanged,
-    playerState,
+    currentPlaybackTarget,
+    onCurrentPlaybackTargetChanged,
     registerPlayer,
 } from '~/services/player';
 import {
@@ -73,8 +73,8 @@ function updateConnection(connectionId: string, name: string) {
     });
 }
 
-onCurrentAudioZoneIdChanged((audioZoneId) => {
-    updateStateForConnection(connection.get(), { audioZoneId });
+onCurrentPlaybackTargetChanged((playbackTarget) => {
+    updateStateForConnection(connection.get(), { playbackTarget });
 });
 
 onConnect(() => {
@@ -111,7 +111,7 @@ type State = {
     clientId?: string | undefined;
     signatureToken?: string | undefined;
     apiToken?: string | undefined;
-    audioZoneId?: number | undefined;
+    playbackTarget?: Api.PlaybackTarget | undefined;
 };
 
 function updateStateForConnection(con: Connection | null, overrides?: State) {
@@ -126,10 +126,7 @@ function updateStateForConnection(con: Connection | null, overrides?: State) {
         clientId: con?.clientId,
         signatureToken: Api.signatureToken(),
         apiToken: con?.token,
-        audioZoneId:
-            typeof playerState.currentAudioZone?.id === 'number'
-                ? playerState.currentAudioZone.id
-                : undefined,
+        playbackTarget: currentPlaybackTarget(),
     };
 
     Object.assign(state, overrides);
