@@ -460,15 +460,12 @@ async fn update_audio_zones() -> Result<(), TauriPlayerError> {
     let audio_zones: &[ApiAudioZoneWithSession] = audio_zones_binding.as_ref();
     let players_binding = CURRENT_PLAYERS.read().await;
     let players: &[ApiPlayer] = players_binding.as_ref();
-    let sessions_binding = CURRENT_SESSIONS.read().await;
-    let sessions: &[ApiSession] = sessions_binding.as_ref();
 
     log::debug!(
         "\
         Updating audio zones\n\t\
         audio_zones={audio_zones:?}\n\t\
         players={players:?}\n\t\
-        sessions={sessions:?}\
         "
     );
 
