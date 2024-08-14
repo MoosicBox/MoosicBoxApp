@@ -26,6 +26,7 @@ panic    = "abort"
 edition = "2021"
 
 [workspace.dependencies]
+async-recursion = "1.1.1"
 async-trait = "0.1.81"
 async_once = "0.2.6"
 atomic_float = "1.0.0"
