@@ -36,6 +36,7 @@ android {
     }
     signingConfigs {
         create("release") {
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
             keyAlias = keyProperties["keyAlias"] as String
             keyPassword = keyProperties["keyPassword"] as String
             storeFile = file(keyProperties["storeFile"] as String)
