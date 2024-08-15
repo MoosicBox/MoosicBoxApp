@@ -497,6 +497,7 @@ async fn update_audio_zones() -> Result<(), TauriPlayerError> {
 async fn get_players(
     session_id: u64,
     playback_target: &ApiPlaybackTarget,
+    recursed: bool,
 ) -> Result<Vec<LocalPlayer>, TauriPlayerError> {
     let players = {
         ACTIVE_PLAYERS
@@ -530,7 +531,7 @@ async fn get_players(
             .collect::<Vec<_>>()
     };
 
-    if !players.is_empty() {
+    if recursed || !players.is_empty() {
         return Ok(players);
     }
 
@@ -554,7 +555,7 @@ async fn get_players(
                     .await
                     .push(audio_zone_with_session);
                 update_audio_zones().await?;
-                return get_players(session_id, playback_target).await;
+                return get_players(session_id, playback_target, true).await;
             }
         }
         ApiPlaybackTarget::ConnectionOutput {
@@ -1073,7 +1074,7 @@ async fn get_session_playback_for_player(
 
 async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleWsMessageError> {
     log::debug!("handle_playback_update: {update:?}");
-    let players = get_players(update.session_id, &update.playback_target).await?;
+    let players = get_players(update.session_id, &update.playback_target, false).await?;
 
     for player in players {
         let update = get_session_playback_for_player(update.to_owned(), &player).await;
