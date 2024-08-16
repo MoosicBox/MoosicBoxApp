@@ -22,12 +22,17 @@ moosicbox_audio_zone = { path = "../../MoosicBoxServer/packages/audio_zone", def
 moosicbox_config = { path = "../../MoosicBoxServer/packages/config", default-features = false }
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
 moosicbox_logging = { path = "../../MoosicBoxServer/packages/logging", default-features = false }
+moosicbox_music_api = { path = "../../MoosicBoxServer/packages/music_api", default-features = false }
 moosicbox_paging = { path = "../../MoosicBoxServer/packages/paging", default-features = false }
 moosicbox_player = { path = "../../MoosicBoxServer/packages/player", default-features = false, features = [
     "local",
 ] }
+moosicbox_remote_library = { path = "../../MoosicBoxServer/packages/remote_library", default-features = false }
 moosicbox_session = { path = "../../MoosicBoxServer/packages/session", default-features = false }
 moosicbox_task = { path = "../../MoosicBoxServer/packages/task", default-features = false }
+moosicbox_upnp = { path = "../../MoosicBoxServer/packages/upnp", default-features = false, features = [
+    "player",
+] }
 moosicbox_ws = { path = "../../MoosicBoxServer/packages/ws", default-features = false }
 
 async-recursion = { workspace = true }
