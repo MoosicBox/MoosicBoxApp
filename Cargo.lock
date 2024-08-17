@@ -3232,6 +3232,7 @@ dependencies = [
  "moosicbox_assert",
  "moosicbox_env_utils",
  "moosicbox_files",
+ "moosicbox_logging",
  "moosicbox_task",
  "rand 0.8.5",
  "regex",

@@ -16,6 +16,7 @@ moosicbox_env_utils = { path = "../../../MoosicBoxServer/packages/env_utils", de
 moosicbox_files = { path = "../../../MoosicBoxServer/packages/files", default-features = false, features = [
     "range",
 ] }
+moosicbox_logging = { path = "../../../MoosicBoxServer/packages/logging", default-features = false }
 moosicbox_task = { path = "../../../MoosicBoxServer/packages/task", default-features = false }
 
 async-trait       = { workspace = true }

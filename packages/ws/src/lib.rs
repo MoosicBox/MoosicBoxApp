@@ -218,7 +218,10 @@ impl WsClient {
                         let ws_writer = rxf
                             .map(|message| match message {
                                 WsMessage::TextMessage(message) => {
-                                    log::debug!("Sending text packet from request",);
+                                    moosicbox_logging::debug_or_trace!(
+                                        ("Sending text packet from request"),
+                                        ("Sending text packet from request message={message}")
+                                    );
                                     Ok(Message::Text(message))
                                 }
                                 WsMessage::Message(bytes) => {
