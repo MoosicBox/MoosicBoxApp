@@ -18,6 +18,7 @@ import {
     wsService,
 } from '~/services/ws';
 import { override } from './ws';
+import { startSilence } from './services/silence-player';
 
 init({
     logWriterApiUrl: 'https://logs.moosicbox.com',
@@ -26,6 +27,7 @@ init({
 });
 
 override();
+startSilence();
 
 function tryInvoke(event: string, payload?: InvokeArgs) {
     (async () => {
