@@ -748,9 +748,9 @@ checksum = "79296716171880943b8470b5f8d03aa55eb2e645a4874bdbb28adb49162e012c"
 
 [[package]]
 name = "bytemuck"
-version = "1.16.3"
+version = "1.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "102087e286b4677862ea56cf8fc58bb2cdfa8725c40ffb80fe3a008eb7f2fc83"
+checksum = "6fd4c6dcc3b0aea2f5c0b4b82c2b15fe39ddbc76041a310848f4706edf76bb31"
 
 [[package]]
 name = "byteorder"
@@ -851,9 +851,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.1.12"
+version = "1.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68064e60dbf1f17005c2fde4d07c16d8baa506fd7ffed8ccab702d93617975c7"
+checksum = "72db2f7947ecee9b03b510377e8bb9077afa27176fdbff55c51027e976fdcc48"
 dependencies = [
  "jobserver",
  "libc",
@@ -1669,6 +1669,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "fluent-uri"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "17c704e9dbe1ddd863da1e6ff3567795087b1eb201ce80d8fa81162e1516500d"
+dependencies = [
+ "bitflags 1.3.2",
+]
+
+[[package]]
 name = "flume"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1725,7 +1734,7 @@ dependencies = [
 [[package]]
 name = "free_log_client"
 version = "0.3.0"
-source = "git+https://github.com/BSteffaniak/FreeLog.git#10fcba2c7eefe90fda9a07fe98ad9faa255d94c4"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#fb3ea4f62d2f70a3c5002a623c917ecc04a5711f"
 dependencies = [
  "free_log_models",
  "futures-util",
@@ -1745,7 +1754,7 @@ dependencies = [
 [[package]]
 name = "free_log_models"
 version = "0.2.0"
-source = "git+https://github.com/BSteffaniak/FreeLog.git#10fcba2c7eefe90fda9a07fe98ad9faa255d94c4"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#fb3ea4f62d2f70a3c5002a623c917ecc04a5711f"
 dependencies = [
  "log",
  "serde",
@@ -2807,6 +2816,29 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "json-patch"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5b1fb8864823fad91877e6caea0baca82e49e8db50f8e5c9f9a453e27d3330fc"
+dependencies = [
+ "jsonptr",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "jsonptr"
+version = "0.4.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c6e529149475ca0b2820835d3dce8fcc41c6b943ca608d32f35b449255e4627"
+dependencies = [
+ "fluent-uri",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -6210,7 +6242,7 @@ dependencies = [
  "dirs",
  "glob",
  "heck 0.5.0",
- "json-patch",
+ "json-patch 1.4.0",
  "schemars",
  "semver",
  "serde",
@@ -6230,7 +6262,7 @@ dependencies = [
  "base64 0.22.1",
  "brotli 3.5.0",
  "ico",
- "json-patch",
+ "json-patch 1.4.0",
  "plist",
  "png",
  "proc-macro2",
@@ -6307,18 +6339,18 @@ dependencies = [
 
 [[package]]
 name = "tauri-utils"
-version = "2.0.0-rc.2"
+version = "2.0.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28bb83cffa26e9cb7a2b3d0c31ab87bf277f44aaaa90f17159aef4d37aabd051"
+checksum = "285af18e09665ea15fdda04cb28fb579a4d71b4e1640628489fecca98838ca9a"
 dependencies = [
- "brotli 3.5.0",
+ "brotli 6.0.0",
  "cargo_metadata",
  "ctor",
  "dunce",
  "glob",
  "html5ever",
  "infer",
- "json-patch",
+ "json-patch 2.0.0",
  "kuchikiki",
  "log",
  "memchr",
@@ -6787,9 +6819,9 @@ dependencies = [
 
 [[package]]
 name = "typeid"
-version = "1.0.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "059d83cc991e7a42fc37bd50941885db0888e34209f8cfd9aab07ddec03bc9cf"
+checksum = "cb9eca5e173aba7b9dbf8c258e667a93861555098ed8398d9a8f25221b525aa8"
 
 [[package]]
 name = "typenum"
