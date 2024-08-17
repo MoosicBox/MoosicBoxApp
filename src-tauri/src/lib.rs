@@ -183,10 +183,18 @@ async fn new_player(
             let playback = local_player.playback.clone();
             let receiver = local_player.receiver.clone();
 
-            PlaybackHandler::new(local_player)
+            let handler = PlaybackHandler::new(local_player.clone())
                 .with_playback(playback)
                 .with_output(Some(Arc::new(std::sync::Mutex::new(output))))
-                .with_receiver(receiver)
+                .with_receiver(receiver);
+
+            local_player
+                .playback_handler
+                .write()
+                .unwrap()
+                .replace(handler.clone());
+
+            handler
         }
         PlayerType::Upnp {
             source_to_music_api,
@@ -205,10 +213,18 @@ async fn new_player(
             let playback = upnp_player.playback.clone();
             let receiver = upnp_player.receiver.clone();
 
-            PlaybackHandler::new(upnp_player)
+            let handler = PlaybackHandler::new(upnp_player.clone())
                 .with_playback(playback)
                 .with_output(Some(Arc::new(std::sync::Mutex::new(output))))
-                .with_receiver(receiver)
+                .with_receiver(receiver);
+
+            upnp_player
+                .playback_handler
+                .write()
+                .unwrap()
+                .replace(handler.clone());
+
+            handler
         }
     };
 
