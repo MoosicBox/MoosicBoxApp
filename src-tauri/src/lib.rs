@@ -768,30 +768,37 @@ async fn send_ws_message(
     message: InboundPayload,
     handle_update: bool,
 ) -> Result<(), SendWsMessageError> {
+    log::debug!("send_ws_message: handle_update={handle_update} message={message:?}");
+
     if handle_update {
-        match &message {
-            InboundPayload::UpdateSession(payload) => {
-                handle_playback_update(&payload.payload.clone().into()).await?;
+        let message = message.clone();
+        moosicbox_task::spawn("send_ws_message: handle_update", async move {
+            match &message {
+                InboundPayload::UpdateSession(payload) => {
+                    handle_playback_update(&payload.payload.clone().into()).await?;
+                }
+                InboundPayload::SetSeek(payload) => {
+                    handle_playback_update(&ApiUpdateSession {
+                        session_id: payload.payload.session_id,
+                        playback_target: payload.payload.playback_target.clone(),
+                        play: None,
+                        stop: None,
+                        name: None,
+                        active: None,
+                        playing: None,
+                        position: None,
+                        seek: Some(payload.payload.seek as f64),
+                        volume: None,
+                        playlist: None,
+                        quality: None,
+                    })
+                    .await?;
+                }
+                _ => {}
             }
-            InboundPayload::SetSeek(payload) => {
-                handle_playback_update(&ApiUpdateSession {
-                    session_id: payload.payload.session_id,
-                    playback_target: payload.payload.playback_target.clone(),
-                    play: None,
-                    stop: None,
-                    name: None,
-                    active: None,
-                    playing: None,
-                    position: None,
-                    seek: Some(payload.payload.seek as f64),
-                    volume: None,
-                    playlist: None,
-                    quality: None,
-                })
-                .await?;
-            }
-            _ => {}
-        }
+
+            Ok::<_, HandleWsMessageError>(())
+        });
     }
 
     handle
@@ -823,15 +830,26 @@ async fn flush_ws_message_buffer() -> Result<(), SendWsMessageError> {
 
 #[tauri::command]
 async fn propagate_ws_message(message: InboundPayload) -> Result<(), TauriPlayerError> {
-    log::debug!("Received ws message from frontend: {message}");
+    moosicbox_logging::debug_or_trace!(
+        ("propagate_ws_message: received ws message from frontend: {message}"),
+        ("propagate_ws_message: received ws message from frontend: {message:?}")
+    );
 
-    if let Some(handle) = WS_HANDLE.read().await.as_ref() {
-        send_ws_message(handle, message, true)
-            .await
-            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
-    } else {
-        WS_MESSAGE_BUFFER.write().await.push(message);
-    }
+    moosicbox_task::spawn("propagate_ws_message", async move {
+        let handle = { WS_HANDLE.read().await.clone() };
+
+        if let Some(handle) = handle {
+            send_ws_message(&handle, message, true).await?;
+        } else {
+            moosicbox_logging::debug_or_trace!(
+                ("propagate_ws_message: pushing message to buffer: {message}"),
+                ("propagate_ws_message: pushing message to buffer: {message:?}")
+            );
+            WS_MESSAGE_BUFFER.write().await.push(message);
+        }
+
+        Ok::<_, SendWsMessageError>(())
+    });
 
     Ok(())
 }
@@ -1261,89 +1279,100 @@ pub enum HandleWsMessageError {
 
 async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessageError> {
     log::debug!("handle_ws_message: {message:?}");
-    match &message {
-        OutboundPayload::SessionUpdated(payload) => {
-            handle_playback_update(&payload.payload).await?
-        }
-        OutboundPayload::SetSeek(payload) => {
-            handle_playback_update(&ApiUpdateSession {
-                session_id: payload.payload.session_id,
-                playback_target: payload.payload.playback_target.clone(),
-                play: None,
-                stop: None,
-                name: None,
-                active: None,
-                playing: None,
-                position: None,
-                seek: Some(payload.payload.seek as f64),
-                volume: None,
-                playlist: None,
-                quality: None,
-            })
-            .await?
-        }
-        OutboundPayload::ConnectionId(payload) => {
-            APP.get()
-                .unwrap()
-                .emit("on-connect", payload.connection_id.to_owned())?;
-        }
-        OutboundPayload::Connections(payload) => {
-            *CURRENT_CONNECTIONS.write().await = payload.payload.clone();
+    moosicbox_task::spawn("handle_ws_message", {
+        let message = message.clone();
+        async move {
+            match &message {
+                OutboundPayload::SessionUpdated(payload) => {
+                    handle_playback_update(&payload.payload).await?
+                }
+                OutboundPayload::SetSeek(payload) => {
+                    handle_playback_update(&ApiUpdateSession {
+                        session_id: payload.payload.session_id,
+                        playback_target: payload.payload.playback_target.clone(),
+                        play: None,
+                        stop: None,
+                        name: None,
+                        active: None,
+                        playing: None,
+                        position: None,
+                        seek: Some(payload.payload.seek as f64),
+                        volume: None,
+                        playlist: None,
+                        quality: None,
+                    })
+                    .await?
+                }
+                OutboundPayload::ConnectionId(payload) => {
+                    APP.get()
+                        .unwrap()
+                        .emit("on-connect", payload.connection_id.to_owned())?;
+                }
+                OutboundPayload::Connections(payload) => {
+                    *CURRENT_CONNECTIONS.write().await = payload.payload.clone();
 
-            update_audio_zones().await?;
-        }
-        OutboundPayload::Sessions(payload) => {
-            let player_ids = {
-                let mut player_ids = vec![];
-                let player_sessions = PENDING_PLAYER_SESSIONS
-                    .read()
-                    .await
-                    .iter()
-                    .map(|(x, y)| (*x, *y))
-                    .collect::<Vec<_>>();
-
-                for (player_id, session_id) in player_sessions {
-                    if let Some(session) =
-                        payload.payload.iter().find(|x| x.session_id == session_id)
-                    {
-                        if let Some(player) = ACTIVE_PLAYERS
-                            .write()
+                    update_audio_zones().await?;
+                }
+                OutboundPayload::Sessions(payload) => {
+                    let player_ids = {
+                        let mut player_ids = vec![];
+                        let player_sessions = PENDING_PLAYER_SESSIONS
+                            .read()
                             .await
-                            .iter_mut()
-                            .find(|x| x.player.id as u64 == player_id)
-                            .map(|x| &mut x.player)
-                        {
-                            log::debug!(
+                            .iter()
+                            .map(|(x, y)| (*x, *y))
+                            .collect::<Vec<_>>();
+
+                        for (player_id, session_id) in player_sessions {
+                            if let Some(session) =
+                                payload.payload.iter().find(|x| x.session_id == session_id)
+                            {
+                                if let Some(player) = ACTIVE_PLAYERS
+                                    .write()
+                                    .await
+                                    .iter_mut()
+                                    .find(|x| x.player.id as u64 == player_id)
+                                    .map(|x| &mut x.player)
+                                {
+                                    log::debug!(
                                 "handle_ws_message: init_from_api_session session={session:?}"
                             );
-                            if let Err(e) = player.init_from_api_session(session.clone()).await {
-                                log::error!("Failed to init player from api session: {e:?}");
+                                    if let Err(e) =
+                                        player.init_from_api_session(session.clone()).await
+                                    {
+                                        log::error!(
+                                            "Failed to init player from api session: {e:?}"
+                                        );
+                                    }
+                                    player_ids.push(player_id);
+                                }
                             }
-                            player_ids.push(player_id);
                         }
+
+                        player_ids
+                    };
+                    {
+                        PENDING_PLAYER_SESSIONS
+                            .write()
+                            .await
+                            .retain(|id, _| !player_ids.contains(id));
                     }
+                    *CURRENT_SESSIONS.write().await = payload.payload.clone();
+
+                    update_audio_zones().await?;
                 }
 
-                player_ids
-            };
-            {
-                PENDING_PLAYER_SESSIONS
-                    .write()
-                    .await
-                    .retain(|id, _| !player_ids.contains(id));
+                OutboundPayload::AudioZoneWithSessions(payload) => {
+                    *CURRENT_AUDIO_ZONES.write().await = payload.payload.clone();
+
+                    update_audio_zones().await?;
+                }
+                _ => {}
             }
-            *CURRENT_SESSIONS.write().await = payload.payload.clone();
 
-            update_audio_zones().await?;
+            Ok::<_, HandleWsMessageError>(())
         }
-
-        OutboundPayload::AudioZoneWithSessions(payload) => {
-            *CURRENT_AUDIO_ZONES.write().await = payload.payload.clone();
-
-            update_audio_zones().await?;
-        }
-        _ => {}
-    }
+    });
 
     APP.get().unwrap().emit("ws-message", message)?;
 

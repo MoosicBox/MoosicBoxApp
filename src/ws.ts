@@ -19,8 +19,11 @@ export function override() {
     wsService.newClient = async function (): Promise<void> {};
 
     wsService.send = function <T extends OutboundMessage>(value: T) {
-        console.debug('Propagating ws message to backend', value);
-        invoke('propagate_ws_message', { message: value });
+        (async () => {
+            console.debug('Propagating ws message to backend', value);
+            await invoke('propagate_ws_message', { message: value });
+            console.debug('Propagated ws message to backend', value);
+        })();
     };
 
     (async () => {
