@@ -6,19 +6,21 @@ plugins {
     id("rust")
 }
 
-val keyProperties = Properties().apply {
-    val propFile = rootProject.file("key.properties")
-    if (propFile.exists()) {
-        propFile.inputStream().use { load(it) }
-    }
-}
+val keyProperties =
+        Properties().apply {
+            val propFile = rootProject.file("key.properties")
+            if (propFile.exists()) {
+                propFile.inputStream().use { load(it) }
+            }
+        }
 
-val tauriProperties = Properties().apply {
-    val propFile = file("tauri.properties")
-    if (propFile.exists()) {
-        propFile.inputStream().use { load(it) }
-    }
-}
+val tauriProperties =
+        Properties().apply {
+            val propFile = file("tauri.properties")
+            if (propFile.exists()) {
+                propFile.inputStream().use { load(it) }
+            }
+        }
 
 android {
     compileSdk = 34
@@ -30,9 +32,7 @@ android {
         targetSdk = 34
         versionCode = tauriProperties.getProperty("tauri.android.versionCode", "1").toInt()
         versionName = tauriProperties.getProperty("tauri.android.versionName", "1.0")
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64a-v8a", "x86", "x86_64")
-        }
+        ndk { abiFilters += listOf("armeabi-v7a", "arm64a-v8a", "x86", "x86_64") }
     }
     signingConfigs {
         create("release") {
@@ -59,23 +59,22 @@ android {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
             isMinifyEnabled = true
             proguardFiles(
-                *fileTree(".") { include("**/*.pro") }
-                    .plus(getDefaultProguardFile("proguard-android-optimize.txt"))
-                    .toList().toTypedArray()
+                    *fileTree(".") { include("**/*.pro") }
+                            .plus(getDefaultProguardFile("proguard-android-optimize.txt"))
+                            .toList()
+                            .toTypedArray()
             )
             signingConfig = signingConfigs.getByName("release")
         }
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+    kotlinOptions { jvmTarget = "1.8" }
 }
 
-rust {
-    rootDirRel = "../../../"
-}
+rust { rootDirRel = "../../../" }
 
 dependencies {
+    implementation("androidx.media3:media3-session:1.4.0")
+    implementation("androidx.media3:media3-exoplayer:1.4.0")
     implementation("androidx.webkit:webkit:1.6.1")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.8.0")
