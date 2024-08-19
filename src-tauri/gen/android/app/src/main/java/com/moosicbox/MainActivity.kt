@@ -19,5 +19,6 @@ class MainActivity : TauriActivity() {
                 },
                 MoreExecutors.directExecutor()
         )
+        super.onStart()
     }
 }
