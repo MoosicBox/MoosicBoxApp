@@ -15,6 +15,16 @@ class PlaybackService : MediaSessionService() {
                 MediaSession.Builder(this, player).setCallback(MediaSessionCallback()).build()
     }
 
+    // Remember to release the player and media session in onDestroy
+    override fun onDestroy() {
+        mediaSession?.run {
+            player.release()
+            release()
+            mediaSession = null
+        }
+        super.onDestroy()
+    }
+
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
         return mediaSession
     }
