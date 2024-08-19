@@ -1,3 +1,5 @@
+package com.moosicbox
+
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.util.UnstableApi
