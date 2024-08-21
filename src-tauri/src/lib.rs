@@ -1635,8 +1635,17 @@ pub fn run() {
     });
 
     let app_builder = tauri::Builder::default()
+        .plugin(tauri_plugin_notification::init())
         .setup(|app| {
             APP.get_or_init(|| app.handle().clone());
+
+            #[cfg(target_os = "android")]
+            {
+                use tauri_plugin_notification::NotificationExt as _;
+
+                app.notification().request_permission()?;
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

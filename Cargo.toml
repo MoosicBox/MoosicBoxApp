@@ -55,6 +55,7 @@ strum = "0.26.3"
 strum_macros = "0.26.4"
 tauri = { version = "2.0.0-rc.5", features = ["protocol-asset"] }
 tauri-build = { version = "2.0.0-rc.5", features = [] }
+tauri-plugin-notification = "2.0.0-rc.2"
 thiserror = "1.0.63"
 tokio = { version = "1.39.3", features = ["io-util", "sync", "tracing"] }
 tokio-tungstenite = { version = "0.23.1", features = [

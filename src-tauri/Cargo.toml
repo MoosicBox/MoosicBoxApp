@@ -52,6 +52,7 @@ serde_json = { workspace = true }
 strum = { workspace = true }
 strum_macros = { workspace = true }
 tauri = { workspace = true, features = ["protocol-asset"] }
+tauri-plugin-notification = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tokio-util = { workspace = true }
