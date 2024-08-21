@@ -3448,7 +3448,7 @@ dependencies = [
 
 [[package]]
 name = "moosicbox_app"
-version = "0.7.0"
+version = "0.7.1"
 dependencies = [
  "async-recursion",
  "atomic_float",
