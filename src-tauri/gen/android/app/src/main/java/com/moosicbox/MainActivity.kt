@@ -42,47 +42,47 @@ class MainActivity : TauriActivity() {
     @UnstableApi
     private inner class PlayerListener : Player.Listener {
         override fun onEvents(player: Player, events: Player.Events) {
-            Log.i("Player.Listener", "onEvents $player $events")
+            Log.i("MOOSICBOX: Player.Listener", "onEvents $player $events")
             super.onEvents(player, events)
         }
 
         override fun onAudioAttributesChanged(audioAttributes: AudioAttributes) {
-            Log.i("Player.Listener", "onAudioAttributesChanged $audioAttributes")
+            Log.i("MOOSICBOX: Player.Listener", "onAudioAttributesChanged $audioAttributes")
             super.onAudioAttributesChanged(audioAttributes)
         }
 
         override fun onAvailableCommandsChanged(availableCommands: Player.Commands) {
-            Log.i("Player.Listener", "onAvailableCommandsChanged $availableCommands")
+            Log.i("MOOSICBOX: Player.Listener", "onAvailableCommandsChanged $availableCommands")
             super.onAvailableCommandsChanged(availableCommands)
         }
 
         override fun onAudioSessionIdChanged(audioSessionId: Int) {
-            Log.i("Player.Listener", "onAudioSessionIdChanged $audioSessionId")
+            Log.i("MOOSICBOX: Player.Listener", "onAudioSessionIdChanged $audioSessionId")
             super.onAudioSessionIdChanged(audioSessionId)
         }
 
         override fun onCues(cueGroup: CueGroup) {
-            Log.i("Player.Listener", "onCues $cueGroup")
+            Log.i("MOOSICBOX: Player.Listener", "onCues $cueGroup")
             super.onCues(cueGroup)
         }
 
         override fun onDeviceInfoChanged(deviceInfo: DeviceInfo) {
-            Log.i("Player.Listener", "onDeviceInfoChanged $deviceInfo")
+            Log.i("MOOSICBOX: Player.Listener", "onDeviceInfoChanged $deviceInfo")
             super.onDeviceInfoChanged(deviceInfo)
         }
 
         override fun onDeviceVolumeChanged(volume: Int, muted: Boolean) {
-            Log.i("Player.Listener", "onDeviceVolumeChanged $volume $muted")
+            Log.i("MOOSICBOX: Player.Listener", "onDeviceVolumeChanged $volume $muted")
             super.onDeviceVolumeChanged(volume, muted)
         }
 
         override fun onIsLoadingChanged(isLoading: Boolean) {
-            Log.i("Player.Listener", "onIsLoadingChanged $isLoading")
+            Log.i("MOOSICBOX: Player.Listener", "onIsLoadingChanged $isLoading")
             super.onIsLoadingChanged(isLoading)
         }
 
         override fun onIsPlayingChanged(isPlaying: Boolean) {
-            Log.i("Player.Listener", "onIsPlayingChanged $isPlaying")
+            Log.i("MOOSICBOX: Player.Listener", "onIsPlayingChanged $isPlaying")
             super.onIsPlayingChanged(isPlaying)
         }
 
@@ -95,32 +95,32 @@ class MainActivity : TauriActivity() {
         }
 
         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-            Log.i("Player.Listener", "onMediaItemTransition $mediaItem $reason")
+            Log.i("MOOSICBOX: Player.Listener", "onMediaItemTransition $mediaItem $reason")
             super.onMediaItemTransition(mediaItem, reason)
         }
 
         override fun onMediaMetadataChanged(mediaMetadata: MediaMetadata) {
-            Log.i("Player.Listener", "onMediaMetadataChanged $mediaMetadata")
+            Log.i("MOOSICBOX: Player.Listener", "onMediaMetadataChanged $mediaMetadata")
             super.onMediaMetadataChanged(mediaMetadata)
         }
 
         override fun onMetadata(metadata: Metadata) {
-            Log.i("Player.Listener", "onMetadata $metadata")
+            Log.i("MOOSICBOX: Player.Listener", "onMetadata $metadata")
             super.onMetadata(metadata)
         }
 
         override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-            Log.i("Player.Listener", "onPlayWhenReadyChanged $playWhenReady $reason")
+            Log.i("MOOSICBOX: Player.Listener", "onPlayWhenReadyChanged $playWhenReady $reason")
             super.onPlayWhenReadyChanged(playWhenReady, reason)
         }
 
         override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters) {
-            Log.i("Player.Listener", "onPlaybackParametersChanged $playbackParameters")
+            Log.i("MOOSICBOX: Player.Listener", "onPlaybackParametersChanged $playbackParameters")
             super.onPlaybackParametersChanged(playbackParameters)
         }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
-            Log.i("Player.Listener", "onPlaybackStateChanged $playbackState")
+            Log.i("MOOSICBOX: Player.Listener", "onPlaybackStateChanged $playbackState")
             super.onPlaybackStateChanged(playbackState)
         }
 
@@ -133,17 +133,17 @@ class MainActivity : TauriActivity() {
         }
 
         override fun onPlayerError(error: PlaybackException) {
-            Log.i("Player.Listener", "onPlayerError $error")
+            Log.i("MOOSICBOX: Player.Listener", "onPlayerError $error")
             super.onPlayerError(error)
         }
 
         override fun onPlayerErrorChanged(error: PlaybackException?) {
-            Log.i("Player.Listener", "onPlayerErrorChanged $error")
+            Log.i("MOOSICBOX: Player.Listener", "onPlayerErrorChanged $error")
             super.onPlayerErrorChanged(error)
         }
 
         override fun onPlaylistMetadataChanged(mediaMetadata: MediaMetadata) {
-            Log.i("Player.Listener", "onPlaylistMetadataChanged $mediaMetadata")
+            Log.i("MOOSICBOX: Player.Listener", "onPlaylistMetadataChanged $mediaMetadata")
             super.onPlaylistMetadataChanged(mediaMetadata)
         }
 
@@ -152,67 +152,73 @@ class MainActivity : TauriActivity() {
                 newPosition: Player.PositionInfo,
                 reason: Int
         ) {
-            Log.i("Player.Listener", "onPositionDiscontinuity $oldPosition $newPosition $reason")
+            Log.i(
+                    "MOOSICBOX: Player.Listener",
+                    "onPositionDiscontinuity $oldPosition $newPosition $reason"
+            )
             super.onPositionDiscontinuity(oldPosition, newPosition, reason)
         }
 
         override fun onRenderedFirstFrame() {
-            Log.i("Player.Listener", "onRenderedFirstFrame")
+            Log.i("MOOSICBOX: Player.Listener", "onRenderedFirstFrame")
             super.onRenderedFirstFrame()
         }
 
         override fun onRepeatModeChanged(repeatMode: Int) {
-            Log.i("Player.Listener", "onRepeatModeChanged $repeatMode")
+            Log.i("MOOSICBOX: Player.Listener", "onRepeatModeChanged $repeatMode")
             super.onRepeatModeChanged(repeatMode)
         }
 
         override fun onSeekBackIncrementChanged(seekBackIncrementMs: Long) {
-            Log.i("Player.Listener", "onSeekBackIncrementChanged $seekBackIncrementMs")
+            Log.i("MOOSICBOX: Player.Listener", "onSeekBackIncrementChanged $seekBackIncrementMs")
             super.onSeekBackIncrementChanged(seekBackIncrementMs)
         }
 
         override fun onSeekForwardIncrementChanged(seekForwardIncrementMs: Long) {
-            Log.i("Player.Listener", "onSeekForwardIncrementChanged $seekForwardIncrementMs")
+            Log.i(
+                    "MOOSICBOX: Player.Listener",
+                    "onSeekForwardIncrementChanged $seekForwardIncrementMs"
+            )
             super.onSeekForwardIncrementChanged(seekForwardIncrementMs)
         }
 
         override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-            Log.i("Player.Listener", "onShuffleModeEnabledChanged $shuffleModeEnabled")
+            Log.i("MOOSICBOX: Player.Listener", "onShuffleModeEnabledChanged $shuffleModeEnabled")
             super.onShuffleModeEnabledChanged(shuffleModeEnabled)
         }
 
         override fun onSkipSilenceEnabledChanged(skipSilenceEnabled: Boolean) {
-            Log.i("Player.Listener", "onSkipSilenceEnabledChanged $skipSilenceEnabled")
+            Log.i("MOOSICBOX: Player.Listener", "onSkipSilenceEnabledChanged $skipSilenceEnabled")
             super.onSkipSilenceEnabledChanged(skipSilenceEnabled)
         }
 
         override fun onSurfaceSizeChanged(width: Int, height: Int) {
-            Log.i("Player.Listener", "onSurfaceSizeChanged $width $height")
+            Log.i("MOOSICBOX: Player.Listener", "onSurfaceSizeChanged $width $height")
             super.onSurfaceSizeChanged(width, height)
         }
 
         override fun onTimelineChanged(timeline: Timeline, reason: Int) {
-            Log.i("Player.Listener", "onTimelineChanged $reason")
+            Log.i("MOOSICBOX: Player.Listener", "onTimelineChanged $reason")
             super.onTimelineChanged(timeline, reason)
         }
 
         override fun onTrackSelectionParametersChanged(parameters: TrackSelectionParameters) {
-            Log.i("Player.Listener", "onTrackSelectionParametersChanged $parameters")
+            Log.i("MOOSICBOX: Player.Listener", "onTrackSelectionParametersChanged $parameters")
             super.onTrackSelectionParametersChanged(parameters)
         }
 
         override fun onTracksChanged(tracks: Tracks) {
-            Log.i("Player.Listener", "onTracksChanged $tracks")
+            Log.i("MOOSICBOX: Player.Listener", "onTracksChanged $tracks")
             super.onTracksChanged(tracks)
         }
 
         override fun onVideoSizeChanged(videoSize: VideoSize) {
-            Log.i("Player.Listener", "onVideoSizeChanged $videoSize")
+            Log.i("MOOSICBOX: Player.Listener", "onVideoSizeChanged $videoSize")
             super.onVideoSizeChanged(videoSize)
         }
 
         override fun onVolumeChanged(volume: Float) {
-            Log.i("Player.Listener", "onVolumeChanged $volume")
+            Log.i("MOOSICBOX: Player.Listener", "onVolumeChanged $volume")
             super.onVolumeChanged(volume)
         }
     }
