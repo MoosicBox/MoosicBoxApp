@@ -1,10 +1,7 @@
 package com.moosicbox
 
 import androidx.annotation.OptIn
-import androidx.media3.common.AudioAttributes
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.common.C
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 
@@ -13,12 +10,7 @@ class PlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
-        val player =
-                ExoPlayer.Builder(this)
-                        .setAudioAttributes(AudioAttributes.DEFAULT, true)
-                        .setHandleAudioBecomingNoisy(true)
-                        .setWakeMode(C.WAKE_MODE_LOCAL)
-                        .build()
+        val player = MoosicBoxPlayer()
         // Build the session with a custom layout.
         mediaSession =
                 MediaSession.Builder(this, player).setCallback(MediaSessionCallback()).build()
