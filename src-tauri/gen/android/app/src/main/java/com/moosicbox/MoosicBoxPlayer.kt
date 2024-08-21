@@ -27,6 +27,39 @@ import kotlin.collections.mutableListOf
 class MoosicBoxPlayer : BasePlayer() {
     private var mediaItems: MutableList<MediaItem> = mutableListOf()
 
+    private var permanentAvailableCommands: Player.Commands =
+            Player.Commands.Builder()
+                    .addAll(
+                            COMMAND_PLAY_PAUSE,
+                            COMMAND_PREPARE,
+                            COMMAND_STOP,
+                            COMMAND_SET_SPEED_AND_PITCH,
+                            COMMAND_SET_SHUFFLE_MODE,
+                            COMMAND_SET_REPEAT_MODE,
+                            COMMAND_GET_CURRENT_MEDIA_ITEM,
+                            COMMAND_GET_TIMELINE,
+                            COMMAND_GET_METADATA,
+                            COMMAND_SET_PLAYLIST_METADATA,
+                            COMMAND_SET_MEDIA_ITEM,
+                            COMMAND_CHANGE_MEDIA_ITEMS,
+                            COMMAND_GET_TRACKS,
+                            COMMAND_GET_AUDIO_ATTRIBUTES,
+                            COMMAND_SET_AUDIO_ATTRIBUTES,
+                            COMMAND_GET_VOLUME,
+                            COMMAND_SET_VOLUME,
+                            COMMAND_SET_VIDEO_SURFACE,
+                            COMMAND_GET_TEXT,
+                            COMMAND_RELEASE
+                    )
+                    .build()
+
+    private var availableCommands: Player.Commands =
+            Player.Commands.Builder()
+                    .addAll(permanentAvailableCommands)
+                    .add(COMMAND_SEEK_TO_DEFAULT_POSITION)
+                    .add(COMMAND_SEEK_TO_MEDIA_ITEM)
+                    .build()
+
     override fun getApplicationLooper(): Looper {
         Log.i("MoosicBoxPlayer", "getApplicationLooper")
         return Looper.getMainLooper()
@@ -87,7 +120,7 @@ class MoosicBoxPlayer : BasePlayer() {
 
     override fun getAvailableCommands(): Player.Commands {
         Log.i("MoosicBoxPlayer", "getAvailableCommands")
-        return Player.Commands.EMPTY
+        return availableCommands
     }
 
     override fun prepare() {
