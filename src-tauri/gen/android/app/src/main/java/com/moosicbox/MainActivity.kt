@@ -1,6 +1,7 @@
 package com.moosicbox
 
 import android.content.ComponentName
+import android.net.Uri
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
@@ -33,6 +34,84 @@ class MainActivity : TauriActivity() {
                     // attached to the PlayerView UI component.
                     val player = controllerFuture.get()
                     player.addListener(PlayerListener())
+
+                    val mediaItems =
+                            listOf(
+                                    MediaItem.Builder()
+                                            // Set a unique media ID for the media item
+                                            .setMediaId("media-1")
+                                            // Set the URI (Uniform Resource Identifier) for the
+                                            // media
+                                            // content
+                                            .setUri(
+                                                    Uri.parse(
+                                                            "http://192.168.254.137:8500/files/track?trackId=1"
+                                                    )
+                                            )
+                                            // Set the media metadata, which includes details about
+                                            // the
+                                            // media
+                                            // content
+                                            .setMediaMetadata(
+                                                    MediaMetadata.Builder()
+                                                            // Set the artist's name for the media
+                                                            // content
+                                                            .setArtist("David Bowie")
+                                                            // Set the title of the media content
+                                                            .setTitle("Heroes")
+                                                            // Set the URI for the artwork or album
+                                                            // cover
+                                                            // associated
+                                                            // with the media content
+                                                            .setArtworkUri(
+                                                                    Uri.parse(
+                                                                            "http://192.168.254.137:8500/files/albums/1/300x300"
+                                                                    )
+                                                            )
+                                                            .build()
+                                            )
+                                            .build(),
+                                    MediaItem.Builder()
+                                            // Set a unique media ID for the media item
+                                            .setMediaId("media-2")
+                                            // Set the URI (Uniform Resource Identifier) for the
+                                            // media
+                                            // content
+                                            .setUri(
+                                                    Uri.parse(
+                                                            "http://192.168.254.137:8500/files/track?trackId=2"
+                                                    )
+                                            )
+                                            // Set the media metadata, which includes details about
+                                            // the
+                                            // media
+                                            // content
+                                            .setMediaMetadata(
+                                                    MediaMetadata.Builder()
+                                                            // Set the artist's name for the media
+                                                            // content
+                                                            .setArtist("David Bowie")
+                                                            // Set the title of the media content
+                                                            .setTitle("Heroes")
+                                                            // Set the URI for the artwork or album
+                                                            // cover
+                                                            // associated
+                                                            // with the media content
+                                                            .setArtworkUri(
+                                                                    Uri.parse(
+                                                                            "http://192.168.254.137:8500/files/albums/1/300x300"
+                                                                    )
+                                                            )
+                                                            .build()
+                                            )
+                                            .build()
+                            )
+                    // Set the created MediaItem on a MediaController
+                    Log.i("MOOSICBOX: MainActivity", "setMediaItems ${mediaItems}")
+                    player.setMediaItems(mediaItems)
+                    player.prepare()
+
+                    PlaybackService.instance.initiateMediaNotification(player)
                 },
                 MoreExecutors.directExecutor()
         )

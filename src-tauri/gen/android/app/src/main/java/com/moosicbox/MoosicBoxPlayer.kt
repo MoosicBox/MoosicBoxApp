@@ -11,7 +11,7 @@ import com.google.common.util.concurrent.ListenableFuture
 import kotlin.collections.mutableListOf
 
 @UnstableApi
-class MoosicBoxPlayer : SimpleBasePlayer {
+class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
     private var mediaItems: MutableList<MediaItem> = mutableListOf()
 
     private var permanentAvailableCommands: Player.Commands =
@@ -50,8 +50,6 @@ class MoosicBoxPlayer : SimpleBasePlayer {
     private var state: SimpleBasePlayer.State =
             SimpleBasePlayer.State.Builder().setAvailableCommands(availableCommands).build()
 
-    constructor() : super(Looper.getMainLooper()) {}
-
     override fun getState(): SimpleBasePlayer.State {
         return this.state
     }
@@ -68,6 +66,31 @@ class MoosicBoxPlayer : SimpleBasePlayer {
 
     override fun handlePrepare(): ListenableFuture<*> {
         Log.i("MoosicBoxPlayer", "prepare")
+        return Futures.immediateFuture(null)
+    }
+
+    override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
+        Log.i("MoosicBoxPlayer", "setPlayWhenReady")
+        return Futures.immediateFuture(null)
+    }
+
+    override fun handleStop(): ListenableFuture<*> {
+        Log.i("MoosicBoxPlayer", "stop")
+        return Futures.immediateFuture(null)
+    }
+
+    override fun handleRelease(): ListenableFuture<*> {
+        Log.i("MoosicBoxPlayer", "release")
+        return Futures.immediateFuture(null)
+    }
+
+    override fun handleSetRepeatMode(@Player.RepeatMode repeatMode: Int): ListenableFuture<*> {
+        Log.i("MoosicBoxPlayer", "setRepeatMode")
+        return Futures.immediateFuture(null)
+    }
+
+    override fun handleSetShuffleModeEnabled(shuffleModeEnabled: Boolean): ListenableFuture<*> {
+        Log.i("MoosicBoxPlayer", "setShuffleModeEnabled")
         return Futures.immediateFuture(null)
     }
 }
