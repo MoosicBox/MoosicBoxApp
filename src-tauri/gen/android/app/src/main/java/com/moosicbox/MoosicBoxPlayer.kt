@@ -1,6 +1,7 @@
 package com.moosicbox
 
 import android.os.Looper
+import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -27,14 +28,20 @@ class MoosicBoxPlayer : BasePlayer() {
     private var mediaItems: MutableList<MediaItem> = mutableListOf()
 
     override fun getApplicationLooper(): Looper {
+        Log.i("MoosicBoxPlayer", "getApplicationLooper")
         return Looper.getMainLooper()
     }
 
-    override fun addListener(listener: Player.Listener) {}
+    override fun addListener(listener: Player.Listener) {
+        Log.i("MoosicBoxPlayer", "addListener")
+    }
 
-    override fun removeListener(listener: Player.Listener) {}
+    override fun removeListener(listener: Player.Listener) {
+        Log.i("MoosicBoxPlayer", "removeListener")
+    }
 
     override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
+        Log.i("MoosicBoxPlayer", "setMediaItems")
         this.mediaItems = mediaItems
     }
 
@@ -43,14 +50,17 @@ class MoosicBoxPlayer : BasePlayer() {
             startIndex: Int,
             startPositionMs: Long
     ) {
+        Log.i("MoosicBoxPlayer", "setMediaItems")
         this.mediaItems = mediaItems
     }
 
     override fun addMediaItems(index: Int, mediaItems: MutableList<MediaItem>) {
+        Log.i("MoosicBoxPlayer", "addMediaItems")
         this.mediaItems.addAll(mediaItems)
     }
 
     override fun moveMediaItems(fromIndex: Int, toIndex: Int, newIndex: Int) {
+        Log.i("MoosicBoxPlayer", "moveMediaItems")
         // Actually do it
         val old = this.mediaItems[fromIndex]
         this.mediaItems[fromIndex] = this.mediaItems[newIndex]
@@ -62,54 +72,72 @@ class MoosicBoxPlayer : BasePlayer() {
             toIndex: Int,
             mediaItems: MutableList<MediaItem>
     ) {
+        Log.i("MoosicBoxPlayer", "replaceMediaItems")
         for (x in fromIndex..toIndex) {
             this.mediaItems[x] = mediaItems[x - fromIndex]
         }
     }
 
     override fun removeMediaItems(fromIndex: Int, toIndex: Int) {
+        Log.i("MoosicBoxPlayer", "removeMediaItems")
         for (x in fromIndex..toIndex) {
             this.mediaItems.removeAt(fromIndex)
         }
     }
 
     override fun getAvailableCommands(): Player.Commands {
+        Log.i("MoosicBoxPlayer", "getAvailableCommands")
         return Player.Commands.EMPTY
     }
 
-    override fun prepare() {}
+    override fun prepare() {
+        Log.i("MoosicBoxPlayer", "prepare")
+    }
 
     override fun getPlaybackState(): Int {
+        Log.i("MoosicBoxPlayer", "getPlaybackState")
         return Player.STATE_READY
     }
 
     override fun getPlaybackSuppressionReason(): Int {
+        Log.i("MoosicBoxPlayer", "getPlaybackSuppressionReason")
         return Player.PLAYBACK_SUPPRESSION_REASON_NONE
     }
 
     override fun getPlayerError(): PlaybackException? {
+        Log.i("MoosicBoxPlayer", "getPlayerError")
         return null
     }
 
-    override fun setPlayWhenReady(playWhenReady: Boolean) {}
+    override fun setPlayWhenReady(playWhenReady: Boolean) {
+        Log.i("MoosicBoxPlayer", "setPlayWhenReady")
+    }
 
     override fun getPlayWhenReady(): Boolean {
+        Log.i("MoosicBoxPlayer", "getPlayWhenReady")
         return false
     }
 
-    override fun setRepeatMode(repeatMode: Int) {}
+    override fun setRepeatMode(repeatMode: Int) {
+        Log.i("MoosicBoxPlayer", "setRepeatMode")
+    }
 
     override fun getRepeatMode(): Int {
+        Log.i("MoosicBoxPlayer", "getRepeatMode")
         return Player.REPEAT_MODE_OFF
     }
 
-    override fun setShuffleModeEnabled(shuffleModeEnabled: Boolean) {}
+    override fun setShuffleModeEnabled(shuffleModeEnabled: Boolean) {
+        Log.i("MoosicBoxPlayer", "setShuffleModeEnabled")
+    }
 
     override fun getShuffleModeEnabled(): Boolean {
+        Log.i("MoosicBoxPlayer", "getShuffleModeEnabled")
         return false
     }
 
     override fun isLoading(): Boolean {
+        Log.i("MoosicBoxPlayer", "isLoading")
         return false
     }
 
@@ -118,165 +146,243 @@ class MoosicBoxPlayer : BasePlayer() {
             positionMs: Long,
             seekCommand: Int,
             isRepeatingCurrentItem: Boolean
-    ) {}
+    ) {
+        Log.i("MoosicBoxPlayer", "seekTo")
+    }
 
     override fun getSeekBackIncrement(): Long {
+        Log.i("MoosicBoxPlayer", "getSeekBackIncrement")
         return 0
     }
 
     override fun getSeekForwardIncrement(): Long {
+        Log.i("MoosicBoxPlayer", "getSeekForwardIncrement")
         return 0
     }
 
     override fun getMaxSeekToPreviousPosition(): Long {
+        Log.i("MoosicBoxPlayer", "getMaxSeekToPreviousPosition")
         return 0
     }
 
-    override fun setPlaybackParameters(playbackParameters: PlaybackParameters) {}
+    override fun setPlaybackParameters(playbackParameters: PlaybackParameters) {
+        Log.i("MoosicBoxPlayer", "setPlaybackParameters")
+    }
 
     override fun getPlaybackParameters(): PlaybackParameters {
+        Log.i("MoosicBoxPlayer", "getPlaybackParameters")
         return PlaybackParameters.DEFAULT
     }
 
-    override fun stop() {}
+    override fun stop() {
+        Log.i("MoosicBoxPlayer", "stop")
+    }
 
-    override fun release() {}
+    override fun release() {
+        Log.i("MoosicBoxPlayer", "release")
+    }
 
     override fun getCurrentTracks(): Tracks {
+        Log.i("MoosicBoxPlayer", "getCurrentTracks")
         return Tracks.EMPTY
     }
 
     override fun getTrackSelectionParameters(): TrackSelectionParameters {
+        Log.i("MoosicBoxPlayer", "getTrackSelectionParameters")
         return TrackSelectionParameters.DEFAULT_WITHOUT_CONTEXT
     }
 
-    override fun setTrackSelectionParameters(parameters: TrackSelectionParameters) {}
+    override fun setTrackSelectionParameters(parameters: TrackSelectionParameters) {
+        Log.i("MoosicBoxPlayer", "setTrackSelectionParameters")
+    }
 
     override fun getMediaMetadata(): MediaMetadata {
+        Log.i("MoosicBoxPlayer", "getMediaMetadata")
         return MediaMetadata.EMPTY
     }
 
     override fun getPlaylistMetadata(): MediaMetadata {
+        Log.i("MoosicBoxPlayer", "getPlaylistMetadata")
         return MediaMetadata.EMPTY
     }
 
-    override fun setPlaylistMetadata(mediaMetadata: MediaMetadata) {}
+    override fun setPlaylistMetadata(mediaMetadata: MediaMetadata) {
+        Log.i("MoosicBoxPlayer", "setPlaylistMetadata")
+    }
 
     override fun getCurrentTimeline(): Timeline {
+        Log.i("MoosicBoxPlayer", "getCurrentTimeline")
         return Timeline.EMPTY
     }
 
     override fun getCurrentPeriodIndex(): Int {
+        Log.i("MoosicBoxPlayer", "getCurrentPeriodIndex")
         return 0
     }
 
     override fun getCurrentMediaItemIndex(): Int {
+        Log.i("MoosicBoxPlayer", "getCurrentMediaItemIndex")
         return 0
     }
 
     override fun getDuration(): Long {
+        Log.i("MoosicBoxPlayer", "getDuration")
         return 0
     }
 
     override fun getCurrentPosition(): Long {
+        Log.i("MoosicBoxPlayer", "getCurrentPosition")
         return 0
     }
 
     override fun getBufferedPosition(): Long {
+        Log.i("MoosicBoxPlayer", "getBufferedPosition")
         return 0
     }
 
     override fun getTotalBufferedDuration(): Long {
+        Log.i("MoosicBoxPlayer", "getTotalBufferedDuration")
         return 0
     }
 
     override fun isPlayingAd(): Boolean {
+        Log.i("MoosicBoxPlayer", "isPlayingAd")
         return false
     }
 
     override fun getCurrentAdGroupIndex(): Int {
+        Log.i("MoosicBoxPlayer", "getCurrentAdGroupIndex")
         return -1
     }
 
     override fun getCurrentAdIndexInAdGroup(): Int {
+        Log.i("MoosicBoxPlayer", "getCurrentAdIndexInAdGroup")
         return -1
     }
 
     override fun getContentPosition(): Long {
+        Log.i("MoosicBoxPlayer", "getContentPosition")
         return 4
     }
 
     override fun getContentBufferedPosition(): Long {
+        Log.i("MoosicBoxPlayer", "getContentBufferedPosition")
         return 0
     }
 
     override fun getAudioAttributes(): AudioAttributes {
+        Log.i("MoosicBoxPlayer", "getAudioAttributes")
         return AudioAttributes.DEFAULT
     }
 
-    override fun setVolume(volume: Float) {}
+    override fun setVolume(volume: Float) {
+        Log.i("MoosicBoxPlayer", "setVolume")
+    }
 
     override fun getVolume(): Float {
+        Log.i("MoosicBoxPlayer", "getVolume")
         return 1.0f
     }
 
-    override fun clearVideoSurface() {}
+    override fun clearVideoSurface() {
+        Log.i("MoosicBoxPlayer", "clearVideoSurface")
+    }
 
-    override fun clearVideoSurface(surface: Surface?) {}
+    override fun clearVideoSurface(surface: Surface?) {
+        Log.i("MoosicBoxPlayer", "clearVideoSurface")
+    }
 
-    override fun setVideoSurface(surface: Surface?) {}
+    override fun setVideoSurface(surface: Surface?) {
+        Log.i("MoosicBoxPlayer", "setVideoSurface")
+    }
 
-    override fun setVideoSurfaceHolder(surfaceHolder: SurfaceHolder?) {}
+    override fun setVideoSurfaceHolder(surfaceHolder: SurfaceHolder?) {
+        Log.i("MoosicBoxPlayer", "setVideoSurfaceHolder")
+    }
 
-    override fun clearVideoSurfaceHolder(surfaceHolder: SurfaceHolder?) {}
+    override fun clearVideoSurfaceHolder(surfaceHolder: SurfaceHolder?) {
+        Log.i("MoosicBoxPlayer", "clearVideoSurfaceHolder")
+    }
 
-    override fun setVideoSurfaceView(surfaceView: SurfaceView?) {}
+    override fun setVideoSurfaceView(surfaceView: SurfaceView?) {
+        Log.i("MoosicBoxPlayer", "setVideoSurfaceView")
+    }
 
-    override fun clearVideoSurfaceView(surfaceView: SurfaceView?) {}
+    override fun clearVideoSurfaceView(surfaceView: SurfaceView?) {
+        Log.i("MoosicBoxPlayer", "clearVideoSurfaceView")
+    }
 
-    override fun setVideoTextureView(textureView: TextureView?) {}
+    override fun setVideoTextureView(textureView: TextureView?) {
+        Log.i("MoosicBoxPlayer", "setVideoTextureView")
+    }
 
-    override fun clearVideoTextureView(textureView: TextureView?) {}
+    override fun clearVideoTextureView(textureView: TextureView?) {
+        Log.i("MoosicBoxPlayer", "clearVideoTextureView")
+    }
 
     override fun getVideoSize(): VideoSize {
+        Log.i("MoosicBoxPlayer", "getVideoSize")
         return VideoSize.UNKNOWN
     }
 
     override fun getSurfaceSize(): Size {
+        Log.i("MoosicBoxPlayer", "getSurfaceSize")
         return Size.ZERO
     }
 
     override fun getCurrentCues(): CueGroup {
+        Log.i("MoosicBoxPlayer", "getCurrentCues")
         return CueGroup.EMPTY_TIME_ZERO
     }
 
     override fun getDeviceInfo(): DeviceInfo {
+        Log.i("MoosicBoxPlayer", "getDeviceInfo")
         return DeviceInfo.UNKNOWN
     }
 
     override fun getDeviceVolume(): Int {
+        Log.i("MoosicBoxPlayer", "getDeviceVolume")
         return 1
     }
 
     override fun isDeviceMuted(): Boolean {
+        Log.i("MoosicBoxPlayer", "isDeviceMuted")
         return false
     }
 
-    override fun setDeviceVolume(volume: Int) {}
+    override fun setDeviceVolume(volume: Int) {
+        Log.i("MoosicBoxPlayer", "setDeviceVolume")
+    }
 
-    override fun setDeviceVolume(volume: Int, flags: Int) {}
+    override fun setDeviceVolume(volume: Int, flags: Int) {
+        Log.i("MoosicBoxPlayer", "setDeviceVolume")
+    }
 
-    override fun increaseDeviceVolume() {}
+    override fun increaseDeviceVolume() {
+        Log.i("MoosicBoxPlayer", "increaseDeviceVolume")
+    }
 
-    override fun increaseDeviceVolume(flags: Int) {}
+    override fun increaseDeviceVolume(flags: Int) {
+        Log.i("MoosicBoxPlayer", "increaseDeviceVolume")
+    }
 
-    override fun decreaseDeviceVolume() {}
+    override fun decreaseDeviceVolume() {
+        Log.i("MoosicBoxPlayer", "decreaseDeviceVolume")
+    }
 
-    override fun decreaseDeviceVolume(flags: Int) {}
+    override fun decreaseDeviceVolume(flags: Int) {
+        Log.i("MoosicBoxPlayer", "decreaseDeviceVolume")
+    }
 
-    override fun setDeviceMuted(muted: Boolean) {}
+    override fun setDeviceMuted(muted: Boolean) {
+        Log.i("MoosicBoxPlayer", "setDeviceMuted")
+    }
 
-    override fun setDeviceMuted(muted: Boolean, flags: Int) {}
+    override fun setDeviceMuted(muted: Boolean, flags: Int) {
+        Log.i("MoosicBoxPlayer", "setDeviceMuted")
+    }
 
-    override fun setAudioAttributes(audioAttributes: AudioAttributes, handleAudioFocus: Boolean) {}
+    override fun setAudioAttributes(audioAttributes: AudioAttributes, handleAudioFocus: Boolean) {
+        Log.i("MoosicBoxPlayer", "setAudioAttributes")
+    }
 }
