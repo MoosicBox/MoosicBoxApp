@@ -1645,9 +1645,13 @@ pub fn run() {
 
             #[cfg(target_os = "android")]
             {
-                use tauri_plugin_notification::NotificationExt as _;
+                use tauri_plugin_notification::{NotificationExt as _, PermissionState};
 
-                app.notification().request_permission()?;
+                let state = app.notification().permission_state()?;
+
+                if state != PermissionState::Denied && state != PermissionState::Granted {
+                    app.notification().request_permission()?;
+                }
             }
 
             Ok(())
