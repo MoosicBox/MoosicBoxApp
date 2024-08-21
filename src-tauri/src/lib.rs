@@ -918,7 +918,11 @@ async fn api_proxy_get(
 ) -> Result<serde_json::Value, TauriPlayerError> {
     let url = format!(
         "{}/{url}",
-        API_URL.read().await.clone().expect("API_URL not set")
+        API_URL
+            .read()
+            .await
+            .clone()
+            .ok_or_else(|| TauriPlayerError::Unknown(format!("API_URL not set ({url})")))?
     );
     info!("Fetching url from proxy: {url}");
     let client = reqwest::Client::new();
@@ -946,7 +950,7 @@ async fn api_proxy_post(
             .read()
             .await
             .clone()
-            .unwrap_or_else(|| panic!("API_URL not set ({url})"))
+            .ok_or_else(|| TauriPlayerError::Unknown(format!("API_URL not set ({url})")))?
     );
     info!("Posting url from proxy: {url}");
     let client = reqwest::Client::new();
