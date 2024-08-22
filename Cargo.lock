@@ -308,12 +308,13 @@ checksum = "5c6cb57a04249c6480766f7f7cef5467412af1490f8d1e243141daddada3264f"
 
 [[package]]
 name = "alsa"
-version = "0.9.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37fe60779335388a88c01ac6c3be40304d1e349de3ada3b15f7808bb90fa9dce"
+checksum = "ed7572b7ba83a31e20d1b48970ee402d2e3e0537dcfe0a3ff4d6eb7508617d43"
 dependencies = [
  "alsa-sys",
  "bitflags 2.6.0",
+ "cfg-if",
  "libc",
 ]
 
@@ -1913,7 +1914,7 @@ dependencies = [
 [[package]]
 name = "free_log_client"
 version = "0.3.0"
-source = "git+https://github.com/BSteffaniak/FreeLog.git#563ef620b2d4671beda65faa6dbfbece8d71c20e"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#c6ebbb70ffa42fd516162271bb1bca8e3fa7bf32"
 dependencies = [
  "free_log_models",
  "futures-util",
@@ -1933,7 +1934,7 @@ dependencies = [
 [[package]]
 name = "free_log_models"
 version = "0.2.0"
-source = "git+https://github.com/BSteffaniak/FreeLog.git#563ef620b2d4671beda65faa6dbfbece8d71c20e"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#c6ebbb70ffa42fd516162271bb1bca8e3fa7bf32"
 dependencies = [
  "log",
  "serde",
@@ -6402,9 +6403,9 @@ dependencies = [
 
 [[package]]
 name = "tao"
-version = "0.29.0"
+version = "0.29.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6775bcf3c1da33f848ede9cff5883ed1e45a29f66533ce42ad06c93ae514ed59"
+checksum = "d3a97abbc7d6cfd0720da3e06fcb1cf2ac87cbfdb5bbbce103a1279a211c4d81"
 dependencies = [
  "bitflags 2.6.0",
  "cocoa",
@@ -6441,13 +6442,13 @@ dependencies = [
 
 [[package]]
 name = "tao-macros"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec114582505d158b669b136e6851f85840c109819d77c42bb7c0709f727d18c2"
+checksum = "f4e16beb8b2ac17db28eab8bca40e62dbfbb34c0fcdc6d9826b11b7b5d047dfd"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.75",
 ]
 
 [[package]]
