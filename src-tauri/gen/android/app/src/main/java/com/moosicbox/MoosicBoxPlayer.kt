@@ -47,10 +47,9 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
                     .add(COMMAND_SEEK_TO_MEDIA_ITEM)
                     .build()
 
-    private var state: SimpleBasePlayer.State =
-            SimpleBasePlayer.State.Builder().setAvailableCommands(availableCommands).build()
+    private var state: State = State.Builder().setAvailableCommands(availableCommands).build()
 
-    override fun getState(): SimpleBasePlayer.State {
+    override fun getState(): State {
         return this.state
     }
 
@@ -59,23 +58,43 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
             startIndex: Int,
             startPositionMs: Long
     ): ListenableFuture<*> {
-        Log.i("MoosicBoxPlayer", "setMediaItems")
+        Log.i("MoosicBoxPlayer", "setMediaItems $mediaItems $startIndex $startPositionMs")
         this.mediaItems = mediaItems
+        this.state =
+                state.buildUpon()
+                        .setPlaylist(
+                                mediaItems.map {
+                                    MediaItemData.Builder(it.mediaId).setMediaItem(it).build()
+                                }
+                        )
+                        .build()
         return Futures.immediateFuture(null)
     }
 
     override fun handlePrepare(): ListenableFuture<*> {
         Log.i("MoosicBoxPlayer", "prepare")
+        this.state = this.state.buildUpon().setPlaybackState(STATE_READY).build()
         return Futures.immediateFuture(null)
     }
 
     override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
-        Log.i("MoosicBoxPlayer", "setPlayWhenReady")
+        Log.i("MoosicBoxPlayer", "setPlayWhenReady $playWhenReady")
+        this.state =
+                this.state
+                        .buildUpon()
+                        .setPlayWhenReady(playWhenReady, PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
+                        .build()
         return Futures.immediateFuture(null)
     }
 
     override fun handleStop(): ListenableFuture<*> {
         Log.i("MoosicBoxPlayer", "stop")
+        this.state =
+                this.state
+                        .buildUpon()
+                        .setPlayWhenReady(false, PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
+                        .setPlaybackState(STATE_ENDED)
+                        .build()
         return Futures.immediateFuture(null)
     }
 
@@ -85,12 +104,24 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
     }
 
     override fun handleSetRepeatMode(@Player.RepeatMode repeatMode: Int): ListenableFuture<*> {
-        Log.i("MoosicBoxPlayer", "setRepeatMode")
+        Log.i("MoosicBoxPlayer", "setRepeatMode $repeatMode")
+        this.state = this.state.buildUpon().setRepeatMode(repeatMode).build()
         return Futures.immediateFuture(null)
     }
 
     override fun handleSetShuffleModeEnabled(shuffleModeEnabled: Boolean): ListenableFuture<*> {
-        Log.i("MoosicBoxPlayer", "setShuffleModeEnabled")
+        Log.i("MoosicBoxPlayer", "setShuffleModeEnabled $shuffleModeEnabled")
+        this.state = this.state.buildUpon().setShuffleModeEnabled(shuffleModeEnabled).build()
+        return Futures.immediateFuture(null)
+    }
+
+    override fun handleSetVideoOutput(videoOutput: Any): ListenableFuture<*> {
+        Log.i("MoosicBoxPlayer", "setVideoOutput $videoOutput")
+        return Futures.immediateFuture(null)
+    }
+
+    override fun handleClearVideoOutput(videoOutput: Any?): ListenableFuture<*> {
+        Log.i("MoosicBoxPlayer", "clearVideoOutput $videoOutput")
         return Futures.immediateFuture(null)
     }
 }
