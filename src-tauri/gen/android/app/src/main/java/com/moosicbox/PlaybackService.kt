@@ -11,8 +11,9 @@ import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.session.MediaLibraryService
+import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
 import androidx.media3.ui.PlayerNotificationManager
 import com.google.common.util.concurrent.ListenableFuture
 import com.google.common.util.concurrent.SettableFuture
@@ -20,8 +21,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
-class PlaybackService : MediaSessionService() {
-    private var mediaSession: MediaSession? = null
+class PlaybackService : MediaLibraryService() {
+    private var mediaLibrarySession: MediaLibrarySession? = null
     private var player: Player? = null
     private lateinit var notificationManager: PlayerNotificationManager
 
@@ -33,8 +34,8 @@ class PlaybackService : MediaSessionService() {
         super.onCreate()
         val player = MoosicBoxPlayer()
         this.player = player
-        mediaSession =
-                MediaSession.Builder(this, player).setCallback(MediaSessionCallback()).build()
+        mediaLibrarySession =
+                MediaLibrarySession.Builder(this, player, MediaLibrarySessionCallback()).build()
     }
 
     // Remember to release the player and media session in onDestroy
@@ -47,17 +48,17 @@ class PlaybackService : MediaSessionService() {
         player = null
         stopSelf()
 
-        mediaSession?.run {
+        mediaLibrarySession?.run {
             player.release()
             release()
-            mediaSession = null
+            mediaLibrarySession = null
         }
 
         super.onDestroy()
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
-        return mediaSession
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? {
+        return mediaLibrarySession
     }
 
     fun initiateMediaNotification(player: Player) {
@@ -71,6 +72,7 @@ class PlaybackService : MediaSessionService() {
         // Register the channel with the system. You can't change the importance
         // or other notification behaviors after this.
         notificationManager.createNotificationChannel(channel)
+
         val playerNotificationManager =
                 PlayerNotificationManager.Builder(this, 123, channelId)
                         .setSmallIconResourceId(R.mipmap.ic_launcher_round)
@@ -151,8 +153,11 @@ class PlaybackService : MediaSessionService() {
         )
     }
 
+    // private inner class MediaNotificationProviderCallback : MediaNotification.Provider.Callback {
+    // }
+
     @UnstableApi
-    private inner class MediaSessionCallback : MediaSession.Callback {
+    private inner class MediaLibrarySessionCallback : MediaLibrarySession.Callback {
         override fun onConnect(
                 session: MediaSession,
                 controller: MediaSession.ControllerInfo
