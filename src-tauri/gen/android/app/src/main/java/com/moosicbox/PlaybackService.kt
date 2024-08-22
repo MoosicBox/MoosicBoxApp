@@ -9,10 +9,10 @@ import android.graphics.Bitmap
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaLibraryService
-import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.ui.PlayerNotificationManager
 import com.google.common.util.concurrent.ListenableFuture
@@ -175,13 +175,22 @@ class PlaybackService : MediaLibraryService() {
         }
 
         override fun onPlaybackResumption(
-                mediaSession: MediaSession,
+                session: MediaSession,
                 controller: MediaSession.ControllerInfo
         ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
             val settable = SettableFuture.create<MediaSession.MediaItemsWithStartPosition>()
             CoroutineScope(Dispatchers.Main).launch {
+                val items = mutableListOf<MediaItem>()
+                for (i in 0..(session.player.mediaItemCount - 1)) {
+                    val item = session.player.getMediaItemAt(i)
+                    items.add(item)
+                }
                 val resumptionPlaylist =
-                        MediaSession.MediaItemsWithStartPosition(mutableListOf(), 0, 0)
+                        MediaSession.MediaItemsWithStartPosition(
+                                items,
+                                session.player.currentMediaItemIndex,
+                                session.player.currentPosition
+                        )
                 settable.set(resumptionPlaylist)
             }
             return settable
