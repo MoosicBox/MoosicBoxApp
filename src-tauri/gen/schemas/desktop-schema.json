@@ -2368,6 +2368,27 @@
           "enum": [
             "notification:deny-show"
           ]
+        },
+        {
+          "description": "player:default -> Default permissions for the plugin",
+          "type": "string",
+          "enum": [
+            "player:default"
+          ]
+        },
+        {
+          "description": "player:allow-ping -> Enables the ping command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "player:allow-ping"
+          ]
+        },
+        {
+          "description": "player:deny-ping -> Denies the ping command without any pre-configured scope.",
+          "type": "string",
+          "enum": [
+            "player:deny-ping"
+          ]
         }
       ]
     },
