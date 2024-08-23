@@ -124,4 +124,12 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
         Log.i("MoosicBoxPlayer", "clearVideoOutput $videoOutput")
         return Futures.immediateFuture(null)
     }
+
+    companion object{
+        init {
+            com.moosicbox.playerplugin.Player.updateState = {
+                Log.i("MoosicBoxPlayer", "Received state ${it}")
+            }
+        }
+    }
 }

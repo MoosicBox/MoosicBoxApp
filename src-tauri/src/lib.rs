@@ -1638,8 +1638,10 @@ pub fn run() {
         join_upnp_service.await
     });
 
-    let app_builder = tauri::Builder::default()
+    #[allow(unused_mut)]
+    let mut app_builder = tauri::Builder::default()
         .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_player::init())
         .setup(|app| {
             APP.get_or_init(|| app.handle().clone());
 
@@ -1703,8 +1705,46 @@ pub fn run() {
 
     #[cfg(not(feature = "aptabase"))]
     app_builder
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|handle, event| {
+            log::trace!("event: {event:?}");
+            match event {
+                tauri::RunEvent::Exit { .. } => {}
+                tauri::RunEvent::ExitRequested { .. } => {}
+                tauri::RunEvent::WindowEvent { .. } => {}
+                tauri::RunEvent::Ready => {
+                    use tauri_plugin_player::PlayerExt;
+
+                    match handle
+                        .player()
+                        .update_state(tauri_plugin_player::UpdateState {
+                            playlist: Some(tauri_plugin_player::Playlist {
+                                tracks: vec![
+                                    tauri_plugin_player::Track {
+                                        id: 1,
+                                        title: "test".to_string(),
+                                    },
+                                    tauri_plugin_player::Track {
+                                        id: 2,
+                                        title: "test 2".to_string(),
+                                    },
+                                ],
+                            }),
+                        }) {
+                        Ok(_resp) => {
+                            log::debug!("Successfully set state");
+                        }
+                        Err(e) => {
+                            log::error!("Failed to set state: {e:?}");
+                        }
+                    }
+                }
+                tauri::RunEvent::Resumed => {}
+                tauri::RunEvent::MainEventsCleared => {}
+                _ => {}
+            }
+        });
 
     if let Err(e) = tauri::async_runtime::block_on(join_upnp_service) {
         log::error!("Failed to join UPnP service: {e:?}");

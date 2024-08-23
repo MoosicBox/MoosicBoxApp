@@ -45,5 +45,10 @@
                 "enable": true
             }
         }
+    },
+    "plugins": {
+        "tauri-plugin-player": {
+            "timeout": 30
+        }
     }
 }

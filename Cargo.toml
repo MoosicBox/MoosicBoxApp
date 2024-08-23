@@ -1,5 +1,5 @@
 [workspace]
-members = ["packages/ws", "src-tauri"]
+members = ["packages/ws", "src-tauri", "tauri-plugin-player"]
 
 resolver = "2"
 
@@ -55,6 +55,7 @@ strum = "0.26.3"
 strum_macros = "0.26.4"
 tauri = { version = "2.0.0-rc.6", features = ["protocol-asset"] }
 tauri-build = { version = "2.0.0-rc.6", features = [] }
+tauri-plugin = { version = "2.0.0-rc.6", features = ["build"] }
 tauri-plugin-notification = "2.0.0-rc.2"
 thiserror = "1.0.63"
 tokio = { version = "1.39.3", features = ["io-util", "sync", "tracing"] }

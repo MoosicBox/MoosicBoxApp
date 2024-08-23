@@ -3482,6 +3482,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-notification",
+ "tauri-plugin-player",
  "thiserror",
  "tokio",
  "tokio-util",
@@ -6604,6 +6605,16 @@ dependencies = [
  "thiserror",
  "time",
  "url",
+]
+
+[[package]]
+name = "tauri-plugin-player"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "tauri",
+ "tauri-plugin",
+ "thiserror",
 ]
 
 [[package]]
