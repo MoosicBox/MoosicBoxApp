@@ -3,8 +3,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Track {
-    pub id: u64,
+    pub id: String,
     pub title: String,
+    pub album: String,
+    pub album_cover: Option<String>,
+    pub artist: String,
+    pub artist_cover: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

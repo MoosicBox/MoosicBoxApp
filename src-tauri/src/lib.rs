@@ -1380,6 +1380,106 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
                     *CURRENT_SESSIONS.write().await = payload.payload.clone();
 
                     update_audio_zones().await?;
+
+                    {
+                        let mut query = String::new();
+                        if let Some(client_id) = CLIENT_ID.read().await.clone() {
+                            query.push_str(&format!("&clientId={client_id}"));
+                        }
+                        if let Some(signature_token) = SIGNATURE_TOKEN.read().await.clone() {
+                            query.push_str(&format!("&signature={signature_token}"));
+                        }
+
+                        let url_string = { API_URL.read().await.clone() };
+                        if let Some(url) = url_string {
+                            use tauri_plugin_player::PlayerExt;
+
+                            let album_cover_url = {
+                                let url = url.clone();
+                                let query = query.clone();
+                                move |album_id: &str, source: ApiSource| {
+                                    format!("{url}/files/albums/{album_id}/300x300?source={source}{query}")
+                                }
+                            };
+
+                            let convert_track = |value: &moosicbox_library::models::ApiTrack| {
+                                value.data().map(|x| {
+                                    let album_id = x
+                                        .get("albumId")
+                                        .and_then(|x| {
+                                            if x.is_string() {
+                                                x.as_str().map(|x| x.to_string())
+                                            } else if x.is_number() {
+                                                x.as_u64().map(|x| x.to_string())
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                        .unwrap_or_default();
+
+                                    let contains_cover = x
+                                        .get("containsCover")
+                                        .and_then(|x| x.as_bool())
+                                        .unwrap_or_default();
+
+                                    let album_cover = if contains_cover {
+                                        Some(album_cover_url(&album_id, value.api_source()))
+                                    } else {
+                                        None
+                                    };
+
+                                    log::trace!("handle_ws_message: Converting track data={x} contains_cover={contains_cover} album_cover={album_cover:?}");
+
+                                    tauri_plugin_player::Track {
+                                        id: value.track_id().to_string(),
+                                        title: x
+                                            .get("title")
+                                            .and_then(|x| x.as_str())
+                                            .unwrap_or_default()
+                                            .to_string(),
+                                        album: x
+                                            .get("album")
+                                            .and_then(|x| x.as_str())
+                                            .unwrap_or_default()
+                                            .to_string(),
+                                        album_cover,
+                                        artist: x
+                                            .get("artist")
+                                            .and_then(|x| x.as_str().map(|x| x.to_string()))
+                                            .unwrap_or_default(),
+                                        artist_cover: x
+                                            .get("artistCover")
+                                            .and_then(|x| x.as_str().map(|x| x.to_string())),
+                                    }
+                                })
+                            };
+
+                            match APP.get().unwrap().player().update_state(
+                                tauri_plugin_player::UpdateState {
+                                    playlist: Some(tauri_plugin_player::Playlist {
+                                        tracks: payload
+                                            .payload
+                                            .first()
+                                            .map(|x| {
+                                                x.playlist
+                                                    .tracks
+                                                    .iter()
+                                                    .filter_map(convert_track)
+                                                    .collect::<Vec<_>>()
+                                            })
+                                            .unwrap_or_default(),
+                                    }),
+                                },
+                            ) {
+                                Ok(_resp) => {
+                                    log::debug!("Successfully set state");
+                                }
+                                Err(e) => {
+                                    log::error!("Failed to set state: {e:?}");
+                                }
+                            }
+                        }
+                    }
                 }
 
                 OutboundPayload::AudioZoneWithSessions(payload) => {
@@ -1645,17 +1745,6 @@ pub fn run() {
         .setup(|app| {
             APP.get_or_init(|| app.handle().clone());
 
-            #[cfg(target_os = "android")]
-            {
-                use tauri_plugin_notification::{NotificationExt as _, PermissionState};
-
-                let state = app.notification().permission_state()?;
-
-                if state != PermissionState::Denied && state != PermissionState::Granted {
-                    app.notification().request_permission()?;
-                }
-            }
-
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -1707,39 +1796,13 @@ pub fn run() {
     app_builder
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|handle, event| {
+        .run(|_handle, event| {
             log::trace!("event: {event:?}");
             match event {
                 tauri::RunEvent::Exit { .. } => {}
                 tauri::RunEvent::ExitRequested { .. } => {}
                 tauri::RunEvent::WindowEvent { .. } => {}
-                tauri::RunEvent::Ready => {
-                    use tauri_plugin_player::PlayerExt;
-
-                    match handle
-                        .player()
-                        .update_state(tauri_plugin_player::UpdateState {
-                            playlist: Some(tauri_plugin_player::Playlist {
-                                tracks: vec![
-                                    tauri_plugin_player::Track {
-                                        id: 1,
-                                        title: "test".to_string(),
-                                    },
-                                    tauri_plugin_player::Track {
-                                        id: 2,
-                                        title: "test 2".to_string(),
-                                    },
-                                ],
-                            }),
-                        }) {
-                        Ok(_resp) => {
-                            log::debug!("Successfully set state");
-                        }
-                        Err(e) => {
-                            log::error!("Failed to set state: {e:?}");
-                        }
-                    }
-                }
+                tauri::RunEvent::Ready => {}
                 tauri::RunEvent::Resumed => {}
                 tauri::RunEvent::MainEventsCleared => {}
                 _ => {}

@@ -21,6 +21,7 @@ moosicbox_audio_output = { path = "../../MoosicBoxServer/packages/audio_output",
 moosicbox_audio_zone = { path = "../../MoosicBoxServer/packages/audio_zone", default-features = false }
 moosicbox_config = { path = "../../MoosicBoxServer/packages/config", default-features = false }
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
+moosicbox_library = { path = "../../MoosicBoxServer/packages/library", default-features = false }
 moosicbox_logging = { path = "../../MoosicBoxServer/packages/logging", default-features = false }
 moosicbox_music_api = { path = "../../MoosicBoxServer/packages/music_api", default-features = false }
 moosicbox_paging = { path = "../../MoosicBoxServer/packages/paging", default-features = false }

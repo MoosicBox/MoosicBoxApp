@@ -50,7 +50,7 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
                     .build()
 
     private var state: State = State.Builder().setAvailableCommands(availableCommands).build()
-    
+
     init {
         MoosicBoxPlayer.player = this
     }
@@ -139,27 +139,29 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
                 Log.i("MoosicBoxPlayer", "Received state ${it}")
 
                 it.playlist?.also {
-                    val mediaItems = it.tracks.map {
-                        MediaItem.Builder()
-                                .setMediaId("media-${it.id}")
-                                .setUri(
-                                        Uri.parse(
-                                                "http://192.168.254.137:8500/files/track?trackId=1"
-                                        )
-                                )
-                                .setMediaMetadata(
+                    val mediaItems =
+                            it.tracks.map {
+                                var metadataBuilder =
                                         MediaMetadata.Builder()
-                                                .setArtist("David Bowie")
+                                                .setArtist(it.artist)
                                                 .setTitle(it.title)
-                                                .setArtworkUri(
-                                                        Uri.parse(
-                                                                "http://192.168.254.137:8500/files/albums/1/300x300"
-                                                        )
+
+                                it.albumCover?.also {
+                                    metadataBuilder = metadataBuilder.setArtworkUri(Uri.parse(it))
+                                }
+
+                                val metadata = metadataBuilder.build()
+
+                                MediaItem.Builder()
+                                        .setMediaId("media-${it.id}")
+                                        .setUri(
+                                                Uri.parse(
+                                                        "http://192.168.254.137:8500/files/track?trackId=1"
                                                 )
-                                                .build()
-                                )
-                                .build()
-                    }
+                                        )
+                                        .setMediaMetadata(metadata)
+                                        .build()
+                            }
 
                     // Set the created MediaItem on a MediaController
                     Log.i("MoosicBoxPlayer", "updateState mediaItems=${mediaItems}")

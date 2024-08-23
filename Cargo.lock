@@ -3462,6 +3462,7 @@ dependencies = [
  "moosicbox_audio_zone",
  "moosicbox_config",
  "moosicbox_core",
+ "moosicbox_library",
  "moosicbox_logging",
  "moosicbox_music_api",
  "moosicbox_paging",
