@@ -154,11 +154,6 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
 
                                 MediaItem.Builder()
                                         .setMediaId("media-${it.id}")
-                                        .setUri(
-                                                Uri.parse(
-                                                        "http://192.168.254.137:8500/files/track?trackId=1"
-                                                )
-                                        )
                                         .setMediaMetadata(metadata)
                                         .build()
                             }
