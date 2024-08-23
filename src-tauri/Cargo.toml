@@ -35,6 +35,8 @@ moosicbox_upnp = { path = "../../MoosicBoxServer/packages/upnp", default-feature
 ] }
 moosicbox_ws = { path = "../../MoosicBoxServer/packages/ws", default-features = false }
 
+tauri-plugin-player = { path = "../tauri-plugin-player" }
+
 async-recursion = { workspace = true }
 atomic_float = { workspace = true }
 console-subscriber = { workspace = true }
