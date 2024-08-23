@@ -61,42 +61,6 @@ class PlaybackService : MediaLibraryService() {
         return mediaLibrarySession
     }
 
-    fun initiateMediaNotification(player: Player) {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
-        val channelId = "moosicbox-notification-channel"
-        val importance = NotificationManager.IMPORTANCE_HIGH
-        val channel = NotificationChannel(channelId, "MoosicBox notifications", importance)
-        channel.description = "MoosicBox notifications channel"
-
-        // Register the channel with the system. You can't change the importance
-        // or other notification behaviors after this.
-        notificationManager.createNotificationChannel(channel)
-
-        val playerNotificationManager =
-                PlayerNotificationManager.Builder(this, 123, channelId)
-                        .setSmallIconResourceId(R.mipmap.ic_launcher_round)
-                        .setChannelImportance(importance)
-                        .setChannelDescriptionResourceId(R.string.app_name)
-                        .setChannelNameResourceId(R.string.app_name)
-                        .setNotificationListener(notificationListener)
-                        .build()
-
-        Log.i("MOOSICBOX: PlaybackService", "setPlayer")
-
-        Log.i(
-                "MOOSICBOX: PlaybackService",
-                "${player.getPlaybackState() == Player.STATE_IDLE} && ${player.isCommandAvailable(Player.COMMAND_GET_TIMELINE)} && ${player.getCurrentTimeline().isEmpty()}"
-        )
-
-        playerNotificationManager.setPlayer(player)
-        playerNotificationManager.setPriority(NotificationCompat.PRIORITY_MAX)
-        playerNotificationManager.setUseRewindAction(true)
-        playerNotificationManager.setUseFastForwardAction(false)
-        playerNotificationManager.setUsePreviousAction(false)
-        playerNotificationManager.setUsePlayPauseActions(true)
-    }
-
     private val notificationListener =
             @OptIn(UnstableApi::class)
             object : PlayerNotificationManager.NotificationListener {

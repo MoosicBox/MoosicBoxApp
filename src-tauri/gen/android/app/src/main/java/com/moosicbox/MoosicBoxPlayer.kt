@@ -1,8 +1,10 @@
 package com.moosicbox
 
+import android.net.Uri
 import android.os.Looper
 import android.util.Log
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.SimpleBasePlayer
 import androidx.media3.common.util.UnstableApi
@@ -48,6 +50,10 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
                     .build()
 
     private var state: State = State.Builder().setAvailableCommands(availableCommands).build()
+    
+    init {
+        MoosicBoxPlayer.player = this
+    }
 
     override fun getState(): State {
         return this.state
@@ -125,10 +131,41 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
         return Futures.immediateFuture(null)
     }
 
-    companion object{
+    companion object {
+        lateinit var player: MoosicBoxPlayer
+
         init {
             com.moosicbox.playerplugin.Player.updateState = {
                 Log.i("MoosicBoxPlayer", "Received state ${it}")
+
+                it.playlist?.also {
+                    val mediaItems = it.tracks.map {
+                        MediaItem.Builder()
+                                .setMediaId("media-${it.id}")
+                                .setUri(
+                                        Uri.parse(
+                                                "http://192.168.254.137:8500/files/track?trackId=1"
+                                        )
+                                )
+                                .setMediaMetadata(
+                                        MediaMetadata.Builder()
+                                                .setArtist("David Bowie")
+                                                .setTitle(it.title)
+                                                .setArtworkUri(
+                                                        Uri.parse(
+                                                                "http://192.168.254.137:8500/files/albums/1/300x300"
+                                                        )
+                                                )
+                                                .build()
+                                )
+                                .build()
+                    }
+
+                    // Set the created MediaItem on a MediaController
+                    Log.i("MoosicBoxPlayer", "updateState mediaItems=${mediaItems}")
+                    player.setMediaItems(mediaItems)
+                    player.prepare()
+                }
             }
         }
     }
