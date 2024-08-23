@@ -5,7 +5,9 @@ import { appState, onStartupFirst } from '~/services/app';
 import { Api, ApiType, Connection, api, connection } from '~/services/api';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
 import {
+    currentPlaybackSessionId,
     currentPlaybackTarget,
+    onCurrentPlaybackSessionChanged,
     onCurrentPlaybackTargetChanged,
     registerPlayer,
 } from '~/services/player';
@@ -112,6 +114,7 @@ type State = {
     signatureToken?: string | undefined;
     apiToken?: string | undefined;
     playbackTarget?: Api.PlaybackTarget | undefined;
+    currentSessionId?: number | undefined;
 };
 
 function updateStateForConnection(con: Connection | null, overrides?: State) {
@@ -127,6 +130,7 @@ function updateStateForConnection(con: Connection | null, overrides?: State) {
         signatureToken: Api.signatureToken(),
         apiToken: con?.token,
         playbackTarget: currentPlaybackTarget(),
+        currentSessionId: currentPlaybackSessionId(),
     };
 
     Object.assign(state, overrides);
@@ -154,6 +158,9 @@ onStartupFirst(async () => {
         setProperty('connectionName', connectionName);
     });
     Api.onSignatureTokenUpdated(async () => {
+        updateStateForConnection(connection.get());
+    });
+    onCurrentPlaybackSessionChanged(() => {
         updateStateForConnection(connection.get());
     });
 });
