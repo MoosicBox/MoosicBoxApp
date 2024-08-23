@@ -131,6 +131,11 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
         return Futures.immediateFuture(null)
     }
 
+    fun setIdle() {
+        Log.i("MoosicBoxPlayer", "setIdle")
+        this.state = this.state.buildUpon().setPlaybackState(STATE_IDLE).build()
+    }
+
     companion object {
         lateinit var player: MoosicBoxPlayer
 
@@ -159,8 +164,14 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
                             }
 
                     Log.i("MoosicBoxPlayer", "updateState mediaItems=${mediaItems}")
-                    player.setMediaItems(mediaItems)
-                    player.prepare()
+
+                    if (mediaItems.isEmpty()) {
+                        player.setIdle()
+                        player.setMediaItems(mediaItems)
+                    } else {
+                        player.setMediaItems(mediaItems)
+                        player.prepare()
+                    }
                 }
             }
         }
