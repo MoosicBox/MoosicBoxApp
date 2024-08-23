@@ -158,7 +158,6 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
                                         .build()
                             }
 
-                    // Set the created MediaItem on a MediaController
                     Log.i("MoosicBoxPlayer", "updateState mediaItems=${mediaItems}")
                     player.setMediaItems(mediaItems)
                     player.prepare()
