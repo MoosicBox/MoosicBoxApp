@@ -15,11 +15,19 @@ data class Track(
         val albumCover: String? = null,
         val artist: String = "",
         val artistCover: String? = null,
+        val duration: Double = 0.0,
 )
 
 data class Playlist(val tracks: List<Track> = listOf())
 
-@InvokeArg data class State(val playlist: Playlist? = null)
+@InvokeArg
+data class State(
+        val playing: Boolean? = null,
+        val position: Long? = null,
+        val seek: Double? = null,
+        val volume: Double? = null,
+        val playlist: Playlist? = null,
+)
 
 @TauriPlugin
 class PlayerPlugin(private val activity: Activity) : Plugin(activity) {

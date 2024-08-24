@@ -1257,6 +1257,39 @@ async fn get_session_playback_for_player(
 
 async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleWsMessageError> {
     log::debug!("handle_playback_update: {update:?}");
+
+    let current_session_id = { *CURRENT_SESSION_ID.read().await };
+
+    if current_session_id.is_some_and(|id| update.session_id == id) {
+        if let Some((url, query)) = get_url_and_query().await {
+            use tauri_plugin_player::PlayerExt;
+
+            if let Err(e) =
+                APP.get()
+                    .unwrap()
+                    .player()
+                    .update_state(tauri_plugin_player::UpdateState {
+                        playing: update.playing,
+                        position: update.position,
+                        seek: update.seek,
+                        volume: update.volume,
+                        playlist: update
+                            .playlist
+                            .as_ref()
+                            .map(|x| tauri_plugin_player::Playlist {
+                                tracks: x
+                                    .tracks
+                                    .iter()
+                                    .filter_map(|x| convert_track(x.clone(), &url, &query))
+                                    .collect::<Vec<_>>(),
+                            }),
+                    })
+            {
+                log::debug!("Failed to update_state: {e:?}");
+            }
+        }
+    }
+
     let players = get_players(update.session_id, &update.playback_target, false).await?;
 
     for mut player in players {
@@ -1298,10 +1331,97 @@ async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleW
     Ok(())
 }
 
-async fn update_playlist() -> Result<(), HandleWsMessageError> {
-    use tauri_plugin_player::PlayerExt;
+fn album_cover_url(album_id: &str, source: ApiSource, url: &str, query: &str) -> String {
+    format!("{url}/files/albums/{album_id}/300x300?source={source}{query}")
+}
 
-    log::trace!("update_playlist");
+fn convert_track(
+    value: moosicbox_library::models::ApiTrack,
+    url: &str,
+    query: &str,
+) -> Option<tauri_plugin_player::Track> {
+    let api_source = value.api_source();
+
+    match value {
+        moosicbox_library::models::ApiTrack::Library { track_id, data } => {
+            let album_cover = if data.contains_cover {
+                Some(album_cover_url(&data.album_id.as_string(), api_source, url, query))
+            } else {
+                None
+            };
+            Some(tauri_plugin_player::Track {
+                id: track_id.to_string(),
+                title: data.title,
+                album: data.album,
+                album_cover,
+                artist: data.artist,
+                artist_cover: None,
+                duration: data.duration
+            })
+        }
+        _ => {
+            value.data().map(|x| {
+                let album_id = x
+                    .get("albumId")
+                    .and_then(|x| {
+                        if x.is_string() {
+                            x.as_str().map(|x| x.to_string())
+                        } else if x.is_number() {
+                            x.as_u64().map(|x| x.to_string())
+                        } else {
+                            None
+                        }
+                    })
+                    .unwrap_or_default();
+
+                let contains_cover = x
+                    .get("containsCover")
+                    .and_then(|x| x.as_bool())
+                    .unwrap_or_default();
+
+                let album_cover = if contains_cover {
+                    Some(album_cover_url(&album_id, api_source, url, query))
+                } else {
+                    None
+                };
+
+                log::trace!("handle_ws_message: Converting track data={x} contains_cover={contains_cover} album_cover={album_cover:?}");
+
+                tauri_plugin_player::Track {
+                    id: value.track_id().to_string(),
+                    title: x
+                        .get("title")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or_default()
+                        .to_string(),
+                    album: x
+                        .get("album")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or_default()
+                        .to_string(),
+                    album_cover,
+                    artist: x
+                        .get("artist")
+                        .and_then(|x| x.as_str().map(|x| x.to_string()))
+                        .unwrap_or_default(),
+                    artist_cover: x
+                        .get("artistCover")
+                        .and_then(|x| x.as_str().map(|x| x.to_string())),
+                    duration: x
+                        .get("duration")
+                        .and_then(|x| x.as_f64())
+                        .unwrap_or_default(),
+                }
+            })
+        }
+    }
+}
+
+async fn get_url_and_query() -> Option<(String, String)> {
+    let url_string = { API_URL.read().await.clone() };
+    let Some(url) = url_string else {
+        return None;
+    };
 
     let mut query = String::new();
     if let Some(client_id) = CLIENT_ID.read().await.clone() {
@@ -1311,10 +1431,13 @@ async fn update_playlist() -> Result<(), HandleWsMessageError> {
         query.push_str(&format!("&signature={signature_token}"));
     }
 
-    let url_string = { API_URL.read().await.clone() };
-    let Some(url) = url_string else {
-        return Ok(());
-    };
+    Some((url, query))
+}
+
+async fn update_playlist() -> Result<(), HandleWsMessageError> {
+    use tauri_plugin_player::PlayerExt;
+
+    log::trace!("update_playlist");
 
     let current_session_id = { *CURRENT_SESSION_ID.read().await };
     let Some(current_session_id) = current_session_id else {
@@ -1334,85 +1457,8 @@ async fn update_playlist() -> Result<(), HandleWsMessageError> {
 
     log::debug!("update_playlist: session={session:?}");
 
-    let album_cover_url = {
-        let url = url.clone();
-        let query = query.clone();
-        move |album_id: &str, source: ApiSource| {
-            format!("{url}/files/albums/{album_id}/300x300?source={source}{query}")
-        }
-    };
-
-    let convert_track = |value: moosicbox_library::models::ApiTrack| {
-        let api_source = value.api_source();
-
-        match value {
-            moosicbox_library::models::ApiTrack::Library { track_id, data } => {
-                let album_cover = if data.contains_cover {
-                    Some(album_cover_url(&data.album_id.as_string(), api_source))
-                } else {
-                    None
-                };
-                Some(tauri_plugin_player::Track {
-                    id: track_id.to_string(),
-                    title: data.title,
-                    album: data.album,
-                    album_cover,
-                    artist: data.artist,
-                    artist_cover: None,
-                })
-            }
-            _ => {
-                value.data().map(|x| {
-                    let album_id = x
-                        .get("albumId")
-                        .and_then(|x| {
-                            if x.is_string() {
-                                x.as_str().map(|x| x.to_string())
-                            } else if x.is_number() {
-                                x.as_u64().map(|x| x.to_string())
-                            } else {
-                                None
-                            }
-                        })
-                        .unwrap_or_default();
-
-                    let contains_cover = x
-                        .get("containsCover")
-                        .and_then(|x| x.as_bool())
-                        .unwrap_or_default();
-
-                    let album_cover = if contains_cover {
-                        Some(album_cover_url(&album_id, api_source))
-                    } else {
-                        None
-                    };
-
-                    log::trace!("handle_ws_message: Converting track data={x} contains_cover={contains_cover} album_cover={album_cover:?}");
-
-                    tauri_plugin_player::Track {
-                        id: value.track_id().to_string(),
-                        title: x
-                            .get("title")
-                            .and_then(|x| x.as_str())
-                            .unwrap_or_default()
-                            .to_string(),
-                        album: x
-                            .get("album")
-                            .and_then(|x| x.as_str())
-                            .unwrap_or_default()
-                            .to_string(),
-                        album_cover,
-                        artist: x
-                            .get("artist")
-                            .and_then(|x| x.as_str().map(|x| x.to_string()))
-                            .unwrap_or_default(),
-                        artist_cover: x
-                            .get("artistCover")
-                            .and_then(|x| x.as_str().map(|x| x.to_string())),
-                    }
-                })
-            }
-        }
+    let Some((url, query)) = get_url_and_query().await else {
+        return Ok(());
     };
 
     match APP
@@ -1420,12 +1466,16 @@ async fn update_playlist() -> Result<(), HandleWsMessageError> {
         .unwrap()
         .player()
         .update_state(tauri_plugin_player::UpdateState {
+            playing: Some(session.playing),
+            position: session.position,
+            seek: session.seek.map(|x| x as f64),
+            volume: session.volume,
             playlist: Some(tauri_plugin_player::Playlist {
                 tracks: session
                     .playlist
                     .tracks
                     .into_iter()
-                    .filter_map(convert_track)
+                    .filter_map(|x| convert_track(x, &url, &query))
                     .collect::<Vec<_>>(),
             }),
         }) {

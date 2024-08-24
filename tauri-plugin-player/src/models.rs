@@ -9,6 +9,7 @@ pub struct Track {
     pub album_cover: Option<String>,
     pub artist: String,
     pub artist_cover: Option<String>,
+    pub duration: f64,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -20,6 +21,15 @@ pub struct Playlist {
 #[derive(Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UpdateState {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub playing: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub position: Option<u16>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub seek: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub volume: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub playlist: Option<Playlist>,
 }
 
