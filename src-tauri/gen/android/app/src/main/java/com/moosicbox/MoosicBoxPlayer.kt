@@ -3,18 +3,46 @@ package com.moosicbox
 import android.net.Uri
 import android.os.Looper
 import android.util.Log
+import android.view.Surface
+import android.view.SurfaceHolder
+import android.view.SurfaceView
+import android.view.TextureView
+import androidx.media3.common.AudioAttributes
+import androidx.media3.common.BasePlayer
+import androidx.media3.common.C
+import androidx.media3.common.DeviceInfo
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
-import androidx.media3.common.SimpleBasePlayer
+import androidx.media3.common.Timeline
+import androidx.media3.common.TrackSelectionParameters
+import androidx.media3.common.Tracks
+import androidx.media3.common.VideoSize
+import androidx.media3.common.text.CueGroup
+import androidx.media3.common.util.Clock
+import androidx.media3.common.util.ListenerSet
+import androidx.media3.common.util.Size
 import androidx.media3.common.util.UnstableApi
-import com.google.common.util.concurrent.Futures
-import com.google.common.util.concurrent.ListenableFuture
-import kotlin.collections.mutableListOf
+import androidx.media3.common.util.Util
 
 @UnstableApi
-class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
+class MoosicBoxPlayer : BasePlayer() {
     private var mediaItems: MutableList<MediaItem> = mutableListOf()
+    private var playWhenReady: Boolean = false
+    private var playbackState: @Player.State Int = Player.STATE_IDLE
+    private var position: Int = C.INDEX_UNSET
+    private var positionMs: Long = C.TIME_UNSET
+    private var mediaMetadata: MediaMetadata = MediaMetadata.EMPTY
+    private var timeline: Timeline = Timeline.EMPTY
+
+    private val listeners: ListenerSet<Player.Listener> =
+            ListenerSet(
+                    getApplicationLooper(),
+                    Clock.DEFAULT,
+                    { listener, flags -> listener.onEvents(this, Player.Events(flags)) }
+            )
 
     private val permanentAvailableCommands: Player.Commands =
             Player.Commands.Builder()
@@ -49,130 +77,610 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
                     .add(COMMAND_SEEK_TO_MEDIA_ITEM)
                     .build()
 
-    private var state: State = State.Builder().setAvailableCommands(availableCommands).build()
-
     init {
         MoosicBoxPlayer.player = this
     }
 
-    override fun getState(): State {
-        return this.state
+    override fun getApplicationLooper(): Looper {
+        Log.i("MoosicBoxPlayer", "getApplicationLooper")
+        return Looper.getMainLooper()
     }
 
-    override fun handleSetMediaItems(
-            mediaItems: MutableList<MediaItem>,
+    override fun addListener(listener: Player.Listener) {
+        Log.i("MoosicBoxPlayer", "addListener")
+        listeners.add(listener)
+    }
+
+    override fun removeListener(listener: Player.Listener) {
+        Log.i("MoosicBoxPlayer", "removeListener")
+        listeners.remove(listener)
+    }
+
+    override fun setMediaItems(mediaItems: MutableList<MediaItem>, resetPosition: Boolean) {
+        Log.i("MoosicBoxPlayer", "setMediaItems")
+        setMediaItems(
+                mediaItems,
+                if (resetPosition) {
+                    C.INDEX_UNSET
+                } else {
+                    position
+                },
+                positionMs
+        )
+    }
+
+    override fun setMediaItems(
+            mediaItems: List<MediaItem>,
             startIndex: Int,
             startPositionMs: Long
-    ): ListenableFuture<*> {
-        Log.i("MoosicBoxPlayer", "setMediaItems $mediaItems $startIndex $startPositionMs")
-        this.mediaItems = mediaItems
-        this.state =
-                state.buildUpon()
-                        .setPlaylist(
-                                mediaItems.map {
-                                    MediaItemData.Builder(it.mediaId).setMediaItem(it).build()
-                                }
-                        )
-                        .build()
-        return Futures.immediateFuture(null)
+    ) {
+        Log.i("MoosicBoxPlayer", "setMediaItems")
+        this.mediaItems = mediaItems.toMutableList()
+        this.position = startIndex
+        this.positionMs = startPositionMs
+
+        this.timeline = PlaylistTimeline(this.mediaItems)
+        this.listeners.queueEvent(Player.EVENT_TIMELINE_CHANGED) { listener ->
+            listener.onTimelineChanged(timeline, Player.TIMELINE_CHANGE_REASON_PLAYLIST_CHANGED)
+        }
+
+        val mediaItem = this.getCurrentMediaItem()
+
+        if (mediaItem != null) {
+            Log.i("MoosicBoxPlayer", "setMediaItems: mediaItem updated to ${mediaItem}")
+            this.mediaMetadata = mediaItem.mediaMetadata
+
+            this.listeners.queueEvent(Player.EVENT_MEDIA_METADATA_CHANGED) { listener ->
+                listener.onMediaMetadataChanged(this.mediaMetadata)
+            }
+        }
+
+        this.listeners.flushEvents()
     }
 
-    override fun handlePrepare(): ListenableFuture<*> {
+    override fun addMediaItems(index: Int, mediaItems: MutableList<MediaItem>) {
+        Log.i("MoosicBoxPlayer", "addMediaItems")
+        this.mediaItems.addAll(index, mediaItems)
+    }
+
+    override fun moveMediaItems(fromIndex: Int, toIndex: Int, newIndex: Int) {
+        Log.i("MoosicBoxPlayer", "moveMediaItems")
+        // Actually do it
+        val old = this.mediaItems[fromIndex]
+        this.mediaItems[fromIndex] = this.mediaItems[newIndex]
+        this.mediaItems[newIndex] = old
+    }
+
+    override fun replaceMediaItems(
+            fromIndex: Int,
+            toIndex: Int,
+            mediaItems: MutableList<MediaItem>
+    ) {
+        Log.i("MoosicBoxPlayer", "replaceMediaItems")
+        for (x in fromIndex..toIndex) {
+            this.mediaItems[x] = mediaItems[x - fromIndex]
+        }
+    }
+
+    override fun removeMediaItems(fromIndex: Int, toIndex: Int) {
+        Log.i("MoosicBoxPlayer", "removeMediaItems")
+        for (x in fromIndex..toIndex) {
+            this.mediaItems.removeAt(fromIndex)
+        }
+    }
+
+    override fun getAvailableCommands(): Player.Commands {
+        Log.i("MoosicBoxPlayer", "getAvailableCommands")
+        return availableCommands
+    }
+
+    override fun prepare() {
         Log.i("MoosicBoxPlayer", "prepare")
-        this.state = this.state.buildUpon().setPlaybackState(STATE_READY).build()
-        return Futures.immediateFuture(null)
     }
 
-    override fun handleSetPlayWhenReady(playWhenReady: Boolean): ListenableFuture<*> {
-        Log.i("MoosicBoxPlayer", "setPlayWhenReady $playWhenReady")
-        this.state =
-                this.state
-                        .buildUpon()
-                        .setPlayWhenReady(playWhenReady, PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
-                        .build()
-        return Futures.immediateFuture(null)
+    override fun getPlaybackState(): Int {
+        Log.i("MoosicBoxPlayer", "getPlaybackState")
+        return playbackState
     }
 
-    override fun handleStop(): ListenableFuture<*> {
+    override fun getPlaybackSuppressionReason(): Int {
+        Log.i("MoosicBoxPlayer", "getPlaybackSuppressionReason")
+        return Player.PLAYBACK_SUPPRESSION_REASON_NONE
+    }
+
+    override fun getPlayerError(): PlaybackException? {
+        Log.i("MoosicBoxPlayer", "getPlayerError")
+        return null
+    }
+
+    override fun setPlayWhenReady(playWhenReady: Boolean) {
+        Log.i("MoosicBoxPlayer", "setPlayWhenReady")
+        if (this.playWhenReady != playWhenReady) {
+            this.playWhenReady = playWhenReady
+            this.listeners.sendEvent(Player.EVENT_PLAY_WHEN_READY_CHANGED) { listener ->
+                listener.onPlayWhenReadyChanged(
+                        playWhenReady,
+                        Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST
+                )
+            }
+        }
+    }
+
+    override fun getPlayWhenReady(): Boolean {
+        Log.i("MoosicBoxPlayer", "getPlayWhenReady")
+        return playWhenReady
+    }
+
+    override fun setRepeatMode(repeatMode: Int) {
+        Log.i("MoosicBoxPlayer", "setRepeatMode")
+    }
+
+    override fun getRepeatMode(): Int {
+        Log.i("MoosicBoxPlayer", "getRepeatMode")
+        return Player.REPEAT_MODE_OFF
+    }
+
+    override fun setShuffleModeEnabled(shuffleModeEnabled: Boolean) {
+        Log.i("MoosicBoxPlayer", "setShuffleModeEnabled")
+    }
+
+    override fun getShuffleModeEnabled(): Boolean {
+        Log.i("MoosicBoxPlayer", "getShuffleModeEnabled")
+        return false
+    }
+
+    override fun isLoading(): Boolean {
+        Log.i("MoosicBoxPlayer", "isLoading")
+        return false
+    }
+
+    override fun seekTo(
+            mediaItemIndex: Int,
+            positionMs: Long,
+            seekCommand: Int,
+            isRepeatingCurrentItem: Boolean
+    ) {
+        if (this.position != mediaItemIndex || this.positionMs != positionMs) {
+            Log.i("MoosicBoxPlayer", "seekTo")
+            this.position = mediaItemIndex
+            this.positionMs = positionMs
+        } else {
+            Log.i("MoosicBoxPlayer", "seekTo no change")
+        }
+    }
+
+    override fun getSeekBackIncrement(): Long {
+        Log.i("MoosicBoxPlayer", "getSeekBackIncrement")
+        return 0
+    }
+
+    override fun getSeekForwardIncrement(): Long {
+        Log.i("MoosicBoxPlayer", "getSeekForwardIncrement")
+        return 0
+    }
+
+    override fun getMaxSeekToPreviousPosition(): Long {
+        Log.i("MoosicBoxPlayer", "getMaxSeekToPreviousPosition")
+        return 0
+    }
+
+    override fun setPlaybackParameters(playbackParameters: PlaybackParameters) {
+        Log.i("MoosicBoxPlayer", "setPlaybackParameters")
+    }
+
+    override fun getPlaybackParameters(): PlaybackParameters {
+        Log.i("MoosicBoxPlayer", "getPlaybackParameters")
+        return PlaybackParameters.DEFAULT
+    }
+
+    override fun stop() {
         Log.i("MoosicBoxPlayer", "stop")
-        this.state =
-                this.state
-                        .buildUpon()
-                        .setPlayWhenReady(false, PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST)
-                        .setPlaybackState(STATE_ENDED)
-                        .build()
-        return Futures.immediateFuture(null)
     }
 
-    override fun handleRelease(): ListenableFuture<*> {
+    override fun release() {
         Log.i("MoosicBoxPlayer", "release")
-        return Futures.immediateFuture(null)
     }
 
-    override fun handleSetRepeatMode(@Player.RepeatMode repeatMode: Int): ListenableFuture<*> {
-        Log.i("MoosicBoxPlayer", "setRepeatMode $repeatMode")
-        this.state = this.state.buildUpon().setRepeatMode(repeatMode).build()
-        return Futures.immediateFuture(null)
+    override fun getCurrentTracks(): Tracks {
+        Log.i("MoosicBoxPlayer", "getCurrentTracks")
+        return Tracks.EMPTY
     }
 
-    override fun handleSetShuffleModeEnabled(shuffleModeEnabled: Boolean): ListenableFuture<*> {
-        Log.i("MoosicBoxPlayer", "setShuffleModeEnabled $shuffleModeEnabled")
-        this.state = this.state.buildUpon().setShuffleModeEnabled(shuffleModeEnabled).build()
-        return Futures.immediateFuture(null)
+    override fun getTrackSelectionParameters(): TrackSelectionParameters {
+        Log.i("MoosicBoxPlayer", "getTrackSelectionParameters")
+        return TrackSelectionParameters.DEFAULT_WITHOUT_CONTEXT
     }
 
-    override fun handleSetVideoOutput(videoOutput: Any): ListenableFuture<*> {
-        Log.i("MoosicBoxPlayer", "setVideoOutput $videoOutput")
-        return Futures.immediateFuture(null)
+    override fun setTrackSelectionParameters(parameters: TrackSelectionParameters) {
+        Log.i("MoosicBoxPlayer", "setTrackSelectionParameters")
     }
 
-    override fun handleClearVideoOutput(videoOutput: Any?): ListenableFuture<*> {
-        Log.i("MoosicBoxPlayer", "clearVideoOutput $videoOutput")
-        return Futures.immediateFuture(null)
+    override fun getMediaMetadata(): MediaMetadata {
+        Log.i("MoosicBoxPlayer", "getMediaMetadata")
+        return getCurrentMediaItem()?.mediaMetadata ?: MediaMetadata.EMPTY
     }
 
-    fun setIdle() {
-        Log.i("MoosicBoxPlayer", "setIdle")
-        this.state = this.state.buildUpon().setPlaybackState(STATE_IDLE).build()
+    override fun getPlaylistMetadata(): MediaMetadata {
+        Log.i("MoosicBoxPlayer", "getPlaylistMetadata")
+        return getCurrentMediaItem()?.mediaMetadata ?: MediaMetadata.EMPTY
+    }
+
+    override fun setPlaylistMetadata(mediaMetadata: MediaMetadata) {
+        Log.i("MoosicBoxPlayer", "setPlaylistMetadata")
+    }
+
+    override fun getCurrentTimeline(): Timeline {
+        Log.i("MoosicBoxPlayer", "getCurrentTimeline")
+        return timeline
+    }
+
+    override fun getCurrentPeriodIndex(): Int {
+        Log.i("MoosicBoxPlayer", "getCurrentPeriodIndex")
+        return 0
+    }
+
+    override fun getCurrentMediaItemIndex(): Int {
+        Log.i("MoosicBoxPlayer", "getCurrentMediaItemIndex")
+        return position
+    }
+
+    override fun getDuration(): Long {
+        Log.i("MoosicBoxPlayer", "getDuration")
+        return getCurrentMediaItem()?.mediaMetadata?.durationMs ?: 0
+    }
+
+    override fun getCurrentPosition(): Long {
+        Log.i("MoosicBoxPlayer", "getCurrentPosition")
+        return positionMs
+    }
+
+    override fun getBufferedPosition(): Long {
+        Log.i("MoosicBoxPlayer", "getBufferedPosition")
+        return positionMs
+    }
+
+    override fun getTotalBufferedDuration(): Long {
+        Log.i("MoosicBoxPlayer", "getTotalBufferedDuration")
+        return getCurrentMediaItem()?.mediaMetadata?.durationMs ?: 0
+    }
+
+    override fun isPlayingAd(): Boolean {
+        Log.i("MoosicBoxPlayer", "isPlayingAd")
+        return false
+    }
+
+    override fun getCurrentAdGroupIndex(): Int {
+        Log.i("MoosicBoxPlayer", "getCurrentAdGroupIndex")
+        return -1
+    }
+
+    override fun getCurrentAdIndexInAdGroup(): Int {
+        Log.i("MoosicBoxPlayer", "getCurrentAdIndexInAdGroup")
+        return -1
+    }
+
+    override fun getContentPosition(): Long {
+        Log.i("MoosicBoxPlayer", "getContentPosition")
+        return positionMs
+    }
+
+    override fun getContentBufferedPosition(): Long {
+        Log.i("MoosicBoxPlayer", "getContentBufferedPosition")
+        return positionMs
+    }
+
+    override fun getAudioAttributes(): AudioAttributes {
+        Log.i("MoosicBoxPlayer", "getAudioAttributes")
+        return AudioAttributes.DEFAULT
+    }
+
+    override fun setVolume(volume: Float) {
+        Log.i("MoosicBoxPlayer", "setVolume")
+    }
+
+    override fun getVolume(): Float {
+        Log.i("MoosicBoxPlayer", "getVolume")
+        return 1.0f
+    }
+
+    override fun clearVideoSurface() {
+        Log.i("MoosicBoxPlayer", "clearVideoSurface")
+    }
+
+    override fun clearVideoSurface(surface: Surface?) {
+        Log.i("MoosicBoxPlayer", "clearVideoSurface")
+    }
+
+    override fun setVideoSurface(surface: Surface?) {
+        Log.i("MoosicBoxPlayer", "setVideoSurface")
+    }
+
+    override fun setVideoSurfaceHolder(surfaceHolder: SurfaceHolder?) {
+        Log.i("MoosicBoxPlayer", "setVideoSurfaceHolder")
+    }
+
+    override fun clearVideoSurfaceHolder(surfaceHolder: SurfaceHolder?) {
+        Log.i("MoosicBoxPlayer", "clearVideoSurfaceHolder")
+    }
+
+    override fun setVideoSurfaceView(surfaceView: SurfaceView?) {
+        Log.i("MoosicBoxPlayer", "setVideoSurfaceView")
+    }
+
+    override fun clearVideoSurfaceView(surfaceView: SurfaceView?) {
+        Log.i("MoosicBoxPlayer", "clearVideoSurfaceView")
+    }
+
+    override fun setVideoTextureView(textureView: TextureView?) {
+        Log.i("MoosicBoxPlayer", "setVideoTextureView")
+    }
+
+    override fun clearVideoTextureView(textureView: TextureView?) {
+        Log.i("MoosicBoxPlayer", "clearVideoTextureView")
+    }
+
+    override fun getVideoSize(): VideoSize {
+        Log.i("MoosicBoxPlayer", "getVideoSize")
+        return VideoSize.UNKNOWN
+    }
+
+    override fun getSurfaceSize(): Size {
+        Log.i("MoosicBoxPlayer", "getSurfaceSize")
+        return Size.ZERO
+    }
+
+    override fun getCurrentCues(): CueGroup {
+        Log.i("MoosicBoxPlayer", "getCurrentCues")
+        return CueGroup.EMPTY_TIME_ZERO
+    }
+
+    override fun getDeviceInfo(): DeviceInfo {
+        Log.i("MoosicBoxPlayer", "getDeviceInfo")
+        return DeviceInfo.UNKNOWN
+    }
+
+    override fun getDeviceVolume(): Int {
+        Log.i("MoosicBoxPlayer", "getDeviceVolume")
+        return 1
+    }
+
+    override fun isDeviceMuted(): Boolean {
+        Log.i("MoosicBoxPlayer", "isDeviceMuted")
+        return false
+    }
+
+    override fun setDeviceVolume(volume: Int) {
+        Log.i("MoosicBoxPlayer", "setDeviceVolume")
+    }
+
+    override fun setDeviceVolume(volume: Int, flags: Int) {
+        Log.i("MoosicBoxPlayer", "setDeviceVolume")
+    }
+
+    override fun increaseDeviceVolume() {
+        Log.i("MoosicBoxPlayer", "increaseDeviceVolume")
+    }
+
+    override fun increaseDeviceVolume(flags: Int) {
+        Log.i("MoosicBoxPlayer", "increaseDeviceVolume")
+    }
+
+    override fun decreaseDeviceVolume() {
+        Log.i("MoosicBoxPlayer", "decreaseDeviceVolume")
+    }
+
+    override fun decreaseDeviceVolume(flags: Int) {
+        Log.i("MoosicBoxPlayer", "decreaseDeviceVolume")
+    }
+
+    override fun setDeviceMuted(muted: Boolean) {
+        Log.i("MoosicBoxPlayer", "setDeviceMuted")
+    }
+
+    override fun setDeviceMuted(muted: Boolean, flags: Int) {
+        Log.i("MoosicBoxPlayer", "setDeviceMuted")
+    }
+
+    override fun setAudioAttributes(audioAttributes: AudioAttributes, handleAudioFocus: Boolean) {
+        Log.i("MoosicBoxPlayer", "setAudioAttributes")
+    }
+
+    fun setPlaybackState(playbackState: @Player.State Int) {
+        if (this.playbackState != playbackState) {
+            this.playbackState = playbackState
+            this.listeners.sendEvent(Player.EVENT_PLAYBACK_STATE_CHANGED) { listener ->
+                listener.onPlaybackStateChanged(playbackState)
+            }
+        }
     }
 
     companion object {
         lateinit var player: MoosicBoxPlayer
 
         init {
-            com.moosicbox.playerplugin.Player.updateState = {
-                Log.i("MoosicBoxPlayer", "Received state ${it}")
+            com.moosicbox.playerplugin.Player.updateState = { state ->
+                Log.i("MoosicBoxPlayer", "Received state $state")
 
-                it.playlist?.also {
-                    val mediaItems =
-                            it.tracks.map {
+                var mediaItems: List<MediaItem>? = null
+
+                state.playlist?.also { playlist ->
+                    mediaItems =
+                            playlist.tracks.map { track ->
                                 var metadataBuilder =
                                         MediaMetadata.Builder()
-                                                .setArtist(it.artist)
-                                                .setTitle(it.title)
+                                                .setArtist(track.artist)
+                                                .setTitle(track.title)
+                                                .setDurationMs((track.duration * 1000).toLong())
 
-                                it.albumCover?.also {
+                                track.albumCover?.also {
                                     metadataBuilder = metadataBuilder.setArtworkUri(Uri.parse(it))
                                 }
 
                                 val metadata = metadataBuilder.build()
 
                                 MediaItem.Builder()
-                                        .setMediaId("media-${it.id}")
+                                        .setMediaId("media-${track.id}")
                                         .setMediaMetadata(metadata)
                                         .build()
                             }
 
-                    Log.i("MoosicBoxPlayer", "updateState mediaItems=${mediaItems}")
-
-                    if (mediaItems.isEmpty()) {
-                        player.setIdle()
-                        player.setMediaItems(mediaItems)
-                    } else {
-                        player.setMediaItems(mediaItems)
-                        player.prepare()
-                    }
+                    Log.i("MoosicBoxPlayer", "updateState mediaItems=$mediaItems")
                 }
+
+                if (mediaItems != null && mediaItems!!.isEmpty()) {
+                    player.setPlaybackState(Player.STATE_IDLE)
+
+                    player.setMediaItems(mediaItems!!)
+                } else {
+                    player.setPlaybackState(Player.STATE_READY)
+                    if (mediaItems != null) {
+                        if (state.position != null) {
+                            if (state.seek != null) {
+                                player.setMediaItems(
+                                        mediaItems!!,
+                                        state.position!!.toInt(),
+                                        (state.seek!! * 1000).toLong()
+                                )
+                            } else {
+                                player.setMediaItems(mediaItems!!, state.position!!.toInt(), 0)
+                            }
+                        } else {
+                            player.setMediaItems(mediaItems!!)
+                        }
+                    } else if (state.position != null) {
+                        if (state.seek != null) {
+                            player.seekTo(state.position!!.toInt(), (state.seek!! * 1000).toLong())
+                        } else {
+                            player.seekToDefaultPosition(state.position!!.toInt())
+                        }
+                    } else if (state.seek != null) {
+                        player.seekTo((state.seek!! * 1000).toLong())
+                    }
+                    state.volume?.also { player.setVolume(it.toFloat()) }
+                    player.prepare()
+                }
+            }
+        }
+    }
+
+    internal class PlaylistTimeline
+    @JvmOverloads
+    constructor(
+            mediaItems: List<MediaItem>,
+            shuffledIndices: IntArray = createUnshuffledIndices(mediaItems.size)
+    ) : Timeline() {
+        private val mediaItems: List<MediaItem>
+        private val shuffledIndices: IntArray
+        private val indicesInShuffled: IntArray
+
+        init {
+            this.mediaItems = mediaItems
+            this.shuffledIndices = shuffledIndices.copyOf(shuffledIndices.size)
+            indicesInShuffled = IntArray(shuffledIndices.size)
+            for (i in shuffledIndices.indices) {
+                indicesInShuffled[shuffledIndices[i]] = i
+            }
+        }
+
+        override fun getWindowCount(): Int {
+            return mediaItems.size
+        }
+
+        override fun getWindow(
+                windowIndex: Int,
+                window: Window,
+                defaultPositionProjectionUs: Long
+        ): Window {
+            window[
+                    0,
+                    mediaItems[windowIndex],
+                    null,
+                    0,
+                    0,
+                    0,
+                    true,
+                    false,
+                    null,
+                    0,
+                    Util.msToUs(DEFAULT_DURATION_MS),
+                    windowIndex,
+                    windowIndex] = 0
+            window.isPlaceholder = false
+            return window
+        }
+
+        override fun getNextWindowIndex(
+                windowIndex: Int,
+                repeatMode: @Player.RepeatMode Int,
+                shuffleModeEnabled: Boolean
+        ): Int {
+            if (repeatMode == REPEAT_MODE_ONE) {
+                return windowIndex
+            }
+            if (windowIndex == getLastWindowIndex(shuffleModeEnabled)) {
+                return if (repeatMode == REPEAT_MODE_ALL) getFirstWindowIndex(shuffleModeEnabled)
+                else C.INDEX_UNSET
+            }
+            return if (shuffleModeEnabled) shuffledIndices[indicesInShuffled[windowIndex] + 1]
+            else windowIndex + 1
+        }
+
+        override fun getPreviousWindowIndex(
+                windowIndex: Int,
+                repeatMode: @Player.RepeatMode Int,
+                shuffleModeEnabled: Boolean
+        ): Int {
+            if (repeatMode == REPEAT_MODE_ONE) {
+                return windowIndex
+            }
+            if (windowIndex == getFirstWindowIndex(shuffleModeEnabled)) {
+                return if (repeatMode == REPEAT_MODE_ALL) getLastWindowIndex(shuffleModeEnabled)
+                else C.INDEX_UNSET
+            }
+            return if (shuffleModeEnabled) shuffledIndices[indicesInShuffled[windowIndex] - 1]
+            else windowIndex - 1
+        }
+
+        override fun getLastWindowIndex(shuffleModeEnabled: Boolean): Int {
+            if (isEmpty) {
+                return C.INDEX_UNSET
+            }
+            return if (shuffleModeEnabled) shuffledIndices[windowCount - 1] else windowCount - 1
+        }
+
+        override fun getFirstWindowIndex(shuffleModeEnabled: Boolean): Int {
+            if (isEmpty) {
+                return C.INDEX_UNSET
+            }
+            return if (shuffleModeEnabled) shuffledIndices[0] else 0
+        }
+
+        override fun getPeriodCount(): Int {
+            return windowCount
+        }
+
+        override fun getPeriod(periodIndex: Int, period: Period, setIds: Boolean): Period {
+            period[null, null, periodIndex, Util.msToUs(DEFAULT_DURATION_MS)] = 0
+            return period
+        }
+
+        override fun getIndexOfPeriod(uid: Any): Int {
+            throw UnsupportedOperationException()
+        }
+
+        override fun getUidOfPeriod(periodIndex: Int): Any {
+            throw UnsupportedOperationException()
+        }
+
+        companion object {
+            private const val DEFAULT_DURATION_MS: Long = 100
+
+            private fun createUnshuffledIndices(length: Int): IntArray {
+                val indices = IntArray(length)
+                for (i in 0 until length) {
+                    indices[i] = i
+                }
+                return indices
             }
         }
     }
