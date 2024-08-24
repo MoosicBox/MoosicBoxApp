@@ -1,14 +1,14 @@
 package com.moosicbox
 
 import android.app.Notification
-import android.app.NotificationChannel
-import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.Bitmap
+import android.media.AudioFormat
+import android.media.AudioManager
+import android.media.AudioTrack
 import android.util.Log
 import androidx.annotation.OptIn
-import androidx.core.app.NotificationCompat
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -22,8 +22,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class PlaybackService : MediaLibraryService() {
-    private var mediaLibrarySession: MediaLibrarySession? = null
-    private var player: Player? = null
+    private lateinit var mediaLibrarySession: MediaLibrarySession
+    private lateinit var audioTrack: AudioTrack
+    private lateinit var player: Player
     private lateinit var notificationManager: PlayerNotificationManager
 
     init {
@@ -36,22 +37,37 @@ class PlaybackService : MediaLibraryService() {
         this.player = player
         mediaLibrarySession =
                 MediaLibrarySession.Builder(this, player, MediaLibrarySessionCallback()).build()
+
+        audioTrack =
+                AudioTrack(
+                        AudioManager.STREAM_MUSIC,
+                        48000,
+                        AudioFormat.CHANNEL_OUT_STEREO,
+                        AudioFormat.ENCODING_PCM_16BIT,
+                        AudioTrack.getMinBufferSize(
+                                48000,
+                                AudioFormat.CHANNEL_OUT_STEREO,
+                                AudioFormat.ENCODING_PCM_16BIT
+                        ),
+                        AudioTrack.MODE_STREAM
+                )
     }
 
     // Remember to release the player and media session in onDestroy
     override fun onDestroy() {
-        if (player?.isPlaying!!) {
-            player?.stop()
+        audioTrack.stop()
+        audioTrack.release()
+
+        if (player.isPlaying) {
+            player.stop()
         }
         notificationManager.setPlayer(null)
-        player?.release()
-        player = null
+        player.release()
         stopSelf()
 
-        mediaLibrarySession?.run {
+        mediaLibrarySession.run {
             player.release()
             release()
-            mediaLibrarySession = null
         }
 
         super.onDestroy()
@@ -123,6 +139,8 @@ class PlaybackService : MediaLibraryService() {
                 session: MediaSession,
                 controller: MediaSession.ControllerInfo
         ): MediaSession.ConnectionResult {
+            audioTrack.play()
+
             // Set available player and session commands.
             return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
                     .setAvailablePlayerCommands(
@@ -136,6 +154,15 @@ class PlaybackService : MediaLibraryService() {
                                     .build()
                     )
                     .build()
+        }
+
+        override fun onMediaButtonEvent(
+                session: MediaSession,
+                controllerInfo: MediaSession.ControllerInfo,
+                intent: Intent
+        ): Boolean {
+            Log.i("PlaybackService", "onMediaButtonEvent $session $controllerInfo $intent")
+            return super.onMediaButtonEvent(session, controllerInfo, intent)
         }
 
         override fun onPlaybackResumption(
