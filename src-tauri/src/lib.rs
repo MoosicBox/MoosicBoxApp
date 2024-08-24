@@ -1851,6 +1851,17 @@ pub fn run() {
         .setup(|app| {
             APP.get_or_init(|| app.handle().clone());
 
+            #[cfg(target_os = "android")]
+            {
+                use tauri_plugin_notification::{NotificationExt as _, PermissionState};
+
+                let state = app.notification().permission_state()?;
+
+                if state != PermissionState::Denied && state != PermissionState::Granted {
+                    app.notification().request_permission()?;
+                }
+            }
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
