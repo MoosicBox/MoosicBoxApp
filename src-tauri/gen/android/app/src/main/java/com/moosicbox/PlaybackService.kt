@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.Bitmap
+import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
@@ -39,18 +40,28 @@ class PlaybackService : MediaLibraryService() {
                 MediaLibrarySession.Builder(this, player, MediaLibrarySessionCallback()).build()
 
         audioTrack =
-                AudioTrack(
-                        AudioManager.STREAM_MUSIC,
-                        48000,
-                        AudioFormat.CHANNEL_OUT_STEREO,
-                        AudioFormat.ENCODING_PCM_16BIT,
-                        AudioTrack.getMinBufferSize(
-                                48000,
-                                AudioFormat.CHANNEL_OUT_STEREO,
-                                AudioFormat.ENCODING_PCM_16BIT
-                        ),
-                        AudioTrack.MODE_STREAM
-                )
+                AudioTrack.Builder()
+                        .setAudioAttributes(
+                                AudioAttributes.Builder()
+                                        .setLegacyStreamType(AudioManager.STREAM_MUSIC)
+                                        .build()
+                        )
+                        .setAudioFormat(
+                                AudioFormat.Builder()
+                                        .setEncoding(AudioFormat.ENCODING_PCM_16BIT)
+                                        .setChannelMask(AudioFormat.CHANNEL_OUT_STEREO)
+                                        .setSampleRate(48000)
+                                        .build()
+                        )
+                        .setBufferSizeInBytes(
+                                AudioTrack.getMinBufferSize(
+                                        48000,
+                                        AudioFormat.CHANNEL_OUT_STEREO,
+                                        AudioFormat.ENCODING_PCM_16BIT
+                                )
+                        )
+                        .setTransferMode(AudioTrack.MODE_STREAM)
+                        .build()
     }
 
     // Remember to release the player and media session in onDestroy
