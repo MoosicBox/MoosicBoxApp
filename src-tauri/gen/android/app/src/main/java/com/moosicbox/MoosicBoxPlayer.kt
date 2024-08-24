@@ -16,7 +16,7 @@ import kotlin.collections.mutableListOf
 class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
     private var mediaItems: MutableList<MediaItem> = mutableListOf()
 
-    private var permanentAvailableCommands: Player.Commands =
+    private val permanentAvailableCommands: Player.Commands =
             Player.Commands.Builder()
                     .addAll(
                             COMMAND_PLAY_PAUSE,
@@ -42,7 +42,7 @@ class MoosicBoxPlayer : SimpleBasePlayer(Looper.getMainLooper()) {
                     )
                     .build()
 
-    private var availableCommands: Player.Commands =
+    private val availableCommands: Player.Commands =
             Player.Commands.Builder()
                     .addAll(permanentAvailableCommands)
                     .add(COMMAND_SEEK_TO_DEFAULT_POSITION)
