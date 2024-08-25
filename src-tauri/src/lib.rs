@@ -1010,6 +1010,8 @@ pub fn on_playback_event(update: &UpdateSession, _current: &Playback) {
     let update = update.to_owned();
 
     moosicbox_task::spawn("moosicbox_app: on_playback_event", async move {
+        propagate_state_to_plugin(&update.clone().into()).await;
+
         if let Some(handle) = WS_HANDLE.read().await.as_ref() {
             log::debug!("on_playback_event: Sending update session: update={update:?}");
 
@@ -1276,9 +1278,7 @@ async fn get_session_playback_for_player(
     update
 }
 
-async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleWsMessageError> {
-    log::debug!("handle_playback_update: {update:?}");
-
+async fn propagate_state_to_plugin(update: &ApiUpdateSession) {
     let current_session_id = { *CURRENT_SESSION_ID.read().await };
 
     if current_session_id.is_some_and(|id| update.session_id == id) {
@@ -1310,6 +1310,12 @@ async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleW
             }
         }
     }
+}
+
+async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleWsMessageError> {
+    log::debug!("handle_playback_update: {update:?}");
+
+    propagate_state_to_plugin(update).await;
 
     let players = get_players(update.session_id, &update.playback_target, false).await?;
 
