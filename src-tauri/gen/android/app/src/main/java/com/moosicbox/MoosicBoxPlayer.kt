@@ -485,6 +485,39 @@ class MoosicBoxPlayer : BasePlayer() {
         Log.i("MoosicBoxPlayer", "setAudioAttributes")
     }
 
+    fun seekToPosition(position: Int) {
+        if (this.position != position) {
+            this.position = position
+
+            seekToDefaultPosition(position)
+
+            val mediaItem = this.getCurrentMediaItem()
+
+            if (mediaItem != null) {
+                this.listeners.sendEvent(Player.EVENT_MEDIA_METADATA_CHANGED) { listener ->
+                    listener.onMediaMetadataChanged(mediaItem.mediaMetadata)
+                }
+            }
+        }
+    }
+
+    fun seekToPosition(position: Int, positionMs: Long) {
+        if (this.position != position || this.positionMs != positionMs) {
+            this.position = position
+            this.positionMs = positionMs
+
+            seekTo(position, positionMs)
+
+            val mediaItem = this.getCurrentMediaItem()
+
+            if (mediaItem != null) {
+                this.listeners.sendEvent(Player.EVENT_MEDIA_METADATA_CHANGED) { listener ->
+                    listener.onMediaMetadataChanged(mediaItem.mediaMetadata)
+                }
+            }
+        }
+    }
+
     fun setPlaybackState(playbackState: @Player.State Int) {
         if (this.playbackState != playbackState) {
             this.playbackState = playbackState
@@ -549,9 +582,12 @@ class MoosicBoxPlayer : BasePlayer() {
                         }
                     } else if (state.position != null) {
                         if (state.seek != null) {
-                            player.seekTo(state.position!!.toInt(), (state.seek!! * 1000).toLong())
+                            player.seekToPosition(
+                                    state.position!!.toInt(),
+                                    (state.seek!! * 1000).toLong()
+                            )
                         } else {
-                            player.seekToDefaultPosition(state.position!!.toInt())
+                            player.seekToPosition(state.position!!.toInt())
                         }
                     } else if (state.seek != null) {
                         player.seekTo((state.seek!! * 1000).toLong())
