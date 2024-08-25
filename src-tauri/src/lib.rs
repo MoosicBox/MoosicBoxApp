@@ -404,23 +404,44 @@ async fn set_state(state: AppState) -> Result<(), TauriPlayerError> {
     }
 
     if updated_connection_details {
-        scan_outputs()
-            .await
-            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        moosicbox_task::spawn("set_state: scan_outputs", async {
+            log::debug!("Attempting to scan_outputs...");
+            scan_outputs().await
+        });
 
-        init_upnp_players()
-            .await
-            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        let inited_upnp_players =
+            moosicbox_task::spawn("set_state: init_upnp_players", async move {
+                log::debug!("Attempting to init_upnp_players...");
+                init_upnp_players().await
+            });
 
-        reinit_players().await?;
+        let reinited_players = moosicbox_task::spawn("set_state: reinit_players", async move {
+            inited_upnp_players
+                .await
+                .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?
+                .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+            log::debug!("Attempting to reinit_players...");
+            reinit_players().await
+        });
 
-        fetch_audio_zones()
-            .await
-            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        let fetched_audio_zones =
+            moosicbox_task::spawn("set_state: fetch_audio_zones", async move {
+                reinited_players
+                    .await
+                    .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?
+                    .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+                log::debug!("Attempting to fetch_audio_zones...");
+                fetch_audio_zones().await
+            });
 
-        init_ws_connection()
-            .await
-            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        moosicbox_task::spawn("set_state: init_ws_connection", async move {
+            fetched_audio_zones
+                .await
+                .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?
+                .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+            log::debug!("Attempting to init_ws_connection...");
+            init_ws_connection().await
+        });
     }
 
     Ok(())
