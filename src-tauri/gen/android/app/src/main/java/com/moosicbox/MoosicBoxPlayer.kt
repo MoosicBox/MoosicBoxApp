@@ -557,6 +557,7 @@ class MoosicBoxPlayer : BasePlayer() {
                         player.seekTo((state.seek!! * 1000).toLong())
                     }
                     state.volume?.also { player.setVolume(it.toFloat()) }
+                    state.playing?.also { player.setPlayWhenReady(it) }
                     player.prepare()
                 }
             }
