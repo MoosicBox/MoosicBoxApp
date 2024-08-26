@@ -486,19 +486,7 @@ class MoosicBoxPlayer : BasePlayer() {
     }
 
     fun seekToPosition(position: Int) {
-        if (this.position != position) {
-            this.position = position
-
-            seekToDefaultPosition(position)
-
-            val mediaItem = this.getCurrentMediaItem()
-
-            if (mediaItem != null) {
-                this.listeners.sendEvent(Player.EVENT_MEDIA_METADATA_CHANGED) { listener ->
-                    listener.onMediaMetadataChanged(mediaItem.mediaMetadata)
-                }
-            }
-        }
+        seekToPosition(position, this.positionMs)
     }
 
     fun seekToPosition(position: Int, positionMs: Long) {
@@ -511,9 +499,17 @@ class MoosicBoxPlayer : BasePlayer() {
             val mediaItem = this.getCurrentMediaItem()
 
             if (mediaItem != null) {
-                this.listeners.sendEvent(Player.EVENT_MEDIA_METADATA_CHANGED) { listener ->
+                this.listeners.queueEvent(Player.EVENT_MEDIA_METADATA_CHANGED) { listener ->
                     listener.onMediaMetadataChanged(mediaItem.mediaMetadata)
                 }
+                this.timeline.
+                this.listeners.queueEvent(Player.EVENT_TIMELINE_CHANGED) { listener ->
+                    listener.onTimelineChanged(
+                            this.timeline,
+                            Player.TIMELINE_CHANGE_REASON_SOURCE_UPDATE
+                    )
+                }
+                this.listeners.flushEvents()
             }
         }
     }
@@ -524,6 +520,7 @@ class MoosicBoxPlayer : BasePlayer() {
             this.listeners.sendEvent(Player.EVENT_PLAYBACK_STATE_CHANGED) { listener ->
                 listener.onPlaybackStateChanged(playbackState)
             }
+            this.listeners.flushEvents()
         }
     }
 
