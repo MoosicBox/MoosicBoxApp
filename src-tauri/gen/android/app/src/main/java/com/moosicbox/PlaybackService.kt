@@ -9,6 +9,8 @@ import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
 import android.util.Log
+import android.view.KeyEvent
+import android.os.Build
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -173,6 +175,49 @@ class PlaybackService : MediaLibraryService() {
                 intent: Intent
         ): Boolean {
             Log.i("PlaybackService", "onMediaButtonEvent $session $controllerInfo $intent")
+
+            val key: KeyEvent? =
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+                    } else {
+                        intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+                    }
+
+            if (key != null) {
+                when (key.keyCode) {
+                    KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                        com.moosicbox.playerplugin.Player.sendMediaEvent(
+                                com.moosicbox.playerplugin.MediaEvent(play = true)
+                        )
+                    }
+                    KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                        com.moosicbox.playerplugin.Player.sendMediaEvent(
+                                com.moosicbox.playerplugin.MediaEvent(play = false)
+                        )
+                    }
+                    KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                        com.moosicbox.playerplugin.Player.sendMediaEvent(
+                                com.moosicbox.playerplugin.MediaEvent(play = !player.isPlaying)
+                        )
+                    }
+                    KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                        com.moosicbox.playerplugin.Player.sendMediaEvent(
+                                com.moosicbox.playerplugin.MediaEvent(nextTrack = true)
+                        )
+                    }
+                    KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                        com.moosicbox.playerplugin.Player.sendMediaEvent(
+                                com.moosicbox.playerplugin.MediaEvent(prevTrack = true)
+                        )
+                    }
+                    KeyEvent.KEYCODE_MEDIA_STOP -> {
+                        com.moosicbox.playerplugin.Player.sendMediaEvent(
+                                com.moosicbox.playerplugin.MediaEvent(play = false)
+                        )
+                    }
+                }
+            }
+
             return super.onMediaButtonEvent(session, controllerInfo, intent)
         }
 

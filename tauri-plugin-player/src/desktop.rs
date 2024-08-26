@@ -17,4 +17,8 @@ impl<R: Runtime> Player<R> {
     pub fn update_state(&self, _payload: UpdateState) -> crate::Result<StateResponse> {
         Ok(StateResponse {})
     }
+
+    pub fn init_channel(&self, _payload: InitChannel) -> crate::Result<InitChannelResponse> {
+        Ok(InitChannelResponse {})
+    }
 }

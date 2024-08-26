@@ -33,4 +33,10 @@ impl<R: Runtime> Player<R> {
             .run_mobile_plugin("updateState", payload)
             .map_err(Into::into)
     }
+
+    pub fn init_channel(&self, payload: InitChannel) -> crate::Result<InitChannelResponse> {
+        self.0
+            .run_mobile_plugin("initChannel", payload)
+            .map_err(Into::into)
+    }
 }

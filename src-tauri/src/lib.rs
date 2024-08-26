@@ -4,7 +4,6 @@ use std::{
     sync::{Arc, LazyLock, OnceLock},
 };
 
-use async_recursion::async_recursion;
 use log::info;
 use moosicbox_app_ws::{WebsocketSendError, WebsocketSender as _, WsClient, WsHandle, WsMessage};
 use moosicbox_audio_output::{AudioOutputError, AudioOutputFactory, AudioOutputScannerError};
@@ -57,6 +56,16 @@ impl From<PlayerError> for TauriPlayerError {
     fn from(err: PlayerError) -> Self {
         TauriPlayerError::Unknown(err.to_string())
     }
+}
+
+#[derive(Debug, Error)]
+pub enum AppError {
+    #[error(transparent)]
+    Tauri(#[from] tauri::Error),
+    #[error(transparent)]
+    SendWsMessage(#[from] SendWsMessageError),
+    #[error("Unknown({0})")]
+    Unknown(String),
 }
 
 static APP: OnceLock<AppHandle> = OnceLock::new();
@@ -504,7 +513,10 @@ async fn set_audio_zone_active_players(
     audio_zone_id: u64,
     players: Vec<(ApiPlayer, PlayerType, AudioOutputFactory)>,
 ) -> Result<(), TauriPlayerError> {
-    log::debug!("Setting audio_zone active players: session_id={session_id} audio_zone_id={audio_zone_id} {:?}", players.iter().map(|(x, _, _)| x).collect::<Vec<_>>());
+    log::debug!(
+        "set_audio_zone_active_players: session_id={session_id} audio_zone_id={audio_zone_id} {:?}",
+        players.iter().map(|(x, _, _)| x).collect::<Vec<_>>()
+    );
 
     let mut api_players_map = AUDIO_ZONE_ACTIVE_API_PLAYERS.write().await;
     api_players_map.insert(audio_zone_id, players.clone());
@@ -613,11 +625,67 @@ async fn update_audio_zones() -> Result<(), TauriPlayerError> {
     Ok(())
 }
 
-#[async_recursion]
+async fn update_connection_outputs(session_ids: &[u64]) -> Result<(), TauriPlayerError> {
+    let Some(current_connection_id) = ({ CONNECTION_ID.read().await.clone() }) else {
+        return Ok(());
+    };
+
+    let outputs = moosicbox_audio_output::output_factories().await;
+
+    for output in outputs {
+        let playback_target = ApiPlaybackTarget::ConnectionOutput {
+            connection_id: current_connection_id.clone(),
+            output_id: output.id.to_owned(),
+        };
+        let output_id = &output.id;
+        log::debug!("update_connection_outputs: ApiPlaybackTarget::ConnectionOutput current_connection_id={current_connection_id} output_id={output_id}");
+
+        let binding = CURRENT_PLAYERS.read().await;
+        let current_players: &[(ApiPlayer, PlayerType, AudioOutputFactory)] = binding.as_ref();
+
+        if let Some((_, ptype, output)) = current_players.iter().find(|(x, _, _)| {
+            log::trace!(
+                "update_connection_outputs: ApiPlaybackTarget::ConnectionOutput checking '{}' == '{output_id}'",
+                x.audio_output_id
+            );
+            &x.audio_output_id == output_id
+        }) {
+            for session_id in session_ids {
+                let session_id = *session_id;
+                log::debug!("update_connection_outputs: ApiPlaybackTarget::ConnectionOutput creating player for output_id={output_id} session_id={session_id} playback_target={playback_target:?}");
+
+                let player = new_player(
+                    session_id,
+                    playback_target.clone(),
+                    output.clone(),
+                    ptype.clone(),
+                )
+                .await?;
+                log::debug!(
+                    "update_connection_outputs: ApiPlaybackTarget::ConnectionOutput created new player={}",
+                    player.id
+                );
+                let player = PlaybackTargetSessionPlayer {
+                    playback_target: playback_target.clone(),
+                    session_id,
+                    player,
+                };
+
+                let mut players = ACTIVE_PLAYERS.write().await;
+
+                if !players.iter().any(|x| x.session_id == session_id && x.playback_target == playback_target) {
+                    players.push(player);
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
 async fn get_players(
     session_id: u64,
-    playback_target: &ApiPlaybackTarget,
-    recursed: bool,
+    playback_target: Option<&ApiPlaybackTarget>,
 ) -> Result<Vec<PlaybackHandler>, TauriPlayerError> {
     let players = {
         let mut playback_handlers = vec![];
@@ -643,7 +711,7 @@ async fn get_players(
             log::trace!(
                 "get_players: Checking if player is in zone: target={target:?} session_id={session_id} player_zone_id={playback_target:?}",
             );
-            if target != playback_target {
+            if playback_target.is_some_and(|x| x != target) {
                 continue;
             }
 
@@ -651,88 +719,6 @@ async fn get_players(
         }
         playback_handlers
     };
-
-    if recursed || !players.is_empty() {
-        return Ok(players);
-    }
-
-    match playback_target {
-        ApiPlaybackTarget::AudioZone { audio_zone_id } => {
-            log::debug!("get_players: ApiPlaybackTarget::AudioZone audio_zone_id={audio_zone_id}");
-            let audio_zone = {
-                let binding = CURRENT_AUDIO_ZONES.read().await;
-                let audio_zones: &[ApiAudioZoneWithSession] = binding.as_ref();
-                audio_zones.iter().find(|x| x.id == *audio_zone_id).cloned()
-            };
-            if let Some(audio_zone) = audio_zone {
-                let audio_zone_with_session = ApiAudioZoneWithSession {
-                    id: *audio_zone_id,
-                    session_id,
-                    name: audio_zone.name,
-                    players: audio_zone.players,
-                };
-                CURRENT_AUDIO_ZONES
-                    .write()
-                    .await
-                    .push(audio_zone_with_session);
-                update_audio_zones().await?;
-                return get_players(session_id, playback_target, true).await;
-            }
-        }
-        ApiPlaybackTarget::ConnectionOutput {
-            connection_id,
-            output_id,
-        } => {
-            log::debug!("get_players: ApiPlaybackTarget::ConnectionOutput connection_id={connection_id} output_id={output_id}");
-
-            let same_connection = {
-                CONNECTION_ID
-                    .read()
-                    .await
-                    .as_ref()
-                    .is_some_and(|x| x == connection_id)
-            };
-
-            if same_connection {
-                log::debug!("get_players: ApiPlaybackTarget::ConnectionOutput same connection");
-
-                let binding = CURRENT_PLAYERS.read().await;
-                let current_players: &[(ApiPlayer, PlayerType, AudioOutputFactory)] =
-                    binding.as_ref();
-
-                if let Some((_, ptype, output)) = current_players
-                    .iter()
-                    .find(|(x, _, _)| {
-                        log::trace!("get_players: ApiPlaybackTarget::ConnectionOutput checking '{}' == '{output_id}'", x.audio_output_id);
-                        &x.audio_output_id == output_id
-                    })
-                {
-                    log::debug!("get_players: ApiPlaybackTarget::ConnectionOutput creating player for output_id={output_id} session_id={session_id} playback_target={playback_target:?}");
-
-                    let player = new_player(
-                        session_id,
-                        playback_target.clone(),
-                        output.clone(),
-                        ptype.clone(),
-                    )
-                    .await?;
-                    log::debug!(
-                        "get_players: ApiPlaybackTarget::ConnectionOutput created new player={}",
-                        player.id
-                    );
-                    ACTIVE_PLAYERS
-                        .write()
-                        .await
-                        .push(PlaybackTargetSessionPlayer {
-                            playback_target: playback_target.clone(),
-                            session_id,
-                            player: player.clone(),
-                        });
-                    return Ok(vec![player]);
-                }
-            }
-        }
-    }
 
     Ok(players)
 }
@@ -1004,40 +990,41 @@ async fn api_proxy_post(
     send_request_builder(builder).await
 }
 
+async fn propagate_playback_event(update: UpdateSession, to_plugin: bool) -> Result<(), AppError> {
+    if to_plugin {
+        propagate_state_to_plugin(&update.clone().into()).await;
+    }
+
+    if let Some(handle) = WS_HANDLE.read().await.as_ref() {
+        log::debug!("on_playback_event: Sending update session: update={update:?}");
+
+        APP.get().unwrap().emit(
+            "ws-message",
+            OutboundPayload::SessionUpdated(SessionUpdatedPayload {
+                payload: update.clone().into(),
+            }),
+        )?;
+
+        send_ws_message(
+            handle,
+            InboundPayload::UpdateSession(UpdateSessionPayload { payload: update }),
+            false,
+        )
+        .await?;
+    } else {
+        log::debug!("on_playback_event: No WS_HANDLE to send update to");
+    }
+
+    Ok(())
+}
+
 pub fn on_playback_event(update: &UpdateSession, _current: &Playback) {
     log::debug!("on_playback_event: received update, spawning task to handle update={update:?}");
 
-    let update = update.to_owned();
-
-    moosicbox_task::spawn("moosicbox_app: on_playback_event", async move {
-        propagate_state_to_plugin(&update.clone().into()).await;
-
-        if let Some(handle) = WS_HANDLE.read().await.as_ref() {
-            log::debug!("on_playback_event: Sending update session: update={update:?}");
-
-            APP.get()
-                .unwrap()
-                .emit(
-                    "ws-message",
-                    OutboundPayload::SessionUpdated(SessionUpdatedPayload {
-                        payload: update.clone().into(),
-                    }),
-                )
-                .map_err(|e| e.to_string())?;
-
-            send_ws_message(
-                handle,
-                InboundPayload::UpdateSession(UpdateSessionPayload { payload: update }),
-                false,
-            )
-            .await
-            .map_err(|e| e.to_string())?;
-        } else {
-            log::debug!("on_playback_event: No WS_HANDLE to send update to");
-        }
-
-        Ok::<_, String>(())
-    });
+    moosicbox_task::spawn(
+        "moosicbox_app: on_playback_event",
+        propagate_playback_event(update.to_owned(), true),
+    );
 }
 
 #[cfg(feature = "aptabase")]
@@ -1140,6 +1127,15 @@ async fn scan_outputs() -> Result<(), ScanOutputsError> {
     add_players_to_current_players(players).await;
 
     update_audio_zones().await?;
+    update_connection_outputs(
+        &CURRENT_SESSIONS
+            .read()
+            .await
+            .iter()
+            .map(|x| x.session_id)
+            .collect::<Vec<_>>(),
+    )
+    .await?;
 
     Ok(())
 }
@@ -1285,28 +1281,26 @@ async fn propagate_state_to_plugin(update: &ApiUpdateSession) {
         if let Some((url, query)) = get_url_and_query().await {
             use tauri_plugin_player::PlayerExt;
 
-            if let Err(e) =
-                APP.get()
-                    .unwrap()
-                    .player()
-                    .update_state(tauri_plugin_player::UpdateState {
-                        playing: update.playing,
-                        position: update.position,
-                        seek: update.seek,
-                        volume: update.volume,
-                        playlist: update
-                            .playlist
-                            .as_ref()
-                            .map(|x| tauri_plugin_player::Playlist {
-                                tracks: x
-                                    .tracks
-                                    .iter()
-                                    .filter_map(|x| convert_track(x.clone(), &url, &query))
-                                    .collect::<Vec<_>>(),
-                            }),
-                    })
-            {
-                log::debug!("Failed to update_state: {e:?}");
+            let player = APP.get().unwrap().player();
+
+            log::debug!("propagate_state_to_plugin: update={update:?}");
+            if let Err(e) = player.update_state(tauri_plugin_player::UpdateState {
+                playing: update.playing,
+                position: update.position,
+                seek: update.seek,
+                volume: update.volume,
+                playlist: update
+                    .playlist
+                    .as_ref()
+                    .map(|x| tauri_plugin_player::Playlist {
+                        tracks: x
+                            .tracks
+                            .iter()
+                            .filter_map(|x| convert_track(x.clone(), &url, &query))
+                            .collect::<Vec<_>>(),
+                    }),
+            }) {
+                log::error!("Failed to update_state: {e:?}");
             }
         }
     }
@@ -1317,7 +1311,7 @@ async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleW
 
     propagate_state_to_plugin(update).await;
 
-    let players = get_players(update.session_id, &update.playback_target, false).await?;
+    let players = get_players(update.session_id, Some(&update.playback_target)).await?;
 
     for mut player in players {
         let update = get_session_playback_for_player(update.to_owned(), &player).await;
@@ -1445,10 +1439,7 @@ fn convert_track(
 }
 
 async fn get_url_and_query() -> Option<(String, String)> {
-    let url_string = { API_URL.read().await.clone() };
-    let Some(url) = url_string else {
-        return None;
-    };
+    let url = { API_URL.read().await.clone() }?;
 
     let mut query = String::new();
     if let Some(client_id) = CLIENT_ID.read().await.clone() {
@@ -1587,8 +1578,8 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
                                     .map(|x| &mut x.player)
                                 {
                                     log::debug!(
-                                "handle_ws_message: init_from_api_session session={session:?}"
-                            );
+                                        "handle_ws_message: init_from_api_session session={session:?}"
+                                    );
                                     if let Err(e) =
                                         player.init_from_api_session(session.clone()).await
                                     {
@@ -1612,6 +1603,14 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
                     *CURRENT_SESSIONS.write().await = payload.payload.clone();
 
                     update_audio_zones().await?;
+                    update_connection_outputs(
+                        &payload
+                            .payload
+                            .iter()
+                            .map(|x| x.session_id)
+                            .collect::<Vec<_>>(),
+                    )
+                    .await?;
                     update_playlist().await?;
                 }
 
@@ -1845,13 +1844,159 @@ async fn init_upnp_players() -> Result<(), InitUpnpError> {
     Ok(())
 }
 
+#[cfg(target_os = "android")]
+async fn handle_media_event(
+    event: tauri_plugin_player::MediaEvent,
+) -> Result<(), TauriPlayerError> {
+    log::trace!("handle_media_event: event={event:?}");
+    let Some(current_session_id) = ({ *CURRENT_SESSION_ID.read().await }) else {
+        log::debug!("handle_media_event: No current_session_id");
+        return Ok(());
+    };
+
+    let Some(current_playback_target) = ({ CURRENT_PLAYBACK_TARGET.read().await.clone() }) else {
+        log::debug!("handle_media_event: No current_playback_target");
+        return Ok(());
+    };
+
+    let players = get_players(
+        current_session_id,
+        Some(&current_playback_target.clone().into()),
+    )
+    .await?;
+    log::debug!("handle_media_event: {} player(s)", players.len());
+
+    for mut player in players {
+        if let Some(true) = event.next_track {
+            let Some(position) = ({
+                player
+                    .playback
+                    .read()
+                    .unwrap()
+                    .as_ref()
+                    .map(|x| std::cmp::min(x.position + 1, x.tracks.len() as u16))
+            }) else {
+                return Ok(());
+            };
+            propagate_playback_event(
+                UpdateSession {
+                    session_id: current_session_id,
+                    playback_target: current_playback_target.clone(),
+                    play: None,
+                    stop: None,
+                    name: None,
+                    active: None,
+                    playing: None,
+                    position: Some(position),
+                    seek: None,
+                    volume: None,
+                    playlist: None,
+                    quality: None,
+                },
+                false,
+            )
+            .await
+            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+            player
+                .next_track(None, None)
+                .await
+                .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        }
+        if let Some(true) = event.prev_track {
+            let Some(position) = ({
+                player
+                    .playback
+                    .read()
+                    .unwrap()
+                    .as_ref()
+                    .map(|x| std::cmp::max(x.position - 1, 0))
+            }) else {
+                return Ok(());
+            };
+            propagate_playback_event(
+                UpdateSession {
+                    session_id: current_session_id,
+                    playback_target: current_playback_target.clone(),
+                    play: None,
+                    stop: None,
+                    name: None,
+                    active: None,
+                    playing: None,
+                    position: Some(position),
+                    seek: None,
+                    volume: None,
+                    playlist: None,
+                    quality: None,
+                },
+                false,
+            )
+            .await
+            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+            player
+                .previous_track(None, None)
+                .await
+                .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        }
+        if let Some(true) = event.play {
+            propagate_playback_event(
+                UpdateSession {
+                    session_id: current_session_id,
+                    playback_target: current_playback_target.clone(),
+                    play: None,
+                    stop: None,
+                    name: None,
+                    active: None,
+                    playing: Some(true),
+                    position: None,
+                    seek: None,
+                    volume: None,
+                    playlist: None,
+                    quality: None,
+                },
+                false,
+            )
+            .await
+            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+            player
+                .resume(None)
+                .await
+                .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        } else if let Some(false) = event.play {
+            propagate_playback_event(
+                UpdateSession {
+                    session_id: current_session_id,
+                    playback_target: current_playback_target.clone(),
+                    play: None,
+                    stop: None,
+                    name: None,
+                    active: None,
+                    playing: Some(false),
+                    position: None,
+                    seek: None,
+                    volume: None,
+                    playlist: None,
+                    quality: None,
+                },
+                false,
+            )
+            .await
+            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+            player
+                .pause(None)
+                .await
+                .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     if std::env::var("TOKIO_CONSOLE") == Ok("1".to_string()) {
         console_subscriber::init();
     } else {
-        let layer =
-            moosicbox_logging::init("moosicbox_app.log").expect("Failed to initialize FreeLog");
+        let layer = moosicbox_logging::init(None).expect("Failed to initialize FreeLog");
         LOG_LAYER.set(layer).expect("Failed to set LOG_LAYER");
     }
 
@@ -1877,6 +2022,32 @@ pub fn run() {
         .plugin(tauri_plugin_player::init())
         .setup(|app| {
             APP.get_or_init(|| app.handle().clone());
+
+            #[cfg(target_os = "android")]
+            {
+                use tauri_plugin_player::PlayerExt as _;
+
+                let player = app.player();
+
+                let channel = tauri::ipc::Channel::new(|event| {
+                    tauri::async_runtime::spawn(async move {
+                        log::trace!("Received event from channel: {event:?}");
+                        let event: tauri_plugin_player::MediaEvent =
+                            event.deserialize().map_err(|x| x.to_string())?;
+                        log::debug!("Received media event from channel: {event:?}");
+
+                        handle_media_event(event).await.map_err(|x| x.to_string())?;
+
+                        Ok::<_, String>(())
+                    });
+                    Ok(())
+                });
+
+                log::debug!("moosicbox_app: init_channel");
+                if let Err(e) = player.init_channel(tauri_plugin_player::InitChannel { channel }) {
+                    log::error!("Failed to init_channel: {e:?}");
+                }
+            }
 
             Ok(())
         })
