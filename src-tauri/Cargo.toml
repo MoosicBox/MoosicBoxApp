@@ -1,6 +1,6 @@
 [package]
 authors     = ["Braden Steffaniak"]
-description = "MoosicBox Tauri App"
+description = "MoosicBox"
 edition     = "2021"
 license     = ""
 name        = "moosicbox_app"
