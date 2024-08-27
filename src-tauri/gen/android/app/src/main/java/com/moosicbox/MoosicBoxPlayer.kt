@@ -36,6 +36,7 @@ class MoosicBoxPlayer : BasePlayer() {
     private var positionMs: Long = C.TIME_UNSET
     private var mediaMetadata: MediaMetadata = MediaMetadata.EMPTY
     private var timeline: Timeline = Timeline.EMPTY
+    private var volume: Float = 1.0f
 
     private val listeners: ListenerSet<Player.Listener> =
             ListenerSet(
@@ -194,20 +195,36 @@ class MoosicBoxPlayer : BasePlayer() {
     }
 
     override fun setPlayWhenReady(playWhenReady: Boolean) {
-        Log.i("MoosicBoxPlayer", "setPlayWhenReady")
+        Log.i("MoosicBoxPlayer", "setPlayWhenReady playWhenReady=$playWhenReady")
+        if (this.playWhenReady != playWhenReady) {
+            com.moosicbox.playerplugin.Player.sendMediaEvent(
+                    com.moosicbox.playerplugin.MediaEvent(play = playWhenReady)
+            )
+            setPlayWhenReadyInternal(playWhenReady)
+        }
+    }
+
+    private fun setPlayWhenReadyInternal(playWhenReady: Boolean, triggerEvents: Boolean = true) {
+        Log.i(
+                "MoosicBoxPlayer",
+                "setPlayWhenReadyInternal playWhenReady=$playWhenReady triggerEvents=$triggerEvents"
+        )
         if (this.playWhenReady != playWhenReady) {
             this.playWhenReady = playWhenReady
-            this.listeners.sendEvent(Player.EVENT_PLAY_WHEN_READY_CHANGED) { listener ->
-                listener.onPlayWhenReadyChanged(
-                        playWhenReady,
-                        Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST
-                )
+            if (triggerEvents) {
+                this.listeners.queueEvent(Player.EVENT_PLAY_WHEN_READY_CHANGED) { listener ->
+                    listener.onPlayWhenReadyChanged(
+                            playWhenReady,
+                            Player.PLAY_WHEN_READY_CHANGE_REASON_USER_REQUEST
+                    )
+                }
+                this.listeners.flushEvents()
             }
         }
     }
 
     override fun getPlayWhenReady(): Boolean {
-        Log.i("MoosicBoxPlayer", "getPlayWhenReady")
+        Log.i("MoosicBoxPlayer", "getPlayWhenReady $playWhenReady")
         return playWhenReady
     }
 
@@ -230,7 +247,7 @@ class MoosicBoxPlayer : BasePlayer() {
     }
 
     override fun isLoading(): Boolean {
-        Log.i("MoosicBoxPlayer", "isLoading")
+        Log.i("MoosicBoxPlayer", "isLoading loading=false")
         return false
     }
 
@@ -241,11 +258,61 @@ class MoosicBoxPlayer : BasePlayer() {
             isRepeatingCurrentItem: Boolean
     ) {
         if (this.position != mediaItemIndex || this.positionMs != positionMs) {
-            Log.i("MoosicBoxPlayer", "seekTo")
-            this.position = mediaItemIndex
-            this.positionMs = positionMs
+            Log.i(
+                    "MoosicBoxPlayer",
+                    "seekTo $mediaItemIndex $positionMs $seekCommand $isRepeatingCurrentItem"
+            )
+            if (this.position + 1 == mediaItemIndex) {
+                com.moosicbox.playerplugin.Player.sendMediaEvent(
+                        com.moosicbox.playerplugin.MediaEvent(nextTrack = true)
+                )
+            } else if (this.position - 1 == mediaItemIndex) {
+                com.moosicbox.playerplugin.Player.sendMediaEvent(
+                        com.moosicbox.playerplugin.MediaEvent(prevTrack = true)
+                )
+            }
+            seekToInternal(mediaItemIndex, positionMs)
         } else {
             Log.i("MoosicBoxPlayer", "seekTo no change")
+        }
+    }
+
+    private fun seekToInternal(positionMs: Long, triggerEvents: Boolean = true) {
+        Log.i(
+                "MoosicBoxPlayer",
+                "seekToInternal positionMs=$positionMs triggerEvents=$triggerEvents"
+        )
+        this.positionMs = positionMs
+    }
+
+    private fun seekToInternal(
+            mediaItemIndex: Int,
+            positionMs: Long,
+            triggerEvents: Boolean = true
+    ) {
+        Log.i(
+                "MoosicBoxPlayer",
+                "seekToInternal mediaItemIndex=$mediaItemIndex positionMs=$positionMs triggerEvents=$triggerEvents"
+        )
+        this.position = mediaItemIndex
+        this.positionMs = positionMs
+
+        if (triggerEvents) {
+            val mediaItem = this.getCurrentMediaItem()
+
+            if (mediaItem != null) {
+                this.listeners.queueEvent(Player.EVENT_MEDIA_METADATA_CHANGED) { listener ->
+                    listener.onMediaMetadataChanged(mediaItem.mediaMetadata)
+                }
+            }
+
+            this.listeners.queueEvent(Player.EVENT_TIMELINE_CHANGED) { listener ->
+                listener.onTimelineChanged(
+                        this.timeline,
+                        Player.TIMELINE_CHANGE_REASON_SOURCE_UPDATE
+                )
+            }
+            this.listeners.flushEvents()
         }
     }
 
@@ -275,6 +342,11 @@ class MoosicBoxPlayer : BasePlayer() {
 
     override fun stop() {
         Log.i("MoosicBoxPlayer", "stop")
+    }
+
+    private fun stopInternal(triggerEvents: Boolean = true) {
+        Log.i("MoosicBoxPlayer", "stop triggerEvents=$triggerEvents")
+        setPlayWhenReadyInternal(false, triggerEvents)
     }
 
     override fun release() {
@@ -485,41 +557,39 @@ class MoosicBoxPlayer : BasePlayer() {
         Log.i("MoosicBoxPlayer", "setAudioAttributes")
     }
 
-    fun seekToPosition(position: Int) {
-        seekToPosition(position, this.positionMs)
+    private fun seekToPositionInternal(position: Int) {
+        seekToInternal(position, this.positionMs)
     }
 
-    fun seekToPosition(position: Int, positionMs: Long) {
-        if (this.position != position || this.positionMs != positionMs) {
-            this.position = position
-            this.positionMs = positionMs
-
-            seekTo(position, positionMs)
-
-            val mediaItem = this.getCurrentMediaItem()
-
-            if (mediaItem != null) {
-                this.listeners.queueEvent(Player.EVENT_MEDIA_METADATA_CHANGED) { listener ->
-                    listener.onMediaMetadataChanged(mediaItem.mediaMetadata)
-                }
-                this.listeners.queueEvent(Player.EVENT_TIMELINE_CHANGED) { listener ->
-                    listener.onTimelineChanged(
-                            this.timeline,
-                            Player.TIMELINE_CHANGE_REASON_SOURCE_UPDATE
-                    )
+    private fun setVolumeInternal(volume: Float, triggerEvents: Boolean = true) {
+        Log.i("MoosicBoxPlayer", "setVolumeInternal volume=$volume triggerEvents=$triggerEvents")
+        if (this.volume != volume) {
+            this.volume = volume
+            if (triggerEvents) {
+                this.listeners.queueEvent(Player.EVENT_VOLUME_CHANGED) { listener ->
+                    listener.onVolumeChanged(volume)
                 }
                 this.listeners.flushEvents()
             }
         }
     }
 
-    fun setPlaybackState(playbackState: @Player.State Int) {
+    private fun setPlaybackStateInternal(
+            playbackState: @Player.State Int,
+            triggerEvents: Boolean = true
+    ) {
+        Log.i(
+                "MoosicBoxPlayer",
+                "setPlaybackStateInternal playbackState=$playbackState triggerEvents=$triggerEvents"
+        )
         if (this.playbackState != playbackState) {
             this.playbackState = playbackState
-            this.listeners.sendEvent(Player.EVENT_PLAYBACK_STATE_CHANGED) { listener ->
-                listener.onPlaybackStateChanged(playbackState)
+            if (triggerEvents) {
+                this.listeners.queueEvent(Player.EVENT_PLAYBACK_STATE_CHANGED) { listener ->
+                    listener.onPlaybackStateChanged(playbackState)
+                }
+                this.listeners.flushEvents()
             }
-            this.listeners.flushEvents()
         }
     }
 
@@ -557,11 +627,11 @@ class MoosicBoxPlayer : BasePlayer() {
                 }
 
                 if (mediaItems != null && mediaItems!!.isEmpty()) {
-                    player.setPlaybackState(Player.STATE_IDLE)
+                    player.setPlaybackStateInternal(Player.STATE_IDLE)
 
                     player.setMediaItems(mediaItems!!)
                 } else {
-                    player.setPlaybackState(Player.STATE_READY)
+                    player.setPlaybackStateInternal(Player.STATE_READY)
                     if (mediaItems != null) {
                         if (state.position != null) {
                             if (state.seek != null) {
@@ -578,18 +648,18 @@ class MoosicBoxPlayer : BasePlayer() {
                         }
                     } else if (state.position != null) {
                         if (state.seek != null) {
-                            player.seekToPosition(
+                            player.seekToInternal(
                                     state.position!!.toInt(),
                                     (state.seek!! * 1000).toLong()
                             )
                         } else {
-                            player.seekToPosition(state.position!!.toInt())
+                            player.seekToPositionInternal(state.position!!.toInt())
                         }
                     } else if (state.seek != null) {
-                        player.seekTo((state.seek!! * 1000).toLong())
+                        player.seekToInternal((state.seek!! * 1000).toLong())
                     }
-                    state.volume?.also { player.setVolume(it.toFloat()) }
-                    state.playing?.also { player.setPlayWhenReady(it) }
+                    state.volume?.also { player.setVolumeInternal(it.toFloat()) }
+                    state.playing?.also { player.setPlayWhenReadyInternal(it) }
                     player.prepare()
                 }
             }

@@ -8,9 +8,9 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.os.Build
 import android.util.Log
 import android.view.KeyEvent
-import android.os.Build
 import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -98,9 +98,9 @@ class PlaybackService : MediaLibraryService() {
                         dismissedByUser: Boolean
                 ) {
                     super.onNotificationCancelled(notificationId, dismissedByUser)
-                    if (player?.isPlaying!!) {
-                        player?.stop()
-                        player?.release()
+                    if (player.isPlaying) {
+                        player.stop()
+                        player.release()
                     }
                 }
 
@@ -176,44 +176,41 @@ class PlaybackService : MediaLibraryService() {
         ): Boolean {
             Log.i("PlaybackService", "onMediaButtonEvent $session $controllerInfo $intent")
 
-            val key: KeyEvent? =
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
-                    } else {
-                        intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
-                    }
+            if (session.player is MoosicBoxPlayer) {
+                val player = session.player as MoosicBoxPlayer
 
-            if (key != null) {
-                when (key.keyCode) {
-                    KeyEvent.KEYCODE_MEDIA_PLAY -> {
-                        com.moosicbox.playerplugin.Player.sendMediaEvent(
-                                com.moosicbox.playerplugin.MediaEvent(play = true)
-                        )
-                    }
-                    KeyEvent.KEYCODE_MEDIA_PAUSE -> {
-                        com.moosicbox.playerplugin.Player.sendMediaEvent(
-                                com.moosicbox.playerplugin.MediaEvent(play = false)
-                        )
-                    }
-                    KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-                        com.moosicbox.playerplugin.Player.sendMediaEvent(
-                                com.moosicbox.playerplugin.MediaEvent(play = !player.isPlaying)
-                        )
-                    }
-                    KeyEvent.KEYCODE_MEDIA_NEXT -> {
-                        com.moosicbox.playerplugin.Player.sendMediaEvent(
-                                com.moosicbox.playerplugin.MediaEvent(nextTrack = true)
-                        )
-                    }
-                    KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
-                        com.moosicbox.playerplugin.Player.sendMediaEvent(
-                                com.moosicbox.playerplugin.MediaEvent(prevTrack = true)
-                        )
-                    }
-                    KeyEvent.KEYCODE_MEDIA_STOP -> {
-                        com.moosicbox.playerplugin.Player.sendMediaEvent(
-                                com.moosicbox.playerplugin.MediaEvent(play = false)
-                        )
+                val key: KeyEvent? =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
+                        } else {
+                            intent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
+                        }
+
+                if (key != null) {
+                    when (key.keyCode) {
+                        KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                            Log.i("PlaybackService", "onMediaButtonEvent play")
+                        }
+                        KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                            Log.i("PlaybackService", "onMediaButtonEvent pause")
+                        }
+                        KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
+                            Log.i("PlaybackService", "onMediaButtonEvent play/pause")
+                            if (player.isPlaying) {
+                                Log.i("PlaybackService", "onMediaButtonEvent play/pause pause")
+                            } else {
+                                Log.i("PlaybackService", "onMediaButtonEvent play/pause play")
+                            }
+                        }
+                        KeyEvent.KEYCODE_MEDIA_NEXT -> {
+                            Log.i("PlaybackService", "onMediaButtonEvent seekToNext")
+                        }
+                        KeyEvent.KEYCODE_MEDIA_PREVIOUS -> {
+                            Log.i("PlaybackService", "onMediaButtonEvent seekToPrevious")
+                        }
+                        KeyEvent.KEYCODE_MEDIA_STOP -> {
+                            Log.i("PlaybackService", "onMediaButtonEvent stop")
+                        }
                     }
                 }
             }
