@@ -1914,7 +1914,7 @@ dependencies = [
 [[package]]
 name = "free_log_client"
 version = "0.3.0"
-source = "git+https://github.com/BSteffaniak/FreeLog.git#be17e934a050fc392d69499f17c61b03e2973479"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#55d4f7d5546e76cb5911346539b9e36e95c71b66"
 dependencies = [
  "free_log_models",
  "futures-util",
@@ -1934,7 +1934,7 @@ dependencies = [
 [[package]]
 name = "free_log_models"
 version = "0.2.0"
-source = "git+https://github.com/BSteffaniak/FreeLog.git#be17e934a050fc392d69499f17c61b03e2973479"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#55d4f7d5546e76cb5911346539b9e36e95c71b66"
 dependencies = [
  "log",
  "serde",
@@ -4467,9 +4467,9 @@ dependencies = [
 
 [[package]]
 name = "object"
-version = "0.36.3"
+version = "0.36.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27b64972346851a39438c60b341ebc01bba47464ae329e55cf343eb93964efd9"
+checksum = "084f1a5821ac4c651660a94a7153d27ac9d8a53736203f58b31945ded098070a"
 dependencies = [
  "memchr",
 ]
@@ -6591,9 +6591,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-notification"
-version = "2.0.0-rc.2"
+version = "2.0.0-rc.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "518b8a37552adef7c2dea4dd23739f9299dc044306321b0aee575b1a256d1b2c"
+checksum = "6bf32fba3a2650f89c7dfc532b38de566a37779e482f07dccabf45fe24444e26"
 dependencies = [
  "log",
  "notify-rust",
