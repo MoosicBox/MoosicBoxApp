@@ -59,6 +59,7 @@ tauri-plugin-notification = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["macros"] }
 tokio-util = { workspace = true }
+tauri-plugin-dialog = "2.0.0-rc"
 
 [features]
 default = ["all-encoders", "cpal"]
