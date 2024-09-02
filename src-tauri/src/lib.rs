@@ -2018,6 +2018,7 @@ pub fn run() {
 
     #[allow(unused_mut)]
     let mut app_builder = tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_player::init())
         .setup(|app| {
