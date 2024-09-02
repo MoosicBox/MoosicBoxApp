@@ -56,6 +56,7 @@ strum_macros = "0.26.4"
 tauri = { version = "2.0.0-rc.6", features = ["protocol-asset"] }
 tauri-build = { version = "2.0.0-rc.6", features = [] }
 tauri-plugin = { version = "2.0.0-rc.6", features = ["build"] }
+tauri-plugin-dialog = "2.0.0-rc.3"
 tauri-plugin-notification = "2.0.0-rc.2"
 thiserror = "1.0.63"
 tokio = { version = "1.40.0", features = ["io-util", "sync", "tracing"] }
