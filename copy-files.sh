@@ -8,15 +8,13 @@ rm -rf public
 mkdir -p public
 cp -r "$dir/public/." app-public/. public
 
-srcDirectories=("components" "layouts" "middleware" "pages" "routes" "services" "styles")
+for srcDir in "$dir"/src/*/; do
+    srcDirName=$(basename "${srcDir%*/}")
 
-for i in "${!srcDirectories[@]}"; do
-    directory=${srcDirectories[$i]}
-
-    echo "Copying $dir/src/${directory}"
-    rm -rf "src/${directory}"
-    mkdir -p "src/${directory}"
-    cp -r "$dir/src/${directory}/." "src/app-${directory}/." "src/${directory}"
+    echo "Copying $dir/src/${srcDirName}"
+    rm -rf "src/${srcDirName}"
+    mkdir -p "src/${srcDirName}"
+    cp -r "$dir/src/${srcDirName}/." "src/app-${srcDirName}/." "src/${srcDirName}"
 done
 
 echo "Copying $dir/src/env.d.ts"
