@@ -1,0 +1,27 @@
+---
+import Layout from './Layout.astro';
+import '~/styles/setup/music.css';
+---
+
+<Layout title="Hello | MoosicBox">
+    <p>Where do you store you music?</p>
+    <button type="button" class="remove-button-styles add-music-folder-button">
+        Add Folder
+    </button>
+</Layout>
+
+<script>
+    import { open } from '@tauri-apps/plugin-dialog';
+
+    // Find all buttons with the `alert` class on the page.
+    const button = document.querySelector('button.add-music-folder-button');
+
+    // Handle clicks on each button.
+    button.addEventListener('click', async () => {
+        const directories = await open({
+            multiple: true,
+            directory: true,
+        });
+        console.log(directories);
+    });
+</script>
