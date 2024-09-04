@@ -1,4 +1,5 @@
-.add-music-folder-button {
+.add-music-folder-button,
+.finish-button {
     padding: 10px;
     background-color: #446b9e1a;
     border-radius: 3px;

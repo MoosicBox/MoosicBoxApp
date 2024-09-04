@@ -2,6 +2,7 @@ import './music-page.css';
 import { createSignal, For, Show } from 'solid-js';
 import { open } from '@tauri-apps/plugin-dialog';
 import { onlyUnique } from '~/services/util';
+import { api } from '~/services/api';
 
 export default function musicPage() {
     const [folders, setFolders] = createSignal<string[]>([]);
@@ -14,6 +15,16 @@ export default function musicPage() {
         if (directories) {
             setFolders([...folders(), ...directories].filter(onlyUnique));
         }
+    }
+
+    async function saveFolders() {
+        await api.enableScanOrigin('LOCAL');
+        await Promise.all(
+            folders().map((folder) => {
+                return api.addScanPath(folder);
+            }),
+        );
+        await api.startScan(['LOCAL']);
     }
 
     return (
@@ -31,6 +42,16 @@ export default function musicPage() {
                     <For each={folders()}>{(folder) => <p>{folder}</p>}</For>
                 )}
             </Show>
+            <button
+                onClick={async () => {
+                    await saveFolders();
+                    window.location.href = '/';
+                }}
+                type="button"
+                class="remove-button-styles finish-button"
+            >
+                Finish
+            </button>
         </div>
     );
 }
