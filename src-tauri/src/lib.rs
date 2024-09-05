@@ -2014,7 +2014,12 @@ pub fn run() {
     if std::env::var("TOKIO_CONSOLE") == Ok("1".to_string()) {
         console_subscriber::init();
     } else {
-        let layer = moosicbox_logging::init(None).expect("Failed to initialize FreeLog");
+        #[cfg(target_os = "android")]
+        let filename = None;
+        #[cfg(not(target_os = "android"))]
+        let filename = Some("moosicbox_app.log");
+
+        let layer = moosicbox_logging::init(filename).expect("Failed to initialize FreeLog");
         LOG_LAYER.set(layer).expect("Failed to set LOG_LAYER");
     }
 
