@@ -630,7 +630,17 @@ async fn update_connection_outputs(session_ids: &[u64]) -> Result<(), TauriPlaye
         return Ok(());
     };
 
-    let outputs = moosicbox_audio_output::output_factories().await;
+    let local_outputs = moosicbox_audio_output::output_factories().await;
+    let upnp_outputs = UPNP_AV_TRANSPORT_SERVICES
+        .read()
+        .await
+        .iter()
+        .cloned()
+        .map(|x| x.try_into())
+        .collect::<Result<Vec<AudioOutputFactory>, AudioOutputError>>()
+        .map_err(|e| TauriPlayerError::Unknown(format!("Error: {e:?}")))?;
+
+    let outputs = [local_outputs, upnp_outputs].concat();
 
     for output in outputs {
         let playback_target = ApiPlaybackTarget::ConnectionOutput {
@@ -1313,6 +1323,8 @@ async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleW
 
     let players = get_players(update.session_id, Some(&update.playback_target)).await?;
 
+    log::debug!("handle_playback_update: player count={}", players.len());
+
     for mut player in players {
         let update = get_session_playback_for_player(update.to_owned(), &player).await;
 
@@ -1787,10 +1799,6 @@ async fn init_upnp_players() -> Result<(), InitUpnpError> {
     };
 
     let mut outputs = Vec::with_capacity(services.len());
-    services
-        .iter()
-        .map(|x| x.clone().try_into())
-        .collect::<Result<Vec<AudioOutputFactory>, AudioOutputError>>()?;
 
     let url_string = { API_URL.read().await.clone() };
     let url = url_string.as_deref();
@@ -1840,6 +1848,16 @@ async fn init_upnp_players() -> Result<(), InitUpnpError> {
         .collect::<Vec<_>>();
 
     add_players_to_current_players(api_players).await;
+
+    update_connection_outputs(
+        &CURRENT_SESSIONS
+            .read()
+            .await
+            .iter()
+            .map(|x| x.session_id)
+            .collect::<Vec<_>>(),
+    )
+    .await?;
 
     Ok(())
 }
