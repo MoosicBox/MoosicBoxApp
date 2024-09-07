@@ -9,6 +9,7 @@ use crate::TauriPlayerError;
 #[derive(Debug, Clone, Serialize)]
 pub struct MoosicBoxServer {
     pub id: String,
+    pub name: String,
     pub host: String,
     pub dns: String,
 }
@@ -17,6 +18,7 @@ impl From<moosicbox_mdns::scanner::MoosicBoxServer> for MoosicBoxServer {
     fn from(value: moosicbox_mdns::scanner::MoosicBoxServer) -> Self {
         MoosicBoxServer {
             id: value.id,
+            name: value.name,
             host: value.host.to_string(),
             dns: value.dns,
         }
