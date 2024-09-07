@@ -12,6 +12,7 @@ use moosicbox_core::{
     sqlite::models::{ApiSource, Id},
     types::PlaybackQuality,
 };
+use moosicbox_mdns::scanner::service::Commander;
 use moosicbox_music_api::{FromId, MusicApi, MusicApisError, SourceToMusicApi};
 use moosicbox_paging::Page;
 use moosicbox_player::{
@@ -35,6 +36,8 @@ use strum_macros::{AsRefStr, EnumString};
 use tauri::{async_runtime::RwLock, AppHandle, Emitter};
 use thiserror::Error;
 use tokio_util::sync::CancellationToken;
+
+mod mdns;
 
 #[cfg(all(feature = "cpal", feature = "android"))]
 #[no_mangle]
@@ -2039,6 +2042,8 @@ pub fn run() {
         join_upnp_service.await
     });
 
+    let (mdns_handle, join_mdns_service) = mdns::spawn_mdns_scanner();
+
     #[allow(unused_mut)]
     let mut app_builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
@@ -2083,6 +2088,7 @@ pub fn run() {
             propagate_ws_message,
             api_proxy_get,
             api_proxy_post,
+            mdns::fetch_moosicbox_servers,
         ]);
 
     #[cfg(feature = "aptabase")]
@@ -2137,7 +2143,14 @@ pub fn run() {
             }
         });
 
+    if let Err(e) = mdns_handle.shutdown() {
+        log::error!("Failed to shutdown mdns service: {e:?}");
+    }
+
     if let Err(e) = tauri::async_runtime::block_on(join_upnp_service) {
         log::error!("Failed to join UPnP service: {e:?}");
+    }
+    if let Err(e) = tauri::async_runtime::block_on(join_mdns_service) {
+        log::error!("Failed to join mdns service: {e:?}");
     }
 }
