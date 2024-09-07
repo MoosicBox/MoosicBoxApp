@@ -19,7 +19,7 @@ impl From<moosicbox_mdns::scanner::MoosicBoxServer> for MoosicBoxServer {
         MoosicBoxServer {
             id: value.id,
             name: value.name,
-            host: value.host.to_string(),
+            host: format!("http://{}", value.host),
             dns: value.dns,
         }
     }
