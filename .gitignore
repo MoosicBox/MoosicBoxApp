@@ -4,6 +4,7 @@ dist/
 .astro/settings.json
 /src/*
 !/src/app-*/
+!/src/config.ts
 !/src/startup.ts
 !/src/ws.ts
 /public/
