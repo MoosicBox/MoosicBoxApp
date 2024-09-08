@@ -2,7 +2,14 @@
 import { init, setProperty } from '@free-log/node-client';
 import { invoke, InvokeArgs } from '@tauri-apps/api/core';
 import { appState, onStartupFirst } from '~/services/app';
-import { Api, ApiType, Connection, api, connection } from '~/services/api';
+import {
+    Api,
+    ApiType,
+    Connection,
+    api,
+    connection,
+    connections,
+} from '~/services/api';
 import { createPlayer as createHowlerPlayer } from '~/services/howler-player';
 import {
     currentPlaybackSessionId,
@@ -24,7 +31,7 @@ import { isServer } from 'solid-js/web';
 
 if (!isServer) {
     if (
-        !connectionId.get() &&
+        connections.get().length === 0 &&
         !window.location.pathname.startsWith('/setup/')
     ) {
         window.location.href = '/setup/hello';
