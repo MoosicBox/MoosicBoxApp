@@ -20,6 +20,16 @@ import {
     wsService,
 } from '~/services/ws';
 import { override } from './ws';
+import { isServer } from 'solid-js/web';
+
+if (!isServer) {
+    if (
+        !connectionId.get() &&
+        !window.location.pathname.startsWith('/setup/')
+    ) {
+        window.location.href = '/setup/hello';
+    }
+}
 
 init({
     logWriterApiUrl: 'https://logs.moosicbox.com',
