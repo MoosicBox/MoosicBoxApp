@@ -53,6 +53,9 @@ importers:
       howler:
         specifier: ^2.2.4
         version: 2.2.4
+      htmx.org:
+        specifier: ^2.0.2
+        version: 2.0.2
       nanostores:
         specifier: ^0.9.5
         version: 0.9.5
@@ -1988,6 +1991,9 @@ packages:
 
   html-void-elements@3.0.0:
     resolution: {integrity: sha512-bEqo66MRXsUGxWHV5IP0PUiAWwoEjba4VCzg0LjFJBpchPaTfyfCKTG6bc5F8ucKec3q5y6qOdGyYTSBEvhCrg==}
+
+  htmx.org@2.0.2:
+    resolution: {integrity: sha512-eUPIpQaWKKstX393XNCRCMJTrqPzikh36Y9RceqsUZLTtlFjFaVDgwZLUsrFk8J2uzZxkkfiy0TE359j2eN6hA==}
 
   http-cache-semantics@4.1.1:
     resolution: {integrity: sha512-er295DKPVsV82j5kw1Gjt+ADA/XYHsajl82cGNQG2eyoPkvgUhX+nDIyelzhIWbbsXP39EHcI6l5tYs2FYqYXQ==}
@@ -5775,6 +5781,8 @@ snapshots:
   html-escaper@3.0.3: {}
 
   html-void-elements@3.0.0: {}
+
+  htmx.org@2.0.2: {}
 
   http-cache-semantics@4.1.1: {}
 
