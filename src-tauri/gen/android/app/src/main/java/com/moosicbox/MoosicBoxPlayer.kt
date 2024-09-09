@@ -608,6 +608,7 @@ class MoosicBoxPlayer : BasePlayer() {
                                 var metadataBuilder =
                                         MediaMetadata.Builder()
                                                 .setArtist(track.artist)
+                                                .setAlbumTitle(track.album)
                                                 .setTitle(track.title)
                                                 .setDurationMs((track.duration * 1000).toLong())
 
