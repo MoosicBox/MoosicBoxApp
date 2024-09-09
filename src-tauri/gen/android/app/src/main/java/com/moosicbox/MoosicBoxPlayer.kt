@@ -611,6 +611,7 @@ class MoosicBoxPlayer : BasePlayer() {
                                                 .setAlbumTitle(track.album)
                                                 .setTitle(track.title)
                                                 .setDurationMs((track.duration * 1000).toLong())
+                                                .setTrackNumber(track.number)
 
                                 track.albumCover?.also {
                                     metadataBuilder = metadataBuilder.setArtworkUri(Uri.parse(it))

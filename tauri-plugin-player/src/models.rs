@@ -5,6 +5,7 @@ use tauri::ipc::Channel;
 #[serde(rename_all = "camelCase")]
 pub struct Track {
     pub id: String,
+    pub number: u32,
     pub title: String,
     pub album: String,
     pub album_cover: Option<String>,

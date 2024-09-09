@@ -11,6 +11,7 @@ import app.tauri.plugin.Plugin
 
 data class Track(
         val id: String = "",
+        val number: Int = 0,
         val title: String = "",
         val album: String = "",
         val albumCover: String? = null,

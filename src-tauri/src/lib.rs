@@ -1387,6 +1387,7 @@ fn convert_track(
             };
             Some(tauri_plugin_player::Track {
                 id: track_id.to_string(),
+                number: data.number,
                 title: data.title,
                 album: data.album,
                 album_cover,
@@ -1425,6 +1426,9 @@ fn convert_track(
 
                 tauri_plugin_player::Track {
                     id: value.track_id().to_string(),
+                    number: x.get("number")
+                        .and_then(|x| x.as_u64())
+                        .unwrap_or_default() as u32,
                     title: x
                         .get("title")
                         .and_then(|x| x.as_str())
