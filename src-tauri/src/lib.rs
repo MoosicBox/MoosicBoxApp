@@ -4,8 +4,11 @@ use std::{
     sync::{Arc, LazyLock, OnceLock},
 };
 
+use async_recursion::async_recursion;
 use log::info;
-use moosicbox_app_ws::{WebsocketSendError, WebsocketSender as _, WsClient, WsHandle, WsMessage};
+use moosicbox_app_ws::{
+    CloseError, WebsocketSendError, WebsocketSender as _, WsClient, WsHandle, WsMessage,
+};
 use moosicbox_audio_output::{AudioOutputError, AudioOutputFactory, AudioOutputScannerError};
 use moosicbox_audio_zone::models::{ApiAudioZoneWithSession, ApiPlayer};
 use moosicbox_core::{
@@ -35,6 +38,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::{AsRefStr, EnumString};
 use tauri::{async_runtime::RwLock, AppHandle, Emitter};
 use thiserror::Error;
+use tokio::task::{JoinError, JoinHandle};
 use tokio_util::sync::CancellationToken;
 
 mod mdns;
@@ -47,6 +51,13 @@ pub extern "C" fn JNI_OnLoad(vm: jni::JavaVM, res: *mut std::os::raw::c_void) ->
         ndk_context::initialize_android_context(vm, res);
     }
     jni::JNIVersion::V6.into()
+}
+
+#[derive(Clone, Serialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct WsConnectMessage {
+    pub connection_id: String,
+    pub ws_url: String,
 }
 
 #[derive(Debug, Error, Serialize, Deserialize)]
@@ -84,6 +95,8 @@ struct PlaybackTargetSessionPlayer {
 
 static API_URL: LazyLock<Arc<RwLock<Option<String>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
+static WS_URL: LazyLock<Arc<RwLock<Option<String>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
 static CONNECTION_ID: LazyLock<Arc<RwLock<Option<String>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
 static SIGNATURE_TOKEN: LazyLock<Arc<RwLock<Option<String>>>> =
@@ -95,6 +108,8 @@ static API_TOKEN: LazyLock<Arc<RwLock<Option<String>>>> =
 static WS_TOKEN: LazyLock<Arc<RwLock<Option<CancellationToken>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
 static WS_HANDLE: LazyLock<Arc<RwLock<Option<WsHandle>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
+static WS_JOIN_HANDLE: LazyLock<Arc<RwLock<Option<JoinHandle<()>>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
 static AUDIO_ZONE_ACTIVE_API_PLAYERS: LazyLock<Arc<RwLock<ApiPlayersMap>>> =
     LazyLock::new(|| Arc::new(RwLock::new(HashMap::new())));
@@ -242,12 +257,14 @@ async fn new_player(
         }
     };
 
-    let session = CURRENT_SESSIONS
-        .read()
-        .await
-        .iter()
-        .find(|x| x.session_id == session_id)
-        .cloned();
+    let session = {
+        CURRENT_SESSIONS
+            .read()
+            .await
+            .iter()
+            .find(|x| x.session_id == session_id)
+            .cloned()
+    };
 
     if let Some(session) = session {
         log::debug!("new_player: init_from_api_session session={session:?}");
@@ -292,7 +309,7 @@ async fn show_main_window(window: tauri::Window) {
     window.get_webview_window("main").unwrap().show().unwrap();
 }
 
-#[derive(Debug, Error, Serialize, Deserialize)]
+#[derive(Debug, Default, Error, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppState {
     connection_id: Option<String>,
@@ -329,10 +346,16 @@ async fn set_state(state: AppState) -> Result<(), TauriPlayerError> {
         let mut connection_id = CONNECTION_ID.write().await;
 
         if connection_id.as_ref() != state.connection_id.as_ref() {
+            log::debug!(
+                "set_state: updating CONNECTION_ID from '{:?}' -> '{:?}'",
+                connection_id.as_ref(),
+                state.connection_id.as_ref()
+            );
+            *connection_id = state.connection_id;
             updated_connection_details = true;
+        } else {
+            log::debug!("set_state: no update to CONNECTION_ID");
         }
-
-        *connection_id = state.connection_id;
     }
 
     {
@@ -357,30 +380,48 @@ async fn set_state(state: AppState) -> Result<(), TauriPlayerError> {
         let mut client_id = CLIENT_ID.write().await;
 
         if client_id.as_ref() != state.client_id.as_ref() {
+            log::debug!(
+                "set_state: updating CLIENT_ID from '{:?}' -> '{:?}'",
+                client_id.as_ref(),
+                state.client_id.as_ref()
+            );
+            *client_id = state.client_id;
             updated_connection_details = true;
+        } else {
+            log::debug!("set_state: no update to CLIENT_ID");
         }
-
-        *client_id = state.client_id;
     }
 
     {
         let mut signature_token = SIGNATURE_TOKEN.write().await;
 
         if signature_token.as_ref() != state.signature_token.as_ref() {
+            log::debug!(
+                "set_state: updating SIGNATURE_TOKEN from '{:?}' -> '{:?}'",
+                signature_token.as_ref(),
+                state.signature_token.as_ref()
+            );
+            *signature_token = state.signature_token;
             updated_connection_details = true;
+        } else {
+            log::debug!("set_state: no update to SIGNATURE_TOKEN");
         }
-
-        *signature_token = state.signature_token;
     }
 
     {
         let mut api_token = API_TOKEN.write().await;
 
         if api_token.as_ref() != state.api_token.as_ref() {
+            log::debug!(
+                "set_state: updating API_TOKEN from '{:?}' -> '{:?}'",
+                api_token.as_ref(),
+                state.api_token.as_ref()
+            );
+            *api_token = state.api_token;
             updated_connection_details = true;
+        } else {
+            log::debug!("set_state: no update to API_TOKEN");
         }
-
-        *api_token = state.api_token;
     }
 
     {
@@ -395,10 +436,16 @@ async fn set_state(state: AppState) -> Result<(), TauriPlayerError> {
         let mut api_url = API_URL.write().await;
 
         if api_url.as_ref() != state.api_url.as_ref() {
+            log::debug!(
+                "set_state: updating API_URL from '{:?}' -> '{:?}'",
+                api_url.as_ref(),
+                state.api_url.as_ref()
+            );
+            *api_url = state.api_url;
             updated_connection_details = true;
+        } else {
+            log::debug!("set_state: no update to API_URL");
         }
-
-        *api_url = state.api_url;
     }
 
     {
@@ -410,12 +457,25 @@ async fn set_state(state: AppState) -> Result<(), TauriPlayerError> {
     }
 
     if state.current_session_id.is_some() {
-        update_playlist()
-            .await
-            .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
+        update_playlist().await.map_err(|e| {
+            log::error!("Failed to update playlist: {e:?}");
+            TauriPlayerError::Unknown(e.to_string())
+        })?;
     }
 
     if updated_connection_details {
+        update_state().await?;
+    }
+
+    Ok(())
+}
+
+#[async_recursion]
+pub async fn update_state() -> Result<(), TauriPlayerError> {
+    let has_connection_id = { CONNECTION_ID.read().await.is_some() };
+    log::debug!("update_state: has_connection_id={has_connection_id}");
+
+    if has_connection_id {
         moosicbox_task::spawn("set_state: scan_outputs", async {
             log::debug!("Attempting to scan_outputs...");
             scan_outputs().await
@@ -436,25 +496,20 @@ async fn set_state(state: AppState) -> Result<(), TauriPlayerError> {
             reinit_players().await
         });
 
-        let fetched_audio_zones =
-            moosicbox_task::spawn("set_state: fetch_audio_zones", async move {
-                reinited_players
-                    .await
-                    .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?
-                    .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
-                log::debug!("Attempting to fetch_audio_zones...");
-                fetch_audio_zones().await
-            });
-
-        moosicbox_task::spawn("set_state: init_ws_connection", async move {
-            fetched_audio_zones
+        moosicbox_task::spawn("set_state: fetch_audio_zones", async move {
+            reinited_players
                 .await
                 .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?
                 .map_err(|e| TauriPlayerError::Unknown(e.to_string()))?;
-            log::debug!("Attempting to init_ws_connection...");
-            init_ws_connection().await
+            log::debug!("Attempting to fetch_audio_zones...");
+            fetch_audio_zones().await
         });
     }
+
+    moosicbox_task::spawn("set_state: init_ws_connection", async move {
+        log::debug!("Attempting to init_ws_connection...");
+        init_ws_connection().await
+    });
 
     Ok(())
 }
@@ -1140,15 +1195,15 @@ async fn scan_outputs() -> Result<(), ScanOutputsError> {
     add_players_to_current_players(players).await;
 
     update_audio_zones().await?;
-    update_connection_outputs(
-        &CURRENT_SESSIONS
+    let ids = {
+        CURRENT_SESSIONS
             .read()
             .await
             .iter()
             .map(|x| x.session_id)
-            .collect::<Vec<_>>(),
-    )
-    .await?;
+            .collect::<Vec<_>>()
+    };
+    update_connection_outputs(&ids).await?;
 
     Ok(())
 }
@@ -1478,17 +1533,23 @@ async fn update_playlist() -> Result<(), HandleWsMessageError> {
 
     let current_session_id = { *CURRENT_SESSION_ID.read().await };
     let Some(current_session_id) = current_session_id else {
+        log::debug!("update_playlist: no CURRENT_SESSION_ID");
         return Ok(());
     };
 
-    let Some(session) = ({
+    log::trace!("update_playlist: current_session_id={current_session_id}");
+
+    let session = {
         let binding = CURRENT_SESSIONS.read().await;
         let sessions: &[ApiSession] = &binding;
         sessions
             .iter()
             .find(|x| x.session_id == current_session_id)
             .cloned()
-    }) else {
+    };
+
+    let Some(session) = session else {
+        log::debug!("update_playlist: no session exists");
         return Ok(());
     };
 
@@ -1566,9 +1627,13 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
                     .await?
                 }
                 OutboundPayload::ConnectionId(payload) => {
-                    APP.get()
-                        .unwrap()
-                        .emit("on-connect", payload.connection_id.to_owned())?;
+                    APP.get().unwrap().emit(
+                        "ws-connect",
+                        WsConnectMessage {
+                            connection_id: payload.connection_id.to_owned(),
+                            ws_url: WS_URL.read().await.to_owned().unwrap_or_default(),
+                        },
+                    )?;
                 }
                 OutboundPayload::Connections(payload) => {
                     *CURRENT_CONNECTIONS.write().await = payload.payload.clone();
@@ -1619,7 +1684,9 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
                             .await
                             .retain(|id, _| !player_ids.contains(id));
                     }
-                    *CURRENT_SESSIONS.write().await = payload.payload.clone();
+                    {
+                        *CURRENT_SESSIONS.write().await = payload.payload.clone();
+                    }
 
                     update_audio_zones().await?;
                     update_connection_outputs(
@@ -1658,9 +1725,13 @@ pub enum InitWsError {
     Serde(#[from] serde_json::Error),
     #[error(transparent)]
     TauriPlayer(#[from] TauriPlayerError),
+    #[error(transparent)]
+    CloseWs(#[from] CloseWsError),
 }
 
 async fn init_ws_connection() -> Result<(), InitWsError> {
+    close_ws_connection().await?;
+
     log::debug!("init_ws_connection: attempting to connect to ws");
     {
         if API_URL.as_ref().read().await.is_none() {
@@ -1685,57 +1756,53 @@ async fn init_ws_connection() -> Result<(), InitWsError> {
     let signature_token = SIGNATURE_TOKEN.read().await.clone();
 
     let ws_url = format!("ws{}/ws", &api_url[4..]);
+    {
+        *WS_URL.write().await = Some(ws_url.clone());
+    }
     let (client, handle) = WsClient::new(ws_url);
 
     WS_HANDLE.write().await.replace(handle.clone());
 
     let mut client = client.with_cancellation_token(token.clone());
 
-    moosicbox_task::spawn("moosicbox_app: ws", async move {
-        let mut rx = client.start(client_id, signature_token, {
-            let handle = handle.clone();
-            move || {
-                tauri::async_runtime::spawn({
-                    let handle = handle.clone();
-                    async move {
-                        log::debug!("Sending GetConnectionId");
-                        if let Err(e) = send_ws_message(
-                            &handle,
-                            InboundPayload::GetConnectionId(EmptyPayload {}),
-                            true,
-                        )
-                        .await
-                        {
-                            log::error!("Failed to send GetConnectionId WS message: {e:?}");
+    WS_JOIN_HANDLE
+        .write()
+        .await
+        .replace(moosicbox_task::spawn("moosicbox_app: ws", async move {
+            let mut rx = client.start(client_id, signature_token, {
+                let handle = handle.clone();
+                move || {
+                    tauri::async_runtime::spawn({
+                        let handle = handle.clone();
+                        async move {
+                            log::debug!("Sending GetConnectionId");
+                            if let Err(e) = send_ws_message(
+                                &handle,
+                                InboundPayload::GetConnectionId(EmptyPayload {}),
+                                true,
+                            )
+                            .await
+                            {
+                                log::error!("Failed to send GetConnectionId WS message: {e:?}");
+                            }
+                            if let Err(e) = flush_ws_message_buffer().await {
+                                log::error!("Failed to flush WS message buffer: {e:?}");
+                            }
                         }
-                        if let Err(e) = flush_ws_message_buffer().await {
-                            log::error!("Failed to flush WS message buffer: {e:?}");
-                        }
-                    }
-                });
-            }
-        });
-
-        while let Some(m) = tokio::select! {
-            resp = rx.recv() => {
-                resp
-            }
-            _ = token.cancelled() => {
-                None
-            }
-        } {
-            match m {
-                WsMessage::TextMessage(message) => {
-                    if let Ok(message) = serde_json::from_str::<OutboundPayload>(&message) {
-                        if let Err(e) = handle_ws_message(message).await {
-                            log::error!("Failed to handle_ws_message: {e:?}");
-                        }
-                    } else {
-                        log::error!("got invalid message: {message}");
-                    }
+                    });
                 }
-                WsMessage::Message(bytes) => match String::from_utf8(bytes.into()) {
-                    Ok(message) => {
+            });
+
+            while let Some(m) = tokio::select! {
+                resp = rx.recv() => {
+                    resp
+                }
+                _ = token.cancelled() => {
+                    None
+                }
+            } {
+                match m {
+                    WsMessage::TextMessage(message) => {
                         if let Ok(message) = serde_json::from_str::<OutboundPayload>(&message) {
                             if let Err(e) = handle_ws_message(message).await {
                                 log::error!("Failed to handle_ws_message: {e:?}");
@@ -1744,17 +1811,53 @@ async fn init_ws_connection() -> Result<(), InitWsError> {
                             log::error!("got invalid message: {message}");
                         }
                     }
-                    Err(e) => {
-                        log::error!("Failed to read ws message: {e:?}");
+                    WsMessage::Message(bytes) => match String::from_utf8(bytes.into()) {
+                        Ok(message) => {
+                            if let Ok(message) = serde_json::from_str::<OutboundPayload>(&message) {
+                                if let Err(e) = handle_ws_message(message).await {
+                                    log::error!("Failed to handle_ws_message: {e:?}");
+                                }
+                            } else {
+                                log::error!("got invalid message: {message}");
+                            }
+                        }
+                        Err(e) => {
+                            log::error!("Failed to read ws message: {e:?}");
+                        }
+                    },
+                    WsMessage::Ping => {
+                        log::debug!("got ping");
                     }
-                },
-                WsMessage::Ping => {
-                    log::debug!("got ping");
                 }
             }
-        }
-        log::debug!("Exiting ws message loop");
-    });
+            log::debug!("Exiting ws message loop");
+        }));
+
+    Ok(())
+}
+
+#[derive(Debug, Error)]
+pub enum CloseWsError {
+    #[error(transparent)]
+    TauriPlayer(#[from] TauriPlayerError),
+    #[error(transparent)]
+    Close(#[from] CloseError),
+    #[error(transparent)]
+    Join(#[from] JoinError),
+}
+
+async fn close_ws_connection() -> Result<(), CloseWsError> {
+    log::debug!("close_ws_connection: attempting to close ws connection");
+
+    if let Some(handle) = WS_HANDLE.read().await.as_ref() {
+        handle.close().await?;
+    }
+
+    if let Some(handle) = WS_JOIN_HANDLE.write().await.take() {
+        handle.abort();
+    }
+
+    log::debug!("close_ws_connection: ws connection closed");
 
     Ok(())
 }
@@ -1856,15 +1959,16 @@ async fn init_upnp_players() -> Result<(), InitUpnpError> {
 
     add_players_to_current_players(api_players).await;
 
-    update_connection_outputs(
-        &CURRENT_SESSIONS
+    let ids = {
+        CURRENT_SESSIONS
             .read()
             .await
             .iter()
             .map(|x| x.session_id)
-            .collect::<Vec<_>>(),
-    )
-    .await?;
+            .collect::<Vec<_>>()
+    };
+
+    update_connection_outputs(&ids).await?;
 
     Ok(())
 }

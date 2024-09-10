@@ -1,9 +1,11 @@
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import {
+    $connectionId,
     InboundMessage,
     onConnectListener,
     onMessageListener,
     OutboundMessage,
+    setWsUrl,
     wsService,
 } from './services/ws';
 import { invoke } from '@tauri-apps/api/core';
@@ -39,12 +41,19 @@ export function override() {
 
     (async () => {
         wsConnectSubscription?.();
-        wsConnectSubscription = await listen<string>(
-            'ws-connect',
-            (message) => {
-                console.debug('Received ws connect from backend', message);
-                onConnectListener.trigger(message.payload);
-            },
-        );
+        wsConnectSubscription = await listen<{
+            wsUrl: string;
+            connectionId: string;
+        }>('ws-connect', ({ payload: { wsUrl, connectionId } }) => {
+            console.debug(
+                'Received ws connect from backend',
+                connectionId,
+                wsUrl,
+            );
+            setWsUrl(wsUrl);
+            if (!$connectionId()) {
+                onConnectListener.trigger(connectionId);
+            }
+        });
     })();
 }

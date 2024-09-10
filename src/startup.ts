@@ -19,11 +19,12 @@ import {
     registerPlayer,
 } from '~/services/player';
 import {
+    $connectionId,
     InboundMessageType,
-    connectionId,
     connectionName,
     onConnect,
     onMessage,
+    setConnectionId,
     wsService,
 } from '~/services/ws';
 import { override } from './ws';
@@ -58,7 +59,7 @@ function tryInvoke(event: string, payload?: InvokeArgs) {
 
 async function updatePlayers() {
     const connection = appState.connections.find(
-        (c) => c.connectionId === connectionId.get(),
+        (c) => c.connectionId === $connectionId(),
     );
 
     if (connection?.players) {
@@ -96,11 +97,12 @@ onCurrentPlaybackTargetChanged((playbackTarget) => {
     updateStateForConnection(connection.get(), { playbackTarget });
 });
 
-onConnect(() => {
-    updateConnection(connectionId.get()!, connectionName.get());
+onConnect((id) => {
+    setConnectionId(`${connection.get()?.id}`, id);
+    updateConnection($connectionId(), connectionName.get());
 });
 connectionName.listen((name) => {
-    updateConnection(connectionId.get()!, name);
+    updateConnection($connectionId()!, name);
 });
 
 const apiOverride: Partial<ApiType> = {};
@@ -114,14 +116,6 @@ function updateApi(secure: boolean) {
         Object.assign(api, apiOverride);
     }
 }
-
-connection.listen((con, prev) => {
-    if (!con) return;
-
-    if (con.apiUrl !== prev?.apiUrl) {
-        updateApi(con.apiUrl.toLowerCase().startsWith('https://'));
-    }
-});
 
 type State = {
     connectionId?: string | undefined;
@@ -140,7 +134,7 @@ function updateStateForConnection(con: Connection | null, overrides?: State) {
     }
 
     const state: State = {
-        connectionId: connectionId.get(),
+        connectionId: $connectionId(),
         connectionName: con?.name,
         apiUrl: con?.apiUrl,
         clientId: con?.clientId,
@@ -160,7 +154,7 @@ function updateStateForConnection(con: Connection | null, overrides?: State) {
 onStartupFirst(async () => {
     tryInvoke('show_main_window');
 
-    setProperty('connectionId', connectionId.get());
+    setProperty('connectionId', $connectionId());
     setProperty('connectionName', connectionName.get());
 
     updateStateForConnection(connection.get());
@@ -168,8 +162,9 @@ onStartupFirst(async () => {
     connection.listen(async (con) => {
         updateStateForConnection(con);
     });
-    connectionId.listen(async (connectionId) => {
+    onConnect(async (connectionId) => {
         setProperty('connectionId', connectionId);
+        updateStateForConnection(connection.get());
     });
     connectionName.listen(async (connectionName) => {
         setProperty('connectionName', connectionName);
