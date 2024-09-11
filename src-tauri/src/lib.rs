@@ -87,10 +87,12 @@ static LOG_LAYER: OnceLock<moosicbox_logging::free_log_client::FreeLogLayer> = O
 
 type ApiPlayersMap = HashMap<u64, Vec<(ApiPlayer, PlayerType, AudioOutputFactory)>>;
 
+#[derive(Debug)]
 struct PlaybackTargetSessionPlayer {
     playback_target: ApiPlaybackTarget,
     session_id: u64,
     player: PlaybackHandler,
+    player_type: PlayerType,
 }
 
 static API_URL: LazyLock<Arc<RwLock<Option<String>>>> =
@@ -152,6 +154,21 @@ enum PlayerType {
         service: Service,
         handle: Handle,
     },
+}
+
+impl std::fmt::Debug for PlayerType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Local => write!(f, "Local"),
+            Self::Upnp {
+                device, service, ..
+            } => f
+                .debug_struct("Upnp")
+                .field("device", device)
+                .field("service", service)
+                .finish(),
+        }
+    }
 }
 
 async fn new_player(
@@ -519,20 +536,22 @@ async fn reinit_players() -> Result<(), TauriPlayerError> {
     let ids = {
         players_map
             .iter()
-            .map(|x| (x.playback_target.clone(), x.session_id, x.player.clone()))
+            .map(|x| {
+                (
+                    x.playback_target.clone(),
+                    x.session_id,
+                    x.player.clone(),
+                    x.player_type.clone(),
+                )
+            })
             .collect::<Vec<_>>()
     };
 
-    for (i, (playback_target, session_id, player)) in ids.into_iter().enumerate() {
+    for (i, (playback_target, session_id, player, ptype)) in ids.into_iter().enumerate() {
         let output = player.output.as_ref().unwrap().lock().unwrap().clone();
         log::debug!("reinit_players: playback_target={playback_target:?} session_id={session_id} output={output:?}");
-        let mut created_player = new_player(
-            session_id,
-            playback_target.clone(),
-            output,
-            PlayerType::Local,
-        )
-        .await?;
+        let mut created_player =
+            new_player(session_id, playback_target.clone(), output, ptype.clone()).await?;
 
         let playback = player.playback.read().unwrap().clone();
 
@@ -560,6 +579,7 @@ async fn reinit_players() -> Result<(), TauriPlayerError> {
             playback_target,
             session_id,
             player: created_player,
+            player_type: ptype,
         };
     }
 
@@ -626,6 +646,7 @@ async fn set_audio_zone_active_players(
                 playback_target,
                 session_id,
                 player,
+                player_type: ptype.clone(),
             };
             if let Some((i, _)) =
                 players_map
@@ -711,7 +732,7 @@ async fn update_connection_outputs(session_ids: &[u64]) -> Result<(), TauriPlaye
         let binding = CURRENT_PLAYERS.read().await;
         let current_players: &[(ApiPlayer, PlayerType, AudioOutputFactory)] = binding.as_ref();
 
-        if let Some((_, ptype, output)) = current_players.iter().find(|(x, _, _)| {
+        if let Some((_player, ptype, output)) = current_players.iter().find(|(x, _, _)| {
             log::trace!(
                 "update_connection_outputs: ApiPlaybackTarget::ConnectionOutput checking '{}' == '{output_id}'",
                 x.audio_output_id
@@ -729,14 +750,16 @@ async fn update_connection_outputs(session_ids: &[u64]) -> Result<(), TauriPlaye
                     ptype.clone(),
                 )
                 .await?;
-                log::debug!(
-                    "update_connection_outputs: ApiPlaybackTarget::ConnectionOutput created new player={}",
-                    player.id
+
+                moosicbox_logging::debug_or_trace!(
+                    ("update_connection_outputs: ApiPlaybackTarget::ConnectionOutput created new player={}", player.id),
+                    ("update_connection_outputs: ApiPlaybackTarget::ConnectionOutput created new player={:?}", player)
                 );
                 let player = PlaybackTargetSessionPlayer {
                     playback_target: playback_target.clone(),
                     session_id,
                     player,
+                    player_type: ptype.clone(),
                 };
 
                 let mut players = ACTIVE_PLAYERS.write().await;
@@ -762,7 +785,7 @@ async fn get_players(
         for player in active_players.iter() {
             let target = &player.playback_target;
             log::trace!(
-                "get_players: Checking if player is in session: target={target:?} session_id={session_id} player_zone_id={playback_target:?}",
+                "get_players: Checking if player is in session: target={target:?} session_id={session_id} player_zone_id={playback_target:?} player={player:?}",
             );
             if !player.player.playback
                 .read()
@@ -770,14 +793,14 @@ async fn get_players(
                 .as_ref()
                 .is_some_and(|p| p.session_id.is_some_and(|s| {
                     log::trace!(
-                        "get_players: player playback.session_id={s} target session_id={session_id}",
+                        "get_players: player playback.session_id={s} target session_id={session_id} player={player:?}",
                     );
                     s == session_id
                 })) {
                 continue;
             }
             log::trace!(
-                "get_players: Checking if player is in zone: target={target:?} session_id={session_id} player_zone_id={playback_target:?}",
+                "get_players: Checking if player is in zone: target={target:?} session_id={session_id} player_zone_id={playback_target:?} player={player:?}",
             );
             if playback_target.is_some_and(|x| x != target) {
                 continue;
@@ -1381,7 +1404,13 @@ async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleW
 
     let players = get_players(update.session_id, Some(&update.playback_target)).await?;
 
-    log::debug!("handle_playback_update: player count={}", players.len());
+    moosicbox_logging::debug_or_trace!(
+        ("handle_playback_update: player count={}", players.len()),
+        (
+            "handle_playback_update: player count={} players={players:?}",
+            players.len()
+        )
+    );
 
     for mut player in players {
         let update = get_session_playback_for_player(update.to_owned(), &player).await;

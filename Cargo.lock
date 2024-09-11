@@ -3606,6 +3606,7 @@ dependencies = [
  "kanal",
  "log",
  "moosicbox_app_ws",
+ "moosicbox_assert",
  "moosicbox_audio_output",
  "moosicbox_audio_zone",
  "moosicbox_config",
