@@ -1975,7 +1975,7 @@ dependencies = [
 [[package]]
 name = "free_log_client"
 version = "0.3.0"
-source = "git+https://github.com/BSteffaniak/FreeLog.git#6c9e96c7b72a4cdd1832258da5bb8dccf6906575"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#be2020aca57047f088023b1e2eac80072603a5e3"
 dependencies = [
  "free_log_models",
  "futures-util",
@@ -1995,7 +1995,7 @@ dependencies = [
 [[package]]
 name = "free_log_models"
 version = "0.2.0"
-source = "git+https://github.com/BSteffaniak/FreeLog.git#6c9e96c7b72a4cdd1832258da5bb8dccf6906575"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#be2020aca57047f088023b1e2eac80072603a5e3"
 dependencies = [
  "log",
  "serde",
@@ -2812,9 +2812,9 @@ dependencies = [
 
 [[package]]
 name = "hyper-util"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cde7055719c54e36e95e8719f95883f22072a48ede39db7fc17a4e1d5281e9b9"
+checksum = "da62f120a8a37763efb0cf8fdf264b884c7b8b9ac8660b900c8661030c00e6ba"
 dependencies = [
  "bytes",
  "futures-channel",
@@ -4398,9 +4398,9 @@ dependencies = [
 
 [[package]]
 name = "notify-rust"
-version = "4.11.1"
+version = "4.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "26a1d03b6305ecefdd9c6c60150179bb8d9f0cd4e64bbcad1e41419e7bf5e414"
+checksum = "5134a72dc570b178bff81b01e81ab14a6fcc015391ed4b3b14853090658cd3a3"
 dependencies = [
  "log",
  "mac-notification-sys",
@@ -5787,9 +5787,9 @@ dependencies = [
 
 [[package]]
 name = "rustls"
-version = "0.23.12"
+version = "0.23.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c58f8c84392efc0a126acce10fa59ff7b3d2ac06ab451a33f2741989b806b044"
+checksum = "f2dabaac7466917e566adb06783a81ca48944c6898a1b08b9374106dd671f4c8"
 dependencies = [
  "once_cell",
  "ring",
@@ -5817,9 +5817,9 @@ checksum = "fc0a2ce646f8655401bb81e7927b812614bd5d91dbc968696be50603510fcaf0"
 
 [[package]]
 name = "rustls-webpki"
-version = "0.102.7"
+version = "0.102.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84678086bd54edf2b415183ed7a94d0efb049f1b646a33e22a36f3794be6ae56"
+checksum = "64ca1bc8749bd4cf37b5ce386cc146580777b4e8572c7b97baf22c83f444bee9"
 dependencies = [
  "ring",
  "rustls-pki-types",
@@ -7002,9 +7002,9 @@ checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
 
 [[package]]
 name = "tauri"
-version = "2.0.0-rc.10"
+version = "2.0.0-rc.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6327f79726c508efbbc3826b343fd7d39ebce786bdeff5881077b35d335d9e0"
+checksum = "4f60dc86a0513f775a6515d79cf2a54ce38f2fa7225e0c5b9d5ae8241e599afa"
 dependencies = [
  "anyhow",
  "bytes",
@@ -7052,9 +7052,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-build"
-version = "2.0.0-rc.9"
+version = "2.0.0-rc.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7938a610d1474435fa38dfba66c95ce9be7f17b500672b6e00072bca5e52fef3"
+checksum = "f9d6fc774b19bedadd547b0310fbdbfadbc7546978eccd6d3e389be7cabc437a"
 dependencies = [
  "anyhow",
  "cargo_toml",
@@ -7074,9 +7074,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-codegen"
-version = "2.0.0-rc.9"
+version = "2.0.0-rc.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "467d3e95b57c860bea13b7c812820d9e7425e4b700e5e69b358d906f22022007"
+checksum = "d14af7a85713898cb8a6be3ece89eb1c39392d8756dd1cc0309ebd6fdc966eb3"
 dependencies = [
  "base64 0.22.1",
  "brotli",
@@ -7101,9 +7101,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-macros"
-version = "2.0.0-rc.8"
+version = "2.0.0-rc.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4585a906bd96bf57d063c3d60c52577ccc5de592d08f9d112e873ada79af9b9"
+checksum = "b9f698301cd7297a7876bb81181a830d40d401461eb14fdaf7ae189b1b56ef76"
 dependencies = [
  "heck 0.5.0",
  "proc-macro2",
@@ -7115,9 +7115,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin"
-version = "2.0.0-rc.9"
+version = "2.0.0-rc.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b905ecef194245bb35baba0447703f9fe40e4c03e946c7aba54c21c23e3452c7"
+checksum = "ad2b0b4fe684059a1b700c1a0d7d51698c05b2257ca64eca2a730d7be2e47c6a"
 dependencies = [
  "anyhow",
  "glob",
@@ -7170,9 +7170,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-plugin-notification"
-version = "2.0.0-rc.3"
+version = "2.0.0-rc.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6bf32fba3a2650f89c7dfc532b38de566a37779e482f07dccabf45fe24444e26"
+checksum = "ffe73765cfea4aca4142ed3fbefe16a072bfa1c0d9e1046790db3782ba5b9bcb"
 dependencies = [
  "log",
  "notify-rust",
@@ -7199,9 +7199,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-runtime"
-version = "2.0.0-rc.9"
+version = "2.0.0-rc.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b72cd110a6699ef44963504d4fa4f6c535677bb0177da2d178f4f822a53058ed"
+checksum = "6a0758dce4f9e08ebeee877d84de0062859495507e1d16f647f97b29f881b43d"
 dependencies = [
  "dpi",
  "gtk",
@@ -7218,9 +7218,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-runtime-wry"
-version = "2.0.0-rc.9"
+version = "2.0.0-rc.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1eb325cca17496ccbb469e7e2fef7f3e31a1005ab0c658dc3331c7781a573401"
+checksum = "78dd7f77e769630da5d91a55e4f102a84ff9c5a99c71e1b5c916a18b5ccafc16"
 dependencies = [
  "cocoa",
  "gtk",
@@ -7242,9 +7242,9 @@ dependencies = [
 
 [[package]]
 name = "tauri-utils"
-version = "2.0.0-rc.9"
+version = "2.0.0-rc.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6746b87c4755f493b94920622e245aef2d771f001ddeffc203e315872d323e1c"
+checksum = "ba92ad9cdf7658fefa29a7218dda0acead9400c021bbf9c3f88e98f5e3b9bbab"
 dependencies = [
  "brotli",
  "cargo_metadata",
@@ -7813,9 +7813,9 @@ checksum = "08f95100a766bf4f8f28f90d77e0a5461bbdb219042e7679bebe79004fed8d75"
 
 [[package]]
 name = "unicode-ident"
-version = "1.0.12"
+version = "1.0.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3354b9ac3fae1ff6755cb6db53683adb661634f67557942dea4facebec0fee4b"
+checksum = "e91b56cd4cadaeb79bbf1a5645f6b4f8dc5bde8834ad5894a8db35fda9efa1fe"
 
 [[package]]
 name = "unicode-normalization"
