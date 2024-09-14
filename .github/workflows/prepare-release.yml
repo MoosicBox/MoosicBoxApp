@@ -420,21 +420,21 @@ jobs:
                   mv msi/MoosicBox_${{ steps.package_version.outputs.version }}_x64_en-US.msi \
                       ${{ steps.assets_dir.outputs.path }}/MoosicBox_x64${{ matrix.release.tag && format('_{0}', matrix.release.tag) || '' }}.msi
 
-            - name: Add moosicbox${{ matrix.release.profile == 'debug' && '_debug' || '' }}.apk Asset
+            - name: Add moosicbox${{ matrix.release.tag && format('_{0}', matrix.release.tag) || '' }}.apk Asset
               if: ${{ matrix.release.target == 'android' }}
               working-directory: MoosicBoxApp/src-tauri/gen/android/app/build/outputs/apk
               shell: bash
               run: |
                   mv universal/${{ matrix.release.profile }}/app-universal-${{ matrix.release.profile }}.apk \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.profile == 'debug' && '_debug' || '' }}.apk
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.tag && format('_{0}', matrix.release.tag) || '' }}.apk
 
-            - name: Add moosicbox${{ matrix.release.profile == 'debug' && '_debug' || '' }}.aab Asset
+            - name: Add moosicbox${{ matrix.release.tag && format('_{0}', matrix.release.tag) || '' }}.aab Asset
               if: ${{ matrix.release.target == 'android' }}
               working-directory: MoosicBoxApp/src-tauri/gen/android/app/build/outputs/bundle
               shell: bash
               run: |
                   mv universal${{ matrix.release.profile == 'release' && 'Release' || 'Debug' }}/app-universal-${{ matrix.release.profile }}.aab \
-                      ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.profile == 'debug' && '_debug' || '' }}.aab
+                      ${{ steps.assets_dir.outputs.path }}/MoosicBox${{ matrix.release.tag && format('_{0}', matrix.release.tag) || '' }}.aab
 
             - name: Upload Assets
               uses: softprops/action-gh-release@master
