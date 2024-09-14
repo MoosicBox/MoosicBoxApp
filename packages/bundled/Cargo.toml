@@ -32,6 +32,8 @@ default = []
 
 fail-on-warnings = []
 
+tunnel = ["moosicbox_server/tunnel"]
+
 # Encoders
 aac  = ["moosicbox_server/aac"]
 flac = ["moosicbox_server/flac"]

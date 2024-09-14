@@ -79,8 +79,8 @@ default = ["cpal"]
 # DO NOT REMOVE!!
 custom-protocol = ["tauri/custom-protocol"]
 
-desktop = ["all-encoders"]
 android = []
+desktop = ["all-encoders", "moosicbox_app_bundled/tunnel"]
 
 all-encoders = ["aac", "flac", "mp3"]
 
