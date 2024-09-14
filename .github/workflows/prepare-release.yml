@@ -24,70 +24,142 @@ jobs:
                       profile: debug
                       target: desktop
                       tag: debug
-                      features: desktop
+                      features: desktop,bundled
 
                     - os: ubuntu-latest
                       profile: release
                       target: desktop
                       tag: release
-                      features: desktop
+                      features: desktop,bundled
 
                     - os: ubuntu-latest
                       profile: release-lto
                       target: desktop
-                      features: desktop
+                      features: desktop,bundled
 
                     - os: ubuntu-latest
                       profile: release-lto-no-panic
                       target: desktop
                       tag: release-lto-no-panic
-                      features: desktop
+                      features: desktop,bundled
 
                     - os: windows-latest
                       profile: debug
                       target: desktop
                       tag: debug
-                      features: desktop
+                      features: desktop,bundled
 
                     - os: windows-latest
                       profile: release
                       target: desktop
                       tag: release
-                      features: desktop
+                      features: desktop,bundled
 
                     - os: windows-latest
                       profile: release-lto
                       target: desktop
-                      features: desktop
+                      features: desktop,bundled
 
                     - os: windows-latest
                       profile: release-lto-no-panic
                       target: desktop
                       tag: release-lto-no-panic
-                      features: desktop
+                      features: desktop,bundled
 
                     - os: macos-latest
                       profile: debug
                       target: desktop
                       tag: debug
-                      features: desktop
+                      features: desktop,bundled
 
                     - os: macos-latest
                       profile: release
                       target: desktop
                       tag: release
-                      features: desktop
+                      features: desktop,bundled
 
                     - os: macos-latest
                       profile: release-lto
                       target: desktop
-                      features: desktop
+                      features: desktop,bundled
 
                     - os: macos-latest
                       profile: release-lto-no-panic
                       target: desktop
                       tag: release-lto-no-panic
-                      features: desktop
+                      features: desktop,bundled
+
+                    - os: ubuntu-latest
+                      profile: debug
+                      target: desktop
+                      tag: debug-client
+                      features: desktop,client
+
+                    - os: ubuntu-latest
+                      profile: release
+                      target: desktop
+                      tag: release-client
+                      features: desktop,client
+
+                    - os: ubuntu-latest
+                      profile: release-lto
+                      target: desktop
+                      tag: client
+                      features: desktop,client
+
+                    - os: ubuntu-latest
+                      profile: release-lto-no-panic
+                      target: desktop
+                      tag: release-lto-no-panic-client
+                      features: desktop,client
+
+                    - os: windows-latest
+                      profile: debug
+                      target: desktop
+                      tag: debug-client
+                      features: desktop,client
+
+                    - os: windows-latest
+                      profile: release
+                      target: desktop
+                      tag: release-client
+                      features: desktop,client
+
+                    - os: windows-latest
+                      profile: release-lto
+                      target: desktop
+                      tag: client
+                      features: desktop,client
+
+                    - os: windows-latest
+                      profile: release-lto-no-panic
+                      target: desktop
+                      tag: release-lto-no-panic-client
+                      features: desktop,client
+
+                    - os: macos-latest
+                      profile: debug
+                      target: desktop
+                      tag: debug-client
+                      features: desktop,client
+
+                    - os: macos-latest
+                      profile: release
+                      target: desktop
+                      tag: release-client
+                      features: desktop,client
+
+                    - os: macos-latest
+                      profile: release-lto
+                      target: desktop
+                      tag: client
+                      features: desktop,client
+
+                    - os: macos-latest
+                      profile: release-lto-no-panic
+                      target: desktop
+                      tag: release-lto-no-panic-client
+                      features: desktop,client
 
                     - os: ubuntu-latest
                       profile: debug
