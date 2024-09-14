@@ -258,8 +258,39 @@ jobs:
                   mv cmdline-tools/* ~/.android/cmdline-tools/latest/
                   yes | ~/.android/cmdline-tools/latest/bin/sdkmanager --licenses
                   ~/.android/cmdline-tools/latest/bin/sdkmanager "platforms;android-33" "platform-tools" "ndk;25.0.8775105" "build-tools;33.0.0"
-                  echo "/home/runner/.android/cmdline-tools/latest/bin" >> $GITHUB_PATH
-                  echo "/home/runner/.android/platform-tools" >> $GITHUB_PATH
+
+                  export ANDROID_HOME=$HOME/Android/Sdk
+                  export ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/25.0.8775105
+
+                  echo "ANDROID_HOME=$HOME/Android/Sdk" >> $GITHUB_ENV
+                  echo "ANDROID_NDK_HOME=$HOME/Android/Sdk/ndk/25.0.8775105" >> $GITHUB_ENV
+
+                  export TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64
+                  export TARGET=aarch64-linux-android
+                  export API=33
+
+                  echo "TOOLCHAIN=$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64" >> $GITHUB_ENV
+                  echo "TARGET=aarch64-linux-android" >> $GITHUB_ENV
+                  echo "API=33" >> $GITHUB_ENV
+
+                  export AR=$TOOLCHAIN/bin/llvm-ar
+                  export CC=$TOOLCHAIN/bin/$TARGET$API-clang
+                  export AS=$CC
+                  export CXX=$TOOLCHAIN/bin/$TARGET$API-clang++
+                  export LD=$TOOLCHAIN/bin/ld
+                  export RANLIB=$TOOLCHAIN/bin/llvm-ranlib
+                  export STRIP=$TOOLCHAIN/bin/llvm-strip
+
+                  echo "AR=$TOOLCHAIN/bin/llvm-ar" >> $GITHUB_ENV
+                  echo "CC=$TOOLCHAIN/bin/$TARGET$API-clang" >> $GITHUB_ENV
+                  echo "AS=$CC" >> $GITHUB_ENV
+                  echo "CXX=$TOOLCHAIN/bin/$TARGET$API-clang++" >> $GITHUB_ENV
+                  echo "LD=$TOOLCHAIN/bin/ld" >> $GITHUB_ENV
+                  echo "RANLIB=$TOOLCHAIN/bin/llvm-ranlib" >> $GITHUB_ENV
+                  echo "STRIP=$TOOLCHAIN/bin/llvm-strip" >> $GITHUB_ENV
+
+                  export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin
+                  export PATH=$PATH:$TOOLCHAIN/bin
 
             - uses: actions/setup-java@v4
               if: ${{ matrix.release.runner != 'self-hosted' }}
