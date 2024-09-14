@@ -44,16 +44,6 @@ use tokio_util::sync::CancellationToken;
 
 mod mdns;
 
-#[cfg(all(feature = "cpal", feature = "android"))]
-#[no_mangle]
-pub extern "C" fn JNI_OnLoad(vm: jni::JavaVM, res: *mut std::os::raw::c_void) -> jni::sys::jint {
-    let vm = vm.get_java_vm_pointer() as *mut std::ffi::c_void;
-    unsafe {
-        ndk_context::initialize_android_context(vm, res);
-    }
-    jni::JNIVersion::V6.into()
-}
-
 #[derive(Clone, Serialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct WsConnectMessage {
