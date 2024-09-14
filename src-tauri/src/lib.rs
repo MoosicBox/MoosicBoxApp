@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     env,
+    fmt::Debug,
     sync::{Arc, LazyLock, OnceLock},
 };
 
@@ -2163,21 +2164,30 @@ pub fn run() {
         LOG_LAYER.set(layer).expect("Failed to set LOG_LAYER");
     }
 
+    let tauri::async_runtime::RuntimeHandle::Tokio(tokio_handle) = tauri::async_runtime::handle();
+
+    #[cfg(feature = "bundled")]
+    let (join_app_server, app_server_handle) = {
+        let server =
+            moosicbox_app_bundled::service::Service::new(moosicbox_app_bundled::Context::new());
+
+        let app_server_handle = server.handle();
+        let join_app_server = server.start_on(&tokio_handle);
+
+        (join_app_server, app_server_handle)
+    };
+
     moosicbox_player::on_playback_event(crate::on_playback_event);
 
     let upnp_service =
         moosicbox_upnp::listener::Service::new(moosicbox_upnp::listener::UpnpContext::new());
 
-    let join_upnp_service = tauri::async_runtime::spawn(async {
-        let upnp_service_handle = upnp_service.handle();
-        let join_upnp_service = upnp_service.start();
+    let upnp_service_handle = upnp_service.handle();
+    let join_upnp_service = upnp_service.start_on(&tokio_handle);
 
-        UPNP_LISTENER_HANDLE
-            .set(upnp_service_handle.clone())
-            .unwrap_or_else(|_| panic!("Failed to set UPNP_LISTENER_HANDLE"));
-
-        join_upnp_service.await
-    });
+    UPNP_LISTENER_HANDLE
+        .set(upnp_service_handle.clone())
+        .unwrap_or_else(|_| panic!("Failed to set UPNP_LISTENER_HANDLE"));
 
     let (mdns_handle, join_mdns_service) = mdns::spawn_mdns_scanner();
 
@@ -2267,21 +2277,61 @@ pub fn run() {
     app_builder
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
-        .run(|_handle, event| {
-            log::trace!("event: {event:?}");
-            match event {
-                tauri::RunEvent::Exit { .. } => {}
-                tauri::RunEvent::ExitRequested { .. } => {}
-                tauri::RunEvent::WindowEvent { .. } => {}
-                tauri::RunEvent::Ready => {}
-                tauri::RunEvent::Resumed => {}
-                tauri::RunEvent::MainEventsCleared => {}
-                _ => {}
+        .run({
+            #[cfg(feature = "bundled")]
+            let app_server_handle = app_server_handle.clone();
+            move |_handle, event| {
+                log::trace!("event: {event:?}");
+
+                let event = Arc::new(event);
+
+                #[cfg(feature = "bundled")]
+                {
+                    use moosicbox_app_bundled::service::Commander as _;
+
+                    if let Err(e) =
+                        app_server_handle.send_command(moosicbox_app_bundled::Command::RunEvent {
+                            event: event.clone(),
+                        })
+                    {
+                        log::error!("AppServer failed to handle event: {e:?}");
+                    }
+                }
+
+                match &*event {
+                    tauri::RunEvent::Exit { .. } => {}
+                    tauri::RunEvent::ExitRequested { .. } => {}
+                    tauri::RunEvent::WindowEvent { .. } => {}
+                    tauri::RunEvent::Ready => {}
+                    tauri::RunEvent::Resumed => {}
+                    tauri::RunEvent::MainEventsCleared => {}
+                    _ => {}
+                }
             }
         });
 
+    #[cfg(feature = "bundled")]
+    {
+        use moosicbox_app_bundled::service::Commander as _;
+
+        if let Err(e) = app_server_handle.shutdown() {
+            log::error!("AppServer failed to shutdown: {e:?}");
+        }
+    }
+
     if let Err(e) = mdns_handle.shutdown() {
         log::error!("Failed to shutdown mdns service: {e:?}");
+    }
+
+    #[cfg(feature = "bundled")]
+    match tauri::async_runtime::block_on(join_app_server) {
+        Err(e) => {
+            log::error!("Failed to join app server: {e:?}");
+        }
+        Ok(Err(e)) => {
+            log::error!("Failed to join app server: {e:?}");
+        }
+        _ => {}
     }
 
     if let Err(e) = tauri::async_runtime::block_on(join_upnp_service) {
