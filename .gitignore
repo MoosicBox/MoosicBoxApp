@@ -7,4 +7,4 @@ dist/
 !/src/startup.ts
 !/src/ws.ts
 /public/
-/target/
+target/
