@@ -24,6 +24,27 @@ jobs:
                   repository: MoosicBox/MoosicBoxUI
                   path: MoosicBoxUI
 
+            - name: Checkout MoosicBoxServer
+              uses: actions/checkout@v4
+              with:
+                  repository: MoosicBox/MoosicBoxServer
+                  path: MoosicBoxServer
+
+            - uses: dtolnay/rust-toolchain@stable
+
+            - name: ⚡ Cache cargo
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cargo/registry
+                      ~/.cargo/git
+                      target
+                  key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+            - name: Build
+              working-directory: MoosicBoxApp
+              run: cargo build
+
             - name: Copy Files
               working-directory: MoosicBoxApp
               shell: bash
