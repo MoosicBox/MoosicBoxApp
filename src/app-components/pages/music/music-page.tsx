@@ -1,8 +1,13 @@
 import './music-page.css';
-import { createSignal, For, Show } from 'solid-js';
+import { createSignal, For, onMount, Show } from 'solid-js';
 import { open } from '@tauri-apps/plugin-dialog';
 import { onlyUnique } from '~/services/util';
-import { api } from '~/services/api';
+import {
+    api,
+    connections,
+    getNewConnectionId,
+    setConnection,
+} from '~/services/api';
 
 export default function musicPage() {
     const [folders, setFolders] = createSignal<string[]>([]);
@@ -26,6 +31,15 @@ export default function musicPage() {
         );
         await api.startScan(['LOCAL']);
     }
+
+    onMount(async () => {
+        if (connections.get().length === 0) {
+            setConnection(getNewConnectionId(), {
+                name: 'Bundled',
+                apiUrl: 'http://localhost:8016',
+            });
+        }
+    });
 
     return (
         <div>

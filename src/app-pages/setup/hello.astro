@@ -1,8 +1,10 @@
 ---
 import Layout from './Layout.astro';
+import { config } from '~/config';
 ---
 
 <Layout title="Hello | MoosicBox">
     <p>hello!</p>
-    <a href="./server">Next</a>
+
+    {config.bundled ? <a href="./music">Next</a> : <a href="./server">Next</a>}
 </Layout>
