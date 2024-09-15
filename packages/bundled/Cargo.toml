@@ -14,7 +14,7 @@ version     = "0.1.0"
 moosicbox_assert = { path = "../../../MoosicBoxServer/packages/assert", default-features = false }
 moosicbox_async_service = { path = "../../../MoosicBoxServer/packages/async_service", default-features = false }
 moosicbox_server = { path = "../../../MoosicBoxServer/packages/server", default-features = false, features = [
-    "all-apis",
+    "app-apis",
 ] }
 moosicbox_task = { path = "../../../MoosicBoxServer/packages/task", default-features = false }
 

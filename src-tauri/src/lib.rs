@@ -136,6 +136,17 @@ const DEFAULT_PLAYBACK_RETRY_OPTIONS: PlaybackRetryOptions = PlaybackRetryOption
     retry_delay: std::time::Duration::from_millis(1000),
 };
 
+#[cfg(feature = "bundled")]
+lazy_static::lazy_static! {
+    static ref THREADS: usize =
+        moosicbox_env_utils::default_env_usize("MAX_THREADS", 64).unwrap_or(64);
+    static ref RT: tokio::runtime::Runtime = tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .max_blocking_threads(*THREADS)
+        .build()
+        .unwrap();
+}
+
 #[derive(Clone)]
 enum PlayerType {
     Local,
@@ -2158,11 +2169,27 @@ pub fn run() {
 
     #[cfg(feature = "bundled")]
     let (join_app_server, app_server_handle) = {
-        let server =
-            moosicbox_app_bundled::service::Service::new(moosicbox_app_bundled::Context::new());
+        use moosicbox_app_bundled::service::Commander as _;
+
+        log::debug!("Starting app server");
+
+        let context = moosicbox_app_bundled::Context::new(RT.handle());
+        let server = moosicbox_app_bundled::service::Service::new(context);
 
         let app_server_handle = server.handle();
-        let join_app_server = server.start_on(&tokio_handle);
+        let (tx, rx) = tokio::sync::oneshot::channel();
+
+        let join_app_server = server.start_on(RT.handle());
+
+        app_server_handle
+            .send_command(moosicbox_app_bundled::Command::WaitForStartup { sender: tx })
+            .expect("Failed to send WaitForStartup command");
+
+        log::debug!("Waiting for app server to start");
+
+        RT.block_on(rx).expect("Failed to start app server");
+
+        log::debug!("App server started");
 
         (join_app_server, app_server_handle)
     };
@@ -2304,29 +2331,37 @@ pub fn run() {
     {
         use moosicbox_app_bundled::service::Commander as _;
 
+        log::debug!("Shutting down app server..");
         if let Err(e) = app_server_handle.shutdown() {
             log::error!("AppServer failed to shutdown: {e:?}");
         }
     }
 
+    log::debug!("Shutting down mdns service..");
     if let Err(e) = mdns_handle.shutdown() {
         log::error!("Failed to shutdown mdns service: {e:?}");
     }
 
     #[cfg(feature = "bundled")]
-    match tauri::async_runtime::block_on(join_app_server) {
-        Err(e) => {
-            log::error!("Failed to join app server: {e:?}");
+    {
+        log::debug!("Joining app server...");
+        match tauri::async_runtime::block_on(join_app_server) {
+            Err(e) => {
+                log::error!("Failed to join app server: {e:?}");
+            }
+            Ok(Err(e)) => {
+                log::error!("Failed to join app server: {e:?}");
+            }
+            _ => {}
         }
-        Ok(Err(e)) => {
-            log::error!("Failed to join app server: {e:?}");
-        }
-        _ => {}
     }
 
+    log::debug!("Joining UPnP service..");
     if let Err(e) = tauri::async_runtime::block_on(join_upnp_service) {
         log::error!("Failed to join UPnP service: {e:?}");
     }
+
+    log::debug!("Joining mdns service...");
     if let Err(e) = tauri::async_runtime::block_on(join_mdns_service) {
         log::error!("Failed to join mdns service: {e:?}");
     }

@@ -1,12 +1,20 @@
 #![cfg_attr(feature = "fail-on-warnings", deny(warnings))]
 
-use moosicbox_async_service::{tokio::sync::RwLock, Arc, CancellationToken, JoinHandle};
+use moosicbox_async_service::{tokio::sync::RwLock, Arc, JoinHandle};
 use strum_macros::AsRefStr;
 use tauri::RunEvent;
 
 #[derive(Debug, AsRefStr)]
 pub enum Command {
-    RunEvent { event: Arc<RunEvent> },
+    RunEvent {
+        event: Arc<RunEvent>,
+    },
+    WaitForStartup {
+        sender: tokio::sync::oneshot::Sender<()>,
+    },
+    WaitForShutdown {
+        sender: tokio::sync::oneshot::Sender<()>,
+    },
 }
 
 impl std::fmt::Display for Command {
@@ -35,12 +43,36 @@ impl service::Processor for service::Service {
         ctx: Arc<RwLock<Context>>,
         command: Command,
     ) -> Result<(), Self::Error> {
-        log::debug!("process_command command={command}");
+        log::debug!("process_command: command={command}");
         match command {
             Command::RunEvent { event } => {
-                log::debug!("Received RunEvent command");
+                log::debug!("process_command: Received RunEvent command");
                 if let Err(e) = ctx.read().await.handle_event(event) {
-                    log::error!("Failed to handle event: {e:?}");
+                    log::error!("process_command: Failed to handle event: {e:?}");
+                }
+            }
+            Command::WaitForStartup { sender } => {
+                if let Some(receiver) = ctx.write().await.receiver.take() {
+                    log::debug!("process_command: Waiting for startup...");
+                    if let Err(e) = receiver.await {
+                        log::error!(
+                            "process_command: Failed to wait for on_startup response: {e:?}"
+                        );
+                    }
+                    log::debug!("process_command: Finished waiting for startup");
+                } else {
+                    log::debug!("process_command: Already started up");
+                }
+                if let Err(e) = sender.send(()) {
+                    log::error!("process_command: Failed to send WaitForStartup response: {e:?}");
+                }
+            }
+            Command::WaitForShutdown { sender } => {
+                if let Some(handle) = ctx.write().await.server_handle.take() {
+                    handle.await??;
+                }
+                if let Err(e) = sender.send(()) {
+                    log::error!("process_command: Failed to send WaitForShutdown response: {e:?}");
                 }
             }
         }
@@ -49,30 +81,32 @@ impl service::Processor for service::Service {
 }
 
 pub struct Context {
-    server_handle: JoinHandle<Result<(), std::io::Error>>,
-    token: CancellationToken,
-}
-
-impl Default for Context {
-    fn default() -> Self {
-        let tauri::async_runtime::RuntimeHandle::Tokio(handle) = tauri::async_runtime::handle();
-
-        let server_handle = moosicbox_task::spawn_on(
-            "moosicbox_app_bundled server",
-            &handle,
-            moosicbox_server::run("0.0.0.0", 8016, None),
-        );
-
-        Self {
-            server_handle,
-            token: CancellationToken::new(),
-        }
-    }
+    server_handle: Option<JoinHandle<std::io::Result<()>>>,
+    receiver: Option<tokio::sync::oneshot::Receiver<()>>,
 }
 
 impl Context {
-    pub fn new() -> Self {
-        Self::default()
+    pub fn new(handle: &tokio::runtime::Handle) -> Self {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+
+        let addr = "0.0.0.0";
+        let port = 8016;
+
+        let server_handle = moosicbox_task::spawn_on(
+            "moosicbox_app_bundled server",
+            handle,
+            moosicbox_server::run(addr, port, None, move || {
+                log::info!("App server listening on {addr}:{port}");
+                if let Err(e) = sender.send(()) {
+                    log::error!("Failed to send on_startup response: {e:?}");
+                }
+            }),
+        );
+
+        Self {
+            server_handle: Some(server_handle),
+            receiver: Some(receiver),
+        }
     }
 
     pub fn handle_event(&self, event: Arc<RunEvent>) -> Result<(), std::io::Error> {
@@ -91,8 +125,9 @@ impl Context {
     }
 
     pub fn shutdown(&self) -> Result<(), std::io::Error> {
-        self.server_handle.abort();
-        self.token.cancel();
+        if let Some(handle) = &self.server_handle {
+            handle.abort();
+        }
         Ok(())
     }
 }
