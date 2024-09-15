@@ -22,6 +22,7 @@ moosicbox_audio_output = { path = "../../MoosicBoxServer/packages/audio_output",
 moosicbox_audio_zone = { path = "../../MoosicBoxServer/packages/audio_zone", default-features = false }
 moosicbox_config = { path = "../../MoosicBoxServer/packages/config", default-features = false }
 moosicbox_core = { path = "../../MoosicBoxServer/packages/core", default-features = false }
+moosicbox_env_utils = { path = "../../MoosicBoxServer/packages/env_utils", default-features = false }
 moosicbox_library = { path = "../../MoosicBoxServer/packages/library", default-features = false }
 moosicbox_logging = { path = "../../MoosicBoxServer/packages/logging", default-features = false }
 moosicbox_mdns = { path = "../../MoosicBoxServer/packages/mdns", default-features = false, features = [
@@ -54,6 +55,7 @@ console-subscriber = { workspace = true }
 debounce = { workspace = true, optional = true }
 jni = { workspace = true, optional = true }
 kanal = { workspace = true }
+lazy_static = { workspace = true }
 log = { workspace = true }
 ndk-context = { workspace = true, optional = true }
 once_cell = { workspace = true }
@@ -73,7 +75,7 @@ tokio = { workspace = true, features = ["macros"] }
 tokio-util = { workspace = true }
 
 [features]
-default = ["cpal"]
+default = ["bundled", "cpal"]
 
 # this feature is used for production builds or when `devPath` points to the filesystem
 # DO NOT REMOVE!!

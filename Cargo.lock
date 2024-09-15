@@ -4186,6 +4186,7 @@ dependencies = [
  "debounce",
  "jni",
  "kanal",
+ "lazy_static",
  "log",
  "moosicbox_app_bundled",
  "moosicbox_app_client",
@@ -4195,6 +4196,7 @@ dependencies = [
  "moosicbox_audio_zone",
  "moosicbox_config",
  "moosicbox_core",
+ "moosicbox_env_utils",
  "moosicbox_library",
  "moosicbox_logging",
  "moosicbox_mdns",
@@ -5010,7 +5012,6 @@ dependencies = [
  "moosicbox_tidal",
  "moosicbox_tunnel",
  "moosicbox_tunnel_sender",
- "moosicbox_upnp",
  "moosicbox_ws",
  "moosicbox_yt",
  "once_cell",
@@ -5174,7 +5175,6 @@ dependencies = [
 name = "moosicbox_upnp"
 version = "0.1.0"
 dependencies = [
- "actix-web",
  "async-recursion",
  "async-trait",
  "atomic_float",
