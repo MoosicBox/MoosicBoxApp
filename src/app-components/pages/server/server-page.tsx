@@ -50,14 +50,9 @@ export function appServerPage() {
             return;
         }
 
-        const id = getNewConnectionId();
-        setConnection(id, {
-            id,
+        setConnection(getNewConnectionId(), {
             name: server.name,
             apiUrl: server.host,
-            clientId: '',
-            token: '',
-            staticToken: '',
         });
     }
 
