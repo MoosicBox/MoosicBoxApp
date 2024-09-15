@@ -27,7 +27,6 @@ export function appServerPage() {
                 const servers = await invoke<Server[]>(
                     'fetch_moosicbox_servers',
                 );
-                console.log(servers);
                 setServers(servers);
             }, 1000),
         );
