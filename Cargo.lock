@@ -4235,6 +4235,7 @@ dependencies = [
  "log",
  "moosicbox_assert",
  "moosicbox_async_service",
+ "moosicbox_config",
  "moosicbox_server",
  "moosicbox_task",
  "strum",
