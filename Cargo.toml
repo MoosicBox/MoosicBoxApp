@@ -2,6 +2,7 @@
 members = [
     "packages/bundled",
     "packages/client",
+    "packages/create_config",
     "packages/ws",
     "src-tauri",
     "tauri-plugin-player",
@@ -37,6 +38,7 @@ async-trait = "0.1.82"
 async_once = "0.2.6"
 atomic_float = "1.1.0"
 bytes = "1.7.1"
+clap = { version = "4.5.17", features = ["derive"] }
 console-subscriber = "0.4.0"
 debounce = "0.2.2"
 flume = "0.11.0"

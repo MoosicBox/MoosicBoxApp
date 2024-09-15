@@ -4251,6 +4251,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "moosicbox_app_create_config"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "log",
+ "moosicbox_assert",
+ "moosicbox_logging",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "moosicbox_app_ws"
 version = "0.1.0"
 dependencies = [

@@ -32,33 +32,9 @@ jobs:
 
             - uses: dtolnay/rust-toolchain@stable
 
-            - name: ⚡ Cache cargo
-              uses: actions/cache@v4
-              with:
-                  path: |
-                      ~/.cargo/registry
-                      ~/.cargo/git
-                      target
-                  key: ${{ matrix.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-            - name: Install Dependencies
-              run: |
-                  sudo apt update
-                  sudo apt install libwebkit2gtk-4.1-dev \
-                      build-essential \
-                      curl \
-                      wget \
-                      file \
-                      libssl-dev \
-                      libgtk-3-dev \
-                      libayatana-appindicator3-dev \
-                      librsvg2-dev \
-                      libasound2-dev \
-                      libsoup-3.0-dev
-
-            - name: Build
+            - name: Generate config
               working-directory: MoosicBoxApp
-              run: cargo build
+              run: cargo run --package moosicbox_app_create_config -- -o src/config.ts
 
             - name: Copy Files
               working-directory: MoosicBoxApp

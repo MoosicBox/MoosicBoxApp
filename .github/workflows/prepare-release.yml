@@ -24,69 +24,81 @@ jobs:
                       profile: debug
                       target: desktop
                       tag: debug
+                      bundled: true
                       features: desktop,bundled
 
                     - os: ubuntu-latest
                       profile: release
                       target: desktop
                       tag: release
+                      bundled: true
                       features: desktop,bundled
 
                     - os: ubuntu-latest
                       profile: release-lto
                       target: desktop
+                      bundled: true
                       features: desktop,bundled
 
                     - os: ubuntu-latest
                       profile: release-lto-no-panic
                       target: desktop
                       tag: release-lto-no-panic
+                      bundled: true
                       features: desktop,bundled
 
                     - os: windows-latest
                       profile: debug
                       target: desktop
                       tag: debug
+                      bundled: true
                       features: desktop,bundled
 
                     - os: windows-latest
                       profile: release
                       target: desktop
                       tag: release
+                      bundled: true
                       features: desktop,bundled
 
                     - os: windows-latest
                       profile: release-lto
                       target: desktop
+                      bundled: true
                       features: desktop,bundled
 
                     - os: windows-latest
                       profile: release-lto-no-panic
                       target: desktop
                       tag: release-lto-no-panic
+                      bundled: true
                       features: desktop,bundled
 
                     - os: macos-latest
                       profile: debug
                       target: desktop
                       tag: debug
+                      bundled: true
                       features: desktop,bundled
 
                     - os: macos-latest
                       profile: release
                       target: desktop
                       tag: release
+                      bundled: true
                       features: desktop,bundled
 
                     - os: macos-latest
                       profile: release-lto
                       target: desktop
+                      bundled: true
                       features: desktop,bundled
 
                     - os: macos-latest
                       profile: release-lto-no-panic
                       target: desktop
                       tag: release-lto-no-panic
+                      bundled: true
                       features: desktop,bundled
 
                     - os: ubuntu-latest
@@ -176,11 +188,13 @@ jobs:
                     # - os: ubuntu-latest
                     #   profile: debug
                     #   target: android
+                    #   bundled: true
                     #   features: android,bundled
 
                     # - os: ubuntu-latest
                     #   profile: release
                     #   target: android
+                    #   bundled: true
                     #   features: android,bundled
 
         steps:
@@ -320,9 +334,9 @@ jobs:
               run: |
                   echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-            - name: Build
+            - name: Generate config
               working-directory: MoosicBoxApp
-              run: cargo build ${{ matrix.release.profile != 'debug' && format('--profile {0}', matrix.release.profile) || '' }}
+              run: cargo run --package moosicbox_app_create_config -- -o src/config.ts ${{ matrix.release.bundled && ' --bundled' || '' }}
 
             - name: pnpm install
               working-directory: MoosicBoxApp
