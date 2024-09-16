@@ -3,6 +3,7 @@ import { createSignal, For, onMount, Show } from 'solid-js';
 import { open } from '@tauri-apps/plugin-dialog';
 import { onlyUnique } from '~/services/util';
 import {
+    Api,
     api,
     connections,
     getNewConnectionId,
@@ -12,7 +13,10 @@ import {
 export default function musicPage() {
     const [folders, setFolders] = createSignal<string[]>([]);
     const [qobuzAuthSuccess, setQobuzAuthSuccess] = createSignal<boolean>();
-    const [tidalAuthSuccess, _setTidalAuthSuccess] = createSignal<boolean>();
+    const [tidalAuthSuccess, setTidalAuthSuccess] = createSignal<boolean>();
+    const [tidalDeviceAuthorization, setTidalDeviceAuthorization] =
+        createSignal<Api.TidalDeviceAuthorizationResponse>();
+    const [pollTimeout, setPollTimeout] = createSignal<NodeJS.Timeout>();
 
     let qobuzUsernameInput: HTMLInputElement;
     let qobuzPasswordInput: HTMLInputElement;
@@ -27,7 +31,40 @@ export default function musicPage() {
         }
     }
 
-    async function authenticateTidal() {}
+    async function authenticateTidal() {
+        setTidalDeviceAuthorization(await api.tidalDeviceAuthorization());
+
+        await pollTidalAuthorizationResponse();
+    }
+
+    async function pollTidalAuthorizationResponse() {
+        console.debug('pollTidalAuthorizationResponse');
+        if (pollTimeout()) {
+            clearTimeout(pollTimeout());
+        }
+
+        const deviceAuthorization = tidalDeviceAuthorization();
+        console.debug('pollTidalAuthorizationResponse:', deviceAuthorization);
+
+        if (deviceAuthorization) {
+            try {
+                const response = await api.tidalDeviceAuthorizationToken(
+                    deviceAuthorization.deviceCode,
+                    true,
+                );
+
+                if (response.accessToken) {
+                    setTidalAuthSuccess(true);
+                    return;
+                }
+            } catch {
+                console.debug('pollTidalAuthorizationResponse: not ready');
+                setPollTimeout(
+                    setTimeout(pollTidalAuthorizationResponse, 1000),
+                );
+            }
+        }
+    }
 
     async function authenticateQobuz() {
         const response = await api.authQobuz(
@@ -118,6 +155,18 @@ export default function musicPage() {
                 >
                     Start web authentication
                 </button>
+                <Show when={tidalDeviceAuthorization()}>
+                    {(auth) => (
+                        <div>
+                            <span>
+                                Follow this link to authenticate with Tidal:{' '}
+                                <a href={auth().url} target="_blank">
+                                    {auth().url}
+                                </a>
+                            </span>
+                        </div>
+                    )}
+                </Show>
                 <Show when={tidalAuthSuccess() === true}>
                     <p>Success!</p>
                 </Show>
