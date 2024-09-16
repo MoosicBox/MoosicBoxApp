@@ -94,6 +94,11 @@ export default function musicPage() {
         await api.startScan(['QOBUZ']);
     }
 
+    async function scanTidal() {
+        await api.enableScanOrigin('TIDAL');
+        await api.startScan(['TIDAL']);
+    }
+
     async function finish() {
         const requests = [];
 
@@ -103,6 +108,10 @@ export default function musicPage() {
 
         if (qobuzAuthSuccess() === true) {
             requests.push(scanQobuz());
+        }
+
+        if (tidalAuthSuccess() === true) {
+            requests.push(scanTidal());
         }
 
         await Promise.all(requests);
