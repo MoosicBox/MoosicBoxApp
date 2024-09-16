@@ -2,9 +2,11 @@ import './DownloadSettings.css';
 import { createSignal, Show, For, onMount } from 'solid-js';
 import { open } from '@tauri-apps/plugin-dialog';
 import { Api, api, defaultDownloadLocation } from '~/services/api';
+import { clientSignal } from '~/services/util';
 
 export default function downloadSettingsRender() {
     const [locations, setLocations] = createSignal<Api.DownloadLocation[]>([]);
+    const [$defaultDownloadLocation] = clientSignal(defaultDownloadLocation);
 
     async function addLocation() {
         const directories = await open({
@@ -45,7 +47,7 @@ export default function downloadSettingsRender() {
                             {(location) => (
                                 <p>
                                     {location.id ===
-                                        defaultDownloadLocation.get() && (
+                                        $defaultDownloadLocation() && (
                                         <span>*</span>
                                     )}{' '}
                                     {location.path}
