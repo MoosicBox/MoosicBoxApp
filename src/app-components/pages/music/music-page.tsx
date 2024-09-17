@@ -3,23 +3,19 @@ import { createSignal, For, onMount, Show } from 'solid-js';
 import { open } from '@tauri-apps/plugin-dialog';
 import { onlyUnique } from '~/services/util';
 import {
-    Api,
     api,
     connections,
     getNewConnectionId,
     setConnection,
 } from '~/services/api';
+import { htmx } from '~/middleware/htmx';
 
 export default function musicPage() {
+    let root: HTMLDivElement;
+
     const [folders, setFolders] = createSignal<string[]>([]);
     const [qobuzAuthSuccess, setQobuzAuthSuccess] = createSignal<boolean>();
     const [tidalAuthSuccess, setTidalAuthSuccess] = createSignal<boolean>();
-    const [tidalDeviceAuthorization, setTidalDeviceAuthorization] =
-        createSignal<Api.TidalDeviceAuthorizationResponse>();
-    const [pollTimeout, setPollTimeout] = createSignal<NodeJS.Timeout>();
-
-    let qobuzUsernameInput: HTMLInputElement;
-    let qobuzPasswordInput: HTMLInputElement;
 
     async function addFolder() {
         const directories = await open({
@@ -28,54 +24,6 @@ export default function musicPage() {
         });
         if (directories) {
             setFolders([...folders(), ...directories].filter(onlyUnique));
-        }
-    }
-
-    async function authenticateTidal() {
-        setTidalDeviceAuthorization(await api.tidalDeviceAuthorization());
-
-        await pollTidalAuthorizationResponse();
-    }
-
-    async function pollTidalAuthorizationResponse() {
-        console.debug('pollTidalAuthorizationResponse');
-        if (pollTimeout()) {
-            clearTimeout(pollTimeout());
-        }
-
-        const deviceAuthorization = tidalDeviceAuthorization();
-        console.debug('pollTidalAuthorizationResponse:', deviceAuthorization);
-
-        if (deviceAuthorization) {
-            try {
-                const response = await api.tidalDeviceAuthorizationToken(
-                    deviceAuthorization.deviceCode,
-                    true,
-                );
-
-                if (response.accessToken) {
-                    setTidalAuthSuccess(true);
-                    return;
-                }
-            } catch {
-                console.debug('pollTidalAuthorizationResponse: not ready');
-                setPollTimeout(
-                    setTimeout(pollTidalAuthorizationResponse, 1000),
-                );
-            }
-        }
-    }
-
-    async function authenticateQobuz() {
-        const response = await api.authQobuz(
-            qobuzUsernameInput.value,
-            qobuzPasswordInput.value,
-            true,
-        );
-        if (response.accessToken) {
-            qobuzUsernameInput.value = '';
-            qobuzPasswordInput.value = '';
-            setQobuzAuthSuccess(true);
         }
     }
 
@@ -118,16 +66,43 @@ export default function musicPage() {
     }
 
     onMount(async () => {
+        root.addEventListener('qobuz-login-attempt', (e) => {
+            if (!('detail' in e))
+                throw new Error(`Invalid qobuz-login-attempt event`);
+
+            type QobuzLoginAttempt = {
+                success: boolean;
+            };
+
+            const attempt = e.detail as QobuzLoginAttempt;
+
+            setQobuzAuthSuccess(attempt.success);
+        });
+        root.addEventListener('tidal-login-attempt', (e) => {
+            if (!('detail' in e))
+                throw new Error(`Invalid tidal-login-attempt event`);
+
+            type TidalLoginAttempt = {
+                success: boolean;
+            };
+
+            const attempt = e.detail as TidalLoginAttempt;
+
+            setTidalAuthSuccess(attempt.success);
+        });
+
         if (connections.get().length === 0) {
             setConnection(getNewConnectionId(), {
                 name: 'Bundled',
                 apiUrl: 'http://localhost:8016',
             });
         }
+
+        htmx.process(root);
     });
 
     return (
-        <div>
+        <div ref={root!}>
             <section class="setup-music-page-local-music">
                 <h1>Local Music</h1>
                 <p>Where do you store your music?</p>
@@ -157,59 +132,23 @@ export default function musicPage() {
             <section class="setup-music-page-tidal-music">
                 <h1>Tidal</h1>
                 <p>Sign in to your Tidal account (optional)</p>
-                <button
-                    onClick={authenticateTidal}
-                    type="button"
-                    class="remove-button-styles moosicbox-button"
+                <div
+                    hx-get={`/admin/tidal/settings`}
+                    hx-trigger="load, connection-updated from:body"
                 >
-                    Start web authentication
-                </button>
-                <Show when={tidalDeviceAuthorization()}>
-                    {(auth) => (
-                        <div>
-                            <span>
-                                Follow this link to authenticate with Tidal:{' '}
-                                <a href={auth().url} target="_blank">
-                                    {auth().url}
-                                </a>
-                            </span>
-                        </div>
-                    )}
-                </Show>
-                <Show when={tidalAuthSuccess() === true}>
-                    <p>Success!</p>
-                </Show>
-                <Show when={tidalAuthSuccess() === false}>
-                    <p>Failed to authenticate!</p>
-                </Show>
+                    loading...
+                </div>
             </section>
             <hr />
             <section class="setup-music-page-qobuz-music">
                 <h1>Qobuz</h1>
                 <p>Sign in to your Qobuz account (optional)</p>
-                <input
-                    ref={qobuzUsernameInput!}
-                    type="text"
-                    onKeyUp={(e) => e.key === 'Enter' && authenticateQobuz()}
-                />
-                <input
-                    ref={qobuzPasswordInput!}
-                    type="password"
-                    onKeyUp={(e) => e.key === 'Enter' && authenticateQobuz()}
-                />
-                <button
-                    onClick={authenticateQobuz}
-                    type="button"
-                    class="remove-button-styles moosicbox-button"
+                <div
+                    hx-get={`/admin/qobuz/settings`}
+                    hx-trigger="load, connection-updated from:body"
                 >
-                    Login
-                </button>
-                <Show when={qobuzAuthSuccess() === true}>
-                    <p>Success!</p>
-                </Show>
-                <Show when={qobuzAuthSuccess() === false}>
-                    <p>Failed to authenticate!</p>
-                </Show>
+                    loading...
+                </div>
             </section>
             <button
                 onClick={async () => {
