@@ -1,12 +1,11 @@
 [package]
-authors      = ["Braden Steffaniak"]
-description  = ""
-edition      = "2021"
-exclude      = ["/examples", "/node_modules", "/webview-dist", "/webview-src"]
-links        = "tauri-plugin-player"
-name         = "tauri-plugin-player"
-rust-version = "1.70"
-version      = "0.1.0"
+authors     = ["Braden Steffaniak"]
+description = ""
+edition     = "2021"
+exclude     = ["/examples", "/node_modules", "/webview-dist", "/webview-src"]
+links       = "tauri-plugin-player"
+name        = "tauri-plugin-player"
+version     = "0.1.0"
 
 [dependencies]
 serde     = { workspace = true }
