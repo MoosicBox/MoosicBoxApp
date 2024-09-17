@@ -3807,14 +3807,14 @@ dependencies = [
 
 [[package]]
 name = "local-ip-address"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b435d7dd476416a905f9634dff8c330cee8d3168fdd1fbd472a17d1a75c00c3e"
+checksum = "3669cf5561f8d27e8fc84cc15e58350e70f557d4d65f70e3154e54cd2f8e1782"
 dependencies = [
  "libc",
  "neli",
  "thiserror",
- "windows-sys 0.48.0",
+ "windows-sys 0.59.0",
 ]
 
 [[package]]
@@ -4163,6 +4163,7 @@ version = "0.1.0"
 dependencies = [
  "actix-htmx",
  "actix-web",
+ "base64 0.22.1",
  "log",
  "maud",
  "moosicbox_assert",
@@ -4170,15 +4171,18 @@ dependencies = [
  "moosicbox_core",
  "moosicbox_database",
  "moosicbox_music_api",
+ "moosicbox_qobuz",
  "moosicbox_scan",
+ "moosicbox_tidal",
  "serde",
  "serde_json",
+ "thiserror",
  "urlencoding",
 ]
 
 [[package]]
 name = "moosicbox_app"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "async-recursion",
  "atomic_float",
@@ -4462,7 +4466,6 @@ dependencies = [
  "moosicbox_assert",
  "moosicbox_database",
  "moosicbox_json_utils",
- "once_cell",
  "rusqlite",
  "serde",
  "serde_json",
@@ -4483,7 +4486,6 @@ dependencies = [
  "log",
  "moosicbox_assert",
  "moosicbox_task",
- "once_cell",
  "regex",
  "serde",
  "serde_json",
@@ -4537,7 +4539,6 @@ dependencies = [
  "moosicbox_scan",
  "moosicbox_task",
  "mp3-duration",
- "once_cell",
  "regex",
  "reqwest",
  "rusqlite",
@@ -4586,7 +4587,6 @@ dependencies = [
  "moosicbox_music_api",
  "moosicbox_stream_utils",
  "moosicbox_task",
- "once_cell",
  "regex",
  "reqwest",
  "rusqlite",
@@ -4652,7 +4652,6 @@ dependencies = [
  "moosicbox_paging",
  "moosicbox_search",
  "moosicbox_stream_utils",
- "once_cell",
  "open",
  "regex",
  "reqwest",
@@ -4745,7 +4744,6 @@ dependencies = [
  "moosicbox_database",
  "moosicbox_json_utils",
  "moosicbox_paging",
- "once_cell",
  "open",
  "reqwest",
  "rusqlite",
@@ -4807,7 +4805,6 @@ dependencies = [
  "moosicbox_stream_utils",
  "moosicbox_task",
  "ogg",
- "once_cell",
  "rand 0.8.5",
  "regex",
  "reqwest",
@@ -4839,7 +4836,6 @@ dependencies = [
  "moosicbox_music_api",
  "moosicbox_paging",
  "moosicbox_search",
- "once_cell",
  "open",
  "regex",
  "reqwest",
@@ -4873,7 +4869,6 @@ dependencies = [
  "moosicbox_paging",
  "moosicbox_search",
  "moosicbox_stream_utils",
- "once_cell",
  "open",
  "regex",
  "reqwest",
@@ -4923,7 +4918,6 @@ dependencies = [
  "moosicbox_search",
  "moosicbox_task",
  "mp3-duration",
- "once_cell",
  "regex",
  "reqwest",
  "serde",
@@ -4959,7 +4953,6 @@ dependencies = [
  "moosicbox_database",
  "moosicbox_json_utils",
  "moosicbox_task",
- "once_cell",
  "regex",
  "serde",
  "serde_json",
@@ -4975,6 +4968,7 @@ version = "0.1.0"
 dependencies = [
  "actix-cors",
  "actix-files",
+ "actix-htmx",
  "actix-web",
  "actix-ws",
  "awc",
@@ -5018,7 +5012,6 @@ dependencies = [
  "moosicbox_tunnel_sender",
  "moosicbox_ws",
  "moosicbox_yt",
- "once_cell",
  "rand 0.8.5",
  "regex",
  "serde",
@@ -5100,7 +5093,6 @@ dependencies = [
  "moosicbox_music_api",
  "moosicbox_paging",
  "moosicbox_search",
- "once_cell",
  "open",
  "reqwest",
  "rusqlite",
@@ -5159,7 +5151,6 @@ dependencies = [
  "moosicbox_task",
  "moosicbox_tunnel",
  "moosicbox_ws",
- "once_cell",
  "rand 0.8.5",
  "regex",
  "reqwest",
@@ -5199,7 +5190,6 @@ dependencies = [
  "moosicbox_session",
  "moosicbox_stream_utils",
  "moosicbox_task",
- "once_cell",
  "pin-utils",
  "rand 0.8.5",
  "regex",
@@ -5238,7 +5228,6 @@ dependencies = [
  "moosicbox_json_utils",
  "moosicbox_logging",
  "moosicbox_session",
- "once_cell",
  "regex",
  "rusqlite",
  "serde",
@@ -5267,7 +5256,6 @@ dependencies = [
  "moosicbox_music_api",
  "moosicbox_paging",
  "moosicbox_search",
- "once_cell",
  "open",
  "reqwest",
  "rusqlite",
