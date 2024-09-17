@@ -4213,7 +4213,6 @@ dependencies = [
  "moosicbox_upnp",
  "moosicbox_ws",
  "ndk-context",
- "once_cell",
  "portpicker",
  "reqwest",
  "serde",
