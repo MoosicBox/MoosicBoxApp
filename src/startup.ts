@@ -124,6 +124,7 @@ type State = {
     clientId?: string | undefined;
     signatureToken?: string | undefined;
     apiToken?: string | undefined;
+    profile?: string | undefined;
     playbackTarget?: Api.PlaybackTarget | undefined;
     currentSessionId?: number | undefined;
 };
@@ -140,6 +141,7 @@ function updateStateForConnection(con: Connection | null, overrides?: State) {
         clientId: con?.clientId,
         signatureToken: Api.signatureToken(),
         apiToken: con?.token,
+        profile: con?.profile,
         playbackTarget: currentPlaybackTarget(),
         currentSessionId: currentPlaybackSessionId(),
     };

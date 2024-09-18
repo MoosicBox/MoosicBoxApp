@@ -150,15 +150,23 @@ impl WsClient {
         &mut self,
         client_id: Option<String>,
         signature_token: Option<String>,
+        profile: String,
         on_start: impl Fn() + Send + 'static,
     ) -> Receiver<WsMessage> {
-        self.start_handler(client_id, signature_token, Self::message_handler, on_start)
+        self.start_handler(
+            client_id,
+            signature_token,
+            profile,
+            Self::message_handler,
+            on_start,
+        )
     }
 
     fn start_handler<T, O>(
         &mut self,
         client_id: Option<String>,
         signature_token: Option<String>,
+        profile: String,
         handler: fn(sender: Sender<T>, m: Message) -> O,
         on_start: impl Fn() + Send + 'static,
     ) -> Receiver<T>
@@ -182,8 +190,9 @@ impl WsClient {
 
                 sender_arc.write().unwrap().replace(txf.clone());
 
+                let profile_param = format!("?moosicboxProfile={profile}");
                 let client_id_param = if let Some(id) = &client_id {
-                    format!("?clientId={id}")
+                    format!("&clientId={id}")
                 } else {
                     "".to_string()
                 };
@@ -198,7 +207,7 @@ impl WsClient {
                 };
                 log::debug!("Connecting to websocket...");
                 match select!(
-                    resp = connect_async(format!("{url}{client_id_param}{signature_token_param}")) => resp,
+                    resp = connect_async(format!("{url}{profile_param}{client_id_param}{signature_token_param}")) => resp,
                     _ = cancellation_token.cancelled() => {
                         log::debug!("Cancelling connect");
                         break;

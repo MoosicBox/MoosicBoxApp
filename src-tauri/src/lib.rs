@@ -88,6 +88,8 @@ struct PlaybackTargetSessionPlayer {
 
 static API_URL: LazyLock<Arc<RwLock<Option<String>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
+static PROFILE: LazyLock<Arc<RwLock<Option<String>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
 static WS_URL: LazyLock<Arc<RwLock<Option<String>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
 static CONNECTION_ID: LazyLock<Arc<RwLock<Option<String>>>> =
@@ -337,6 +339,7 @@ pub struct AppState {
     client_id: Option<String>,
     signature_token: Option<String>,
     api_token: Option<String>,
+    profile: Option<String>,
     playback_target: Option<PlaybackTarget>,
     current_session_id: Option<u64>,
 }
@@ -464,6 +467,30 @@ async fn set_state(state: AppState) -> Result<(), TauriPlayerError> {
             updated_connection_details = true;
         } else {
             log::debug!("set_state: no update to API_URL");
+        }
+    }
+
+    {
+        if let Some(profile) = &state.profile {
+            LOG_LAYER
+                .get()
+                .map(|x| x.set_property("profile", profile.to_owned().into()));
+        } else {
+            LOG_LAYER.get().map(|x| x.remove_property("profile"));
+        }
+
+        let mut profile = PROFILE.write().await;
+
+        if profile.as_ref() != state.profile.as_ref() {
+            log::debug!(
+                "set_state: updating PROFILE from '{:?}' -> '{:?}'",
+                profile.as_ref(),
+                state.profile.as_ref()
+            );
+            *profile = state.profile;
+            updated_connection_details = true;
+        } else {
+            log::debug!("set_state: no update to PROFILE");
         }
     }
 
@@ -1758,6 +1785,8 @@ pub enum InitWsError {
     TauriPlayer(#[from] TauriPlayerError),
     #[error(transparent)]
     CloseWs(#[from] CloseWsError),
+    #[error("Missing profile")]
+    MissingProfile,
 }
 
 async fn init_ws_connection() -> Result<(), InitWsError> {
@@ -1782,6 +1811,11 @@ async fn init_ws_connection() -> Result<(), InitWsError> {
     };
 
     let api_url = API_URL.read().await.clone().unwrap();
+    let profile = PROFILE
+        .read()
+        .await
+        .clone()
+        .ok_or_else(|| InitWsError::MissingProfile)?;
 
     let client_id = CLIENT_ID.read().await.clone();
     let signature_token = SIGNATURE_TOKEN.read().await.clone();
@@ -1800,7 +1834,7 @@ async fn init_ws_connection() -> Result<(), InitWsError> {
         .write()
         .await
         .replace(moosicbox_task::spawn("moosicbox_app: ws", async move {
-            let mut rx = client.start(client_id, signature_token, {
+            let mut rx = client.start(client_id, signature_token, profile, {
                 let handle = handle.clone();
                 move || {
                     tauri::async_runtime::spawn({
