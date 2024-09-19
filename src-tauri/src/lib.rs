@@ -287,9 +287,11 @@ async fn new_player(
             .cloned()
     };
 
-    if let Some(session) = session {
+    let profile = { PROFILE.read().await.clone() };
+
+    if let (Some(profile), Some(session)) = (profile.clone(), session) {
         log::debug!("new_player: init_from_api_session session={session:?}");
-        if let Err(e) = player.init_from_api_session(session).await {
+        if let Err(e) = player.init_from_api_session(profile, session).await {
             log::error!("Failed to init player from api session: {e:?}");
         }
     } else {
@@ -312,6 +314,7 @@ async fn new_player(
             None,
             *PLAYBACK_QUALITY.read().await,
             Some(session_id),
+            profile,
             Some(playback_target.into()),
             false,
             None,
@@ -596,7 +599,8 @@ async fn reinit_players() -> Result<(), TauriPlayerError> {
                     Some(playback.volume.load(std::sync::atomic::Ordering::SeqCst)),
                     Some(playback.tracks.clone()),
                     Some(playback.quality),
-                    playback.session_id,
+                    Some(playback.session_id),
+                    Some(playback.profile),
                     Some(playback_target.clone().into()),
                     false,
                     None,
@@ -642,7 +646,7 @@ async fn set_audio_zone_active_players(
                         .read()
                         .unwrap()
                         .as_ref()
-                        .is_some_and(|p| p.session_id.is_some_and(|s| s == session_id))
+                        .is_some_and(|p| p.session_id == session_id)
                 };
 
                 let same_output = existing
@@ -816,16 +820,18 @@ async fn get_players(
             log::trace!(
                 "get_players: Checking if player is in session: target={target:?} session_id={session_id} player_zone_id={playback_target:?} player={player:?}",
             );
-            if !player.player.playback
+            let same_session = player.player.playback
                 .read()
                 .unwrap()
                 .as_ref()
-                .is_some_and(|p| p.session_id.is_some_and(|s| {
+                .is_some_and(|p| {
                     log::trace!(
-                        "get_players: player playback.session_id={s} target session_id={session_id} player={player:?}",
+                        "get_players: player playback.session_id={} target session_id={session_id} player={player:?}",
+                        p.session_id
                     );
-                    s == session_id
-                })) {
+                    p.session_id == session_id
+                });
+            if !same_session {
                 continue;
             }
             log::trace!(
@@ -888,6 +894,8 @@ async fn set_playback_quality(quality: PlaybackQuality) -> Result<(), TauriPlaye
     let mut binding = ACTIVE_PLAYERS.write().await;
     let players = binding.iter_mut();
 
+    let profile = { PROFILE.read().await.clone() };
+
     for x in players {
         x.player
             .update_playback(
@@ -901,6 +909,7 @@ async fn set_playback_quality(quality: PlaybackQuality) -> Result<(), TauriPlaye
                 None,
                 *PLAYBACK_QUALITY.read().await,
                 Some(x.session_id),
+                profile.clone(),
                 Some(x.playback_target.clone().into()),
                 false,
                 None,
@@ -936,6 +945,7 @@ async fn send_ws_message(
                 InboundPayload::SetSeek(payload) => {
                     handle_playback_update(&ApiUpdateSession {
                         session_id: payload.payload.session_id,
+                        profile: payload.payload.profile.clone(),
                         playback_target: payload.payload.playback_target.clone(),
                         play: None,
                         stop: None,
@@ -1355,7 +1365,7 @@ async fn get_session_playback_for_player(
             .read()
             .unwrap()
             .as_ref()
-            .and_then(|x| x.session_id)
+            .map(|x| x.session_id)
     };
 
     if let Some(session_id) = session_id {
@@ -1471,6 +1481,7 @@ async fn handle_playback_update(update: &ApiUpdateSession) -> Result<(), HandleW
                 }),
                 update.quality,
                 Some(update.session_id),
+                Some(update.profile.clone()),
                 Some(update.playback_target.into()),
                 false,
                 Some(DEFAULT_PLAYBACK_RETRY_OPTIONS),
@@ -1670,6 +1681,7 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
                 OutboundPayload::SetSeek(payload) => {
                     handle_playback_update(&ApiUpdateSession {
                         session_id: payload.payload.session_id,
+                        profile: payload.payload.profile.clone(),
                         playback_target: payload.payload.playback_target.clone(),
                         play: None,
                         stop: None,
@@ -1708,28 +1720,33 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
                             .map(|(x, y)| (*x, *y))
                             .collect::<Vec<_>>();
 
-                        for (player_id, session_id) in player_sessions {
-                            if let Some(session) =
-                                payload.payload.iter().find(|x| x.session_id == session_id)
-                            {
-                                if let Some(player) = ACTIVE_PLAYERS
-                                    .write()
-                                    .await
-                                    .iter_mut()
-                                    .find(|x| x.player.id as u64 == player_id)
-                                    .map(|x| &mut x.player)
+                        let profile = { PROFILE.read().await.clone() };
+
+                        if let Some(profile) = profile {
+                            for (player_id, session_id) in player_sessions {
+                                if let Some(session) =
+                                    payload.payload.iter().find(|x| x.session_id == session_id)
                                 {
-                                    log::debug!(
+                                    if let Some(player) = ACTIVE_PLAYERS
+                                        .write()
+                                        .await
+                                        .iter_mut()
+                                        .find(|x| x.player.id as u64 == player_id)
+                                        .map(|x| &mut x.player)
+                                    {
+                                        log::debug!(
                                         "handle_ws_message: init_from_api_session session={session:?}"
                                     );
-                                    if let Err(e) =
-                                        player.init_from_api_session(session.clone()).await
-                                    {
-                                        log::error!(
-                                            "Failed to init player from api session: {e:?}"
-                                        );
+                                        if let Err(e) = player
+                                            .init_from_api_session(profile.clone(), session.clone())
+                                            .await
+                                        {
+                                            log::error!(
+                                                "Failed to init player from api session: {e:?}"
+                                            );
+                                        }
+                                        player_ids.push(player_id);
                                     }
-                                    player_ids.push(player_id);
                                 }
                             }
                         }
