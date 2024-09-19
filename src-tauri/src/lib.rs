@@ -181,16 +181,20 @@ async fn new_player(
     output: AudioOutputFactory,
     player_type: PlayerType,
 ) -> Result<PlaybackHandler, TauriPlayerError> {
-    let headers = if API_TOKEN.read().await.is_some() {
-        let mut headers = HashMap::new();
+    let profile = { PROFILE.read().await.clone() };
+    let Some(profile) = profile else {
+        return Err(TauriPlayerError::Unknown("Missing profile".to_string()));
+    };
+
+    let mut headers = HashMap::new();
+    headers.insert("moosicbox-profile".to_string(), profile);
+
+    if API_TOKEN.read().await.is_some() {
         headers.insert(
             "Authorization".to_string(),
             API_TOKEN.read().await.clone().unwrap().to_string(),
         );
-        Some(headers)
-    } else {
-        None
-    };
+    }
 
     let query = if CLIENT_ID.read().await.is_some() && SIGNATURE_TOKEN.read().await.is_some() {
         let mut query = HashMap::new();
@@ -215,7 +219,7 @@ async fn new_player(
 
     let player_source = PlayerSource::Remote {
         host: host.clone(),
-        headers,
+        headers: Some(headers),
         query,
     };
 
@@ -1296,6 +1300,8 @@ pub enum RegisterPlayersError {
     Serde(#[from] serde_json::Error),
     #[error(transparent)]
     TauriPlayer(#[from] TauriPlayerError),
+    #[error("Missing profile")]
+    MissingProfile,
 }
 
 async fn register_players(
@@ -1310,10 +1316,29 @@ async fn register_players(
         .map(|x| format!("&clientId={x}"))
         .unwrap_or_default();
 
+    let profile = { PROFILE.read().await.clone() };
+    let Some(profile) = profile else {
+        return Err(RegisterPlayersError::MissingProfile);
+    };
+
+    let mut headers = serde_json::Map::new();
+
+    headers.insert(
+        "moosicbox-profile".to_string(),
+        serde_json::Value::String(profile),
+    );
+
+    if let Some(api_token) = api_token {
+        headers.insert(
+            "Authorization".to_string(),
+            serde_json::Value::String(format!("bearer {api_token}")),
+        );
+    }
+
     let response = api_proxy_post(
         format!("session/register-players?connectionId={connection_id}{client_id}",),
         Some(serde_json::to_value(players)?),
-        api_token.map(|token| serde_json::json!({"Authorization": format!("bearer {token}")})),
+        Some(serde_json::Value::Object(headers)),
     )
     .await?;
 
@@ -1326,6 +1351,8 @@ pub enum FetchAudioZonesError {
     Serde(#[from] serde_json::Error),
     #[error(transparent)]
     TauriPlayer(#[from] TauriPlayerError),
+    #[error("Missing profile")]
+    MissingProfile,
 }
 
 async fn fetch_audio_zones() -> Result<(), FetchAudioZonesError> {
@@ -1338,9 +1365,28 @@ async fn fetch_audio_zones() -> Result<(), FetchAudioZonesError> {
         .map(|x| format!("?clientId={x}"))
         .unwrap_or_default();
 
+    let profile = { PROFILE.read().await.clone() };
+    let Some(profile) = profile else {
+        return Err(FetchAudioZonesError::MissingProfile);
+    };
+
+    let mut headers = serde_json::Map::new();
+
+    headers.insert(
+        "moosicbox-profile".to_string(),
+        serde_json::Value::String(profile),
+    );
+
+    if let Some(api_token) = api_token {
+        headers.insert(
+            "Authorization".to_string(),
+            serde_json::Value::String(format!("bearer {api_token}")),
+        );
+    }
+
     let response = api_proxy_get(
         format!("audio-zone/with-session{client_id}",),
-        api_token.map(|token| serde_json::json!({"Authorization": format!("bearer {token}")})),
+        Some(serde_json::Value::Object(headers)),
     )
     .await?;
 
