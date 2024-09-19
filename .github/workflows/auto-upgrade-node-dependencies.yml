@@ -50,6 +50,18 @@ jobs:
                   restore-keys: |
                       ${{ matrix.os }}-pnpm-store-
 
+            - name: Checkout MoosicBoxServer
+              uses: actions/checkout@v4
+              with:
+                  repository: MoosicBox/MoosicBoxServer
+                  path: MoosicBoxServer
+
+            - uses: dtolnay/rust-toolchain@stable
+
+            - name: Generate config
+              working-directory: MoosicBoxApp
+              run: cargo run --package moosicbox_app_create_config -- -o src/config.ts
+
             - name: pnpm install
               working-directory: MoosicBoxApp
               run: pnpm install
