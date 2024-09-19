@@ -2065,6 +2065,11 @@ async fn handle_media_event(
         return Ok(());
     };
 
+    let Some(current_profile) = ({ PROFILE.read().await.clone() }) else {
+        log::debug!("handle_media_event: No current_profile");
+        return Ok(());
+    };
+
     let Some(current_playback_target) = ({ CURRENT_PLAYBACK_TARGET.read().await.clone() }) else {
         log::debug!("handle_media_event: No current_playback_target");
         return Ok(());
@@ -2092,6 +2097,7 @@ async fn handle_media_event(
             propagate_playback_event(
                 UpdateSession {
                     session_id: current_session_id,
+                    profile: current_profile.clone(),
                     playback_target: current_playback_target.clone(),
                     play: None,
                     stop: None,
@@ -2127,6 +2133,7 @@ async fn handle_media_event(
             propagate_playback_event(
                 UpdateSession {
                     session_id: current_session_id,
+                    profile: current_profile.clone(),
                     playback_target: current_playback_target.clone(),
                     play: None,
                     stop: None,
@@ -2152,6 +2159,7 @@ async fn handle_media_event(
             propagate_playback_event(
                 UpdateSession {
                     session_id: current_session_id,
+                    profile: current_profile.clone(),
                     playback_target: current_playback_target.clone(),
                     play: None,
                     stop: None,
@@ -2176,6 +2184,7 @@ async fn handle_media_event(
             propagate_playback_event(
                 UpdateSession {
                     session_id: current_session_id,
+                    profile: current_profile.clone(),
                     playback_target: current_playback_target.clone(),
                     play: None,
                     stop: None,
