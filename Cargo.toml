@@ -52,7 +52,6 @@ kanal = "0.1.0-pre8"
 lazy_static = "1.5.0"
 log = "0.4.22"
 ndk-context = "0.1.1"
-portpicker = "0.1"
 rand = "0.8"
 regex = "1.10.6"
 reqwest = { version = "0.12.7", default-features = false, features = [
