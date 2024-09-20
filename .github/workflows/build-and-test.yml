@@ -140,8 +140,20 @@ jobs:
               run: |
                   cargo install --git https://github.com/est31/cargo-udeps --locked
 
-            - name: Validate dependencies
+            - name: Validate dependencies (udeps)
               shell: bash
               working-directory: MoosicBoxApp
               run: |
                   cargo +nightly udeps
+
+            - name: Install cargo-machete
+              shell: bash
+              working-directory: MoosicBoxApp
+              run: |
+                  cargo install cargo-machete
+
+            - name: Validate ${{ matrix.package.name }} dependencies (machete)
+              shell: bash
+              working-directory: MoosicBoxApp
+              run: |
+                  cargo machete --with-metadata
