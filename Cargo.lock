@@ -4079,6 +4079,7 @@ dependencies = [
  "strum",
  "strum_macros",
  "tauri",
+ "thiserror",
  "tokio",
 ]
 
