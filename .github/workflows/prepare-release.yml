@@ -176,7 +176,8 @@ jobs:
                     - os: ubuntu-latest
                       profile: debug
                       target: android
-                      # tag: client
+                      tag: debug
+                      # tag: debug-client
                       features: android,client
 
                     - os: ubuntu-latest
