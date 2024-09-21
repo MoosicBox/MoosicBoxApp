@@ -3,31 +3,6 @@
 version = 3
 
 [[package]]
-name = "actix"
-version = "0.13.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de7fa236829ba0841304542f7614c42b80fca007455315c45c785ccfa873a85b"
-dependencies = [
- "actix-macros",
- "actix-rt",
- "actix_derive",
- "bitflags 2.6.0",
- "bytes",
- "crossbeam-channel",
- "futures-core",
- "futures-sink",
- "futures-task",
- "futures-util",
- "log",
- "once_cell",
- "parking_lot",
- "pin-project-lite",
- "smallvec",
- "tokio",
- "tokio-util",
-]
-
-[[package]]
 name = "actix-codec"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -165,7 +140,6 @@ version = "2.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "24eda4e2a6e042aa4e55ac438a2ae052d3b5da0ecf83d7411e1a368946925208"
 dependencies = [
- "actix-macros",
  "futures-core",
  "tokio",
 ]
@@ -274,17 +248,6 @@ dependencies = [
  "bytestring",
  "futures-core",
  "tokio",
-]
-
-[[package]]
-name = "actix_derive"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6ac1e58cded18cb28ddc17143c4dea5345b3ad575e14f32f66e4054a56eb271"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.77",
 ]
 
 [[package]]
@@ -2055,18 +2018,6 @@ name = "extended"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af9673d8203fcb076b19dfd17e38b3d4ae9f44959416ea532ce72415a6020365"
-
-[[package]]
-name = "fallible-iterator"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2acce4a10f12dc2fb14a218589d4f1f62ef011b2d0cc4b3cb1bba8e94da14649"
-
-[[package]]
-name = "fallible-streaming-iterator"
-version = "0.1.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
 
 [[package]]
 name = "fastdivide"
@@ -4069,8 +4020,6 @@ dependencies = [
  "moosicbox_scan",
  "moosicbox_tidal",
  "serde",
- "serde_json",
- "thiserror",
  "urlencoding",
 ]
 
@@ -4079,20 +4028,16 @@ name = "moosicbox_app"
 version = "0.11.0"
 dependencies = [
  "async-recursion",
- "atomic_float",
  "console-subscriber",
  "debounce",
- "jni",
  "kanal",
  "lazy_static",
  "log",
  "moosicbox_app_bundled",
- "moosicbox_app_client",
  "moosicbox_app_ws",
  "moosicbox_assert",
  "moosicbox_audio_output",
  "moosicbox_audio_zone",
- "moosicbox_config",
  "moosicbox_core",
  "moosicbox_env_utils",
  "moosicbox_library",
@@ -4106,7 +4051,6 @@ dependencies = [
  "moosicbox_task",
  "moosicbox_upnp",
  "moosicbox_ws",
- "ndk-context",
  "reqwest",
  "serde",
  "serde_json",
@@ -4126,8 +4070,6 @@ dependencies = [
 name = "moosicbox_app_bundled"
 version = "0.1.0"
 dependencies = [
- "flume",
- "futures",
  "log",
  "moosicbox_assert",
  "moosicbox_async_service",
@@ -4137,7 +4079,6 @@ dependencies = [
  "strum",
  "strum_macros",
  "tauri",
- "thiserror",
  "tokio",
 ]
 
@@ -4174,11 +4115,6 @@ dependencies = [
  "moosicbox_env_utils",
  "moosicbox_logging",
  "moosicbox_task",
- "rand 0.8.5",
- "regex",
- "reqwest",
- "serde",
- "serde_json",
  "thiserror",
  "tokio",
  "tokio-tungstenite",
@@ -4211,11 +4147,9 @@ dependencies = [
 name = "moosicbox_audio_decoder"
 version = "0.1.0"
 dependencies = [
- "arrayvec",
  "bytes",
  "flume",
  "futures",
- "lazy_static",
  "log",
  "moosicbox_stream_utils",
  "moosicbox_task",
@@ -4260,11 +4194,9 @@ dependencies = [
  "mp3lame-encoder",
  "rb",
  "serde",
- "serde_json",
  "symphonia",
  "thiserror",
  "tokio",
- "tokio-util",
 ]
 
 [[package]]
@@ -4273,7 +4205,6 @@ version = "0.1.0"
 dependencies = [
  "actix-web",
  "async-trait",
- "bytes",
  "log",
  "moosicbox_assert",
  "moosicbox_core",
@@ -4282,24 +4213,20 @@ dependencies = [
  "moosicbox_paging",
  "moosicbox_task",
  "serde",
- "serde_json",
- "thiserror",
  "tokio",
- "tokio-util",
 ]
 
 [[package]]
 name = "moosicbox_auth"
 version = "0.1.0"
 dependencies = [
- "actix",
  "actix-web",
+ "futures",
  "log",
  "moosicbox_core",
  "moosicbox_database",
  "moosicbox_json_utils",
  "reqwest",
- "rusqlite",
  "serde",
  "serde_json",
  "thiserror",
@@ -4328,22 +4255,17 @@ dependencies = [
  "moosicbox_json_utils",
  "nanoid",
  "serde",
- "serde_json",
  "thiserror",
- "utoipa",
 ]
 
 [[package]]
 name = "moosicbox_core"
 version = "0.1.0"
 dependencies = [
- "actix-web",
  "async-trait",
- "futures",
  "log",
  "moosicbox_database",
  "moosicbox_json_utils",
- "rusqlite",
  "serde",
  "serde_json",
  "strum",
@@ -4363,7 +4285,6 @@ dependencies = [
  "log",
  "qstring",
  "regex",
- "serde",
  "sqlx",
  "thiserror",
  "tokio",
@@ -4393,7 +4314,6 @@ dependencies = [
  "hyper 1.4.1",
  "id3",
  "lazy_static",
- "lofty",
  "log",
  "moosicbox_assert",
  "moosicbox_config",
@@ -4401,15 +4321,11 @@ dependencies = [
  "moosicbox_database",
  "moosicbox_files",
  "moosicbox_json_utils",
- "moosicbox_library",
  "moosicbox_music_api",
  "moosicbox_paging",
  "moosicbox_scan",
  "moosicbox_task",
- "mp3-duration",
  "regex",
- "reqwest",
- "rusqlite",
  "serde",
  "serde_json",
  "strum",
@@ -4448,15 +4364,12 @@ dependencies = [
  "moosicbox_core",
  "moosicbox_database",
  "moosicbox_image",
- "moosicbox_json_utils",
  "moosicbox_music_api",
  "moosicbox_stream_utils",
  "moosicbox_task",
  "regex",
  "reqwest",
- "rusqlite",
  "serde",
- "serde_json",
  "strum",
  "strum_macros",
  "symphonia",
@@ -4488,7 +4401,6 @@ dependencies = [
  "chrono",
  "log",
  "moosicbox_database",
- "serde",
  "serde_json",
  "tantivy",
  "thiserror",
@@ -4515,16 +4427,12 @@ dependencies = [
  "moosicbox_search",
  "moosicbox_stream_utils",
  "regex",
- "reqwest",
- "rusqlite",
  "serde",
  "serde_json",
  "strum",
  "strum_macros",
  "thiserror",
  "tokio",
- "tokio-util",
- "url",
 ]
 
 [[package]]
@@ -4558,8 +4466,6 @@ name = "moosicbox_menu"
 version = "0.1.0"
 dependencies = [
  "actix-web",
- "async-recursion",
- "futures",
  "log",
  "moosicbox_assert",
  "moosicbox_core",
@@ -4570,9 +4476,7 @@ dependencies = [
  "moosicbox_scan",
  "moosicbox_search",
  "moosicbox_session",
- "rusqlite",
  "serde",
- "serde_json",
  "thiserror",
  "tokio",
 ]
@@ -4599,15 +4503,12 @@ dependencies = [
  "moosicbox_database",
  "moosicbox_json_utils",
  "moosicbox_paging",
- "rusqlite",
  "serde",
  "serde_json",
  "strum",
  "strum_macros",
  "thiserror",
  "tokio",
- "tokio-util",
- "url",
  "utoipa",
 ]
 
@@ -4618,9 +4519,7 @@ dependencies = [
  "futures",
  "log",
  "moosicbox_core",
- "moosicbox_json_utils",
  "serde",
- "thiserror",
  "tokio",
  "utoipa",
 ]
@@ -4629,23 +4528,19 @@ dependencies = [
 name = "moosicbox_player"
 version = "0.1.0"
 dependencies = [
- "actix-web",
  "async-trait",
  "atomic_float",
  "bytes",
  "flume",
  "futures",
- "lazy_static",
  "local-ip-address",
  "log",
  "moosicbox_assert",
  "moosicbox_audio_decoder",
  "moosicbox_audio_output",
- "moosicbox_audio_zone",
  "moosicbox_core",
  "moosicbox_database",
  "moosicbox_json_utils",
- "moosicbox_library",
  "moosicbox_logging",
  "moosicbox_music_api",
  "moosicbox_resampler",
@@ -4684,14 +4579,12 @@ dependencies = [
  "moosicbox_search",
  "regex",
  "reqwest",
- "rusqlite",
  "serde",
  "serde_json",
  "strum",
  "strum_macros",
  "thiserror",
  "tokio",
- "tokio-util",
  "url",
 ]
 
@@ -4700,24 +4593,12 @@ name = "moosicbox_remote_library"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "futures",
  "log",
  "moosicbox_core",
- "moosicbox_database",
- "moosicbox_json_utils",
  "moosicbox_music_api",
  "moosicbox_paging",
- "regex",
  "reqwest",
- "rusqlite",
- "serde",
- "serde_json",
- "strum",
- "strum_macros",
  "thiserror",
- "tokio",
- "tokio-util",
- "url",
 ]
 
 [[package]]
@@ -4783,12 +4664,10 @@ dependencies = [
  "log",
  "moosicbox_config",
  "moosicbox_core",
- "moosicbox_database",
  "moosicbox_json_utils",
  "moosicbox_task",
  "regex",
  "serde",
- "serde_json",
  "tantivy",
  "thiserror",
  "tokio",
@@ -4804,12 +4683,9 @@ dependencies = [
  "actix-web",
  "actix-ws",
  "console-subscriber",
- "enum-as-inner",
  "flume",
- "futures",
  "futures-util",
  "kanal",
- "lazy_static",
  "local-ip-address",
  "log",
  "moosicbox_admin_htmx",
@@ -4844,8 +4720,6 @@ dependencies = [
  "moosicbox_ws",
  "moosicbox_yt",
  "rand 0.8.5",
- "regex",
- "serde",
  "serde_json",
  "strum",
  "strum_macros",
@@ -4922,14 +4796,12 @@ dependencies = [
  "moosicbox_search",
  "open",
  "reqwest",
- "rusqlite",
  "serde",
  "serde_json",
  "strum",
  "strum_macros",
  "thiserror",
  "tokio",
- "tokio-util",
  "url",
 ]
 
@@ -4958,7 +4830,6 @@ dependencies = [
  "bytes",
  "futures-channel",
  "futures-util",
- "lazy_static",
  "log",
  "moosicbox_assert",
  "moosicbox_audio_decoder",
@@ -4982,8 +4853,6 @@ dependencies = [
  "serde",
  "serde-aux",
  "serde_json",
- "strum",
- "strum_macros",
  "symphonia",
  "thiserror",
  "tokio",
@@ -4997,23 +4866,18 @@ version = "0.1.0"
 dependencies = [
  "async-recursion",
  "async-trait",
- "atomic_float",
  "flume",
  "futures",
  "itertools 0.13.0",
  "log",
  "moosicbox_assert",
  "moosicbox_async_service",
- "moosicbox_audio_decoder",
  "moosicbox_audio_output",
  "moosicbox_core",
- "moosicbox_database",
- "moosicbox_json_utils",
  "moosicbox_logging",
  "moosicbox_music_api",
  "moosicbox_player",
  "moosicbox_session",
- "moosicbox_stream_utils",
  "moosicbox_task",
  "pin-utils",
  "rand 0.8.5",
@@ -5022,14 +4886,12 @@ dependencies = [
  "roxmltree 0.20.0",
  "rupnp",
  "serde",
- "serde_json",
  "strum",
  "strum_macros",
  "symphonia",
  "thiserror",
  "tokio",
  "tokio-util",
- "url",
  "xml",
 ]
 
@@ -5037,8 +4899,6 @@ dependencies = [
 name = "moosicbox_ws"
 version = "0.1.0"
 dependencies = [
- "actix-rt",
- "actix-web",
  "async-trait",
  "log",
  "moosicbox_assert",
@@ -5048,8 +4908,6 @@ dependencies = [
  "moosicbox_json_utils",
  "moosicbox_logging",
  "moosicbox_session",
- "regex",
- "rusqlite",
  "serde",
  "serde_json",
  "strum",
@@ -5077,14 +4935,12 @@ dependencies = [
  "moosicbox_search",
  "open",
  "reqwest",
- "rusqlite",
  "serde",
  "serde_json",
  "strum",
  "strum_macros",
  "thiserror",
  "tokio",
- "tokio-util",
  "url",
 ]
 
@@ -6777,20 +6633,6 @@ dependencies = [
  "roxmltree 0.18.1",
  "ssdp-client",
  "tokio",
-]
-
-[[package]]
-name = "rusqlite"
-version = "0.32.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7753b721174eb8ff87a9a0e799e2d7bc3749323e773db92e0984debb00019d6e"
-dependencies = [
- "bitflags 2.6.0",
- "fallible-iterator",
- "fallible-streaming-iterator",
- "hashlink",
- "libsqlite3-sys",
- "smallvec",
 ]
 
 [[package]]
