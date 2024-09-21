@@ -46,6 +46,9 @@ moosicbox_ws = { path = "../../MoosicBoxServer/packages/ws", default-features = 
 # Bundled Dependencies
 moosicbox_app_bundled = { path = "../packages/bundled", default-features = false, optional = true }
 
+# Client Dependencies
+moosicbox_app_client = { path = "../packages/client", default-features = false, optional = true }
+
 tauri-plugin-player = { path = "../tauri-plugin-player" }
 
 async-recursion = { workspace = true }
@@ -81,6 +84,7 @@ desktop = ["all-encoders", "moosicbox_app_bundled/tunnel"]
 all-encoders = ["aac", "flac", "mp3"]
 
 bundled = ["dep:moosicbox_app_bundled"]
+client = ["dep:moosicbox_app_client"]
 
 # Encoders
 aac  = ["moosicbox_app_bundled/aac", "moosicbox_core/aac"]

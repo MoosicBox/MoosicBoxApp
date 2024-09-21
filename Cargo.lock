@@ -4034,6 +4034,7 @@ dependencies = [
  "lazy_static",
  "log",
  "moosicbox_app_bundled",
+ "moosicbox_app_client",
  "moosicbox_app_ws",
  "moosicbox_assert",
  "moosicbox_audio_output",

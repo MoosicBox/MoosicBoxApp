@@ -2273,6 +2273,11 @@ pub fn run() {
 
     let tauri::async_runtime::RuntimeHandle::Tokio(tokio_handle) = tauri::async_runtime::handle();
 
+    #[cfg(feature = "client")]
+    {
+        moosicbox_app_client::init();
+    }
+
     #[cfg(feature = "bundled")]
     let (join_app_server, app_server_handle) = {
         use moosicbox_app_bundled::service::Commander as _;
