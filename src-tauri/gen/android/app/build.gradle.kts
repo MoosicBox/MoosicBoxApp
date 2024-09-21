@@ -57,7 +57,7 @@ android {
         }
         getByName("release") {
             manifestPlaceholders["usesCleartextTraffic"] = "true"
-            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                     *fileTree(".") { include("**/*.pro") }
                             .plus(getDefaultProguardFile("proguard-android-optimize.txt"))
