@@ -6,5 +6,15 @@ import { config } from '~/config';
 <Layout title="Hello | MoosicBox">
     <p>hello!</p>
 
-    {config.bundled ? <a href="./music">Next</a> : <a href="./server">Next</a>}
+    {
+        config.bundled ? (
+            <a href="./profile">Next</a>
+        ) : (
+            <a href="./server">Next</a>
+        )
+    }
 </Layout>
+
+<script>
+    localStorage.setItem('settingUp', 'true');
+</script>

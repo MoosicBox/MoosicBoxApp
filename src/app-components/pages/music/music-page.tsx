@@ -68,6 +68,17 @@ export default function musicPage() {
     }
 
     onMount(async () => {
+        htmx.process(root);
+
+        if (connections.get().length === 0) {
+            await setConnection(getNewConnectionId(), {
+                name: 'Bundled',
+                apiUrl: 'http://localhost:8016',
+            });
+        } else {
+            document.body.dispatchEvent(new Event('load-new-profile'));
+        }
+
         root.addEventListener('qobuz-login-attempt', (e) => {
             if (!('detail' in e))
                 throw new Error(`Invalid qobuz-login-attempt event`);
@@ -92,15 +103,6 @@ export default function musicPage() {
 
             setTidalAuthSuccess(attempt.success);
         });
-
-        if (connections.get().length === 0) {
-            setConnection(getNewConnectionId(), {
-                name: 'Bundled',
-                apiUrl: 'http://localhost:8016',
-            });
-        }
-
-        htmx.process(root);
     });
 
     return (
@@ -136,7 +138,7 @@ export default function musicPage() {
                 <p>Sign in to your Tidal account (optional)</p>
                 <div
                     hx-get={`/admin/tidal/settings`}
-                    hx-trigger="load, connection-updated from:body"
+                    hx-trigger="connection-updated from:body, load-new-profile from:body"
                 >
                     loading...
                 </div>
@@ -147,7 +149,7 @@ export default function musicPage() {
                 <p>Sign in to your Qobuz account (optional)</p>
                 <div
                     hx-get={`/admin/qobuz/settings`}
-                    hx-trigger="load, connection-updated from:body"
+                    hx-trigger="connection-updated from:body, load-new-profile from:body"
                 >
                     loading...
                 </div>

@@ -4562,6 +4562,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "moosicbox_profiles"
+version = "0.1.0"
+dependencies = [
+ "moosicbox_assert",
+ "tokio",
+]
+
+[[package]]
 name = "moosicbox_qobuz"
 version = "0.1.0"
 dependencies = [
@@ -4710,6 +4718,7 @@ dependencies = [
  "moosicbox_middleware",
  "moosicbox_music_api",
  "moosicbox_player",
+ "moosicbox_profiles",
  "moosicbox_qobuz",
  "moosicbox_scan",
  "moosicbox_schema",
