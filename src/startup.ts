@@ -31,10 +31,11 @@ import { override } from './ws';
 import { isServer } from 'solid-js/web';
 
 if (!isServer) {
-    if (
-        connections.get().length === 0 &&
-        !window.location.pathname.startsWith('/setup/')
-    ) {
+    const settingUp =
+        connections.get().length === 0 || localStorage.getItem('settingUp');
+    const setupPath = window.location.pathname.startsWith('/setup/');
+
+    if (settingUp && !setupPath) {
         window.location.href = '/setup/hello';
     }
 }

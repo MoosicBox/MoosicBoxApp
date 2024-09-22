@@ -63,6 +63,8 @@ export default function musicPage() {
         }
 
         await Promise.all(requests);
+
+        localStorage.removeItem('settingUp');
     }
 
     onMount(async () => {
