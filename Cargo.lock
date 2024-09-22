@@ -4020,7 +4020,9 @@ dependencies = [
  "moosicbox_scan",
  "moosicbox_tidal",
  "serde",
+ "serde_json",
  "urlencoding",
+ "whoami",
 ]
 
 [[package]]
@@ -4253,8 +4255,10 @@ dependencies = [
  "actix-web",
  "home",
  "log",
+ "moosicbox_assert",
  "moosicbox_database",
  "moosicbox_json_utils",
+ "moosicbox_profiles",
  "nanoid",
  "serde",
  "thiserror",
@@ -4711,6 +4715,7 @@ dependencies = [
  "moosicbox_downloader",
  "moosicbox_env_utils",
  "moosicbox_files",
+ "moosicbox_json_utils",
  "moosicbox_library",
  "moosicbox_logging",
  "moosicbox_mdns",
@@ -9241,6 +9246,7 @@ checksum = "372d5b87f58ec45c384ba03563b03544dc5fadc3983e434b286913f5b4a9bb6d"
 dependencies = [
  "redox_syscall",
  "wasite",
+ "web-sys",
 ]
 
 [[package]]
