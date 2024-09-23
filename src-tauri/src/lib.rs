@@ -92,6 +92,8 @@ static PROFILE: LazyLock<Arc<RwLock<Option<String>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
 static WS_URL: LazyLock<Arc<RwLock<Option<String>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
+static WS_CONNECTION_ID: LazyLock<Arc<RwLock<Option<String>>>> =
+    LazyLock::new(|| Arc::new(RwLock::new(None)));
 static CONNECTION_ID: LazyLock<Arc<RwLock<Option<String>>>> =
     LazyLock::new(|| Arc::new(RwLock::new(None)));
 static SIGNATURE_TOKEN: LazyLock<Arc<RwLock<Option<String>>>> =
@@ -335,6 +337,25 @@ async fn show_main_window(window: tauri::Window) {
     use tauri::Manager as _;
 
     window.get_webview_window("main").unwrap().show().unwrap();
+}
+
+#[tauri::command]
+async fn on_startup() -> Result<(), tauri::Error> {
+    log::debug!("on_startup");
+
+    let connection_id = { WS_CONNECTION_ID.read().await.clone() };
+
+    if let Some(connection_id) = connection_id {
+        APP.get().unwrap().emit(
+            "ws-connect",
+            WsConnectMessage {
+                connection_id,
+                ws_url: WS_URL.read().await.to_owned().unwrap_or_default(),
+            },
+        )?;
+    }
+
+    Ok(())
 }
 
 #[derive(Debug, Default, Error, Serialize, Deserialize)]
@@ -1743,6 +1764,12 @@ async fn handle_ws_message(message: OutboundPayload) -> Result<(), HandleWsMessa
                     .await?
                 }
                 OutboundPayload::ConnectionId(payload) => {
+                    {
+                        WS_CONNECTION_ID
+                            .write()
+                            .await
+                            .replace(payload.connection_id.to_owned());
+                    }
                     APP.get().unwrap().emit(
                         "ws-connect",
                         WsConnectMessage {
@@ -2356,6 +2383,7 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            on_startup,
             #[cfg(not(all(target_os = "android")))]
             show_main_window,
             set_playback_quality,

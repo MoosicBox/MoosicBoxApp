@@ -1,6 +1,5 @@
 import { listen, UnlistenFn } from '@tauri-apps/api/event';
 import {
-    $connectionId,
     InboundMessage,
     onConnectListener,
     onMessageListener,
@@ -51,9 +50,7 @@ export function override() {
                 wsUrl,
             );
             setWsUrl(wsUrl);
-            if (!$connectionId()) {
-                onConnectListener.trigger(connectionId);
-            }
+            onConnectListener.trigger(connectionId);
         });
     })();
 }

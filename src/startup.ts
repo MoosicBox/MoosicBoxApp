@@ -156,6 +156,7 @@ function updateStateForConnection(con: Connection | null, overrides?: State) {
 
 onStartupFirst(async () => {
     tryInvoke('show_main_window');
+    tryInvoke('on_startup');
 
     setProperty('connectionId', $connectionId());
     setProperty('connectionName', connectionName.get());
