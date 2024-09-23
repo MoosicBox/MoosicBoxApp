@@ -1,14 +1,7 @@
-import { config } from '~/config';
 import './server-page.css';
 import { createSignal, For, onCleanup, onMount } from 'solid-js';
 import { invoke } from '@tauri-apps/api/core';
 import { connections, getNewConnectionId, setConnection } from '~/services/api';
-
-export default function serverPage() {
-    if (config.bundled) return bundledAppServerPage();
-    if (config.app) return appServerPage();
-    throw new Error(`Invalid configuration: ${JSON.stringify(config)}`);
-}
 
 type Server = {
     id: string;
@@ -17,7 +10,7 @@ type Server = {
     dns: string;
 };
 
-export function appServerPage() {
+export default function serverPage() {
     const [intervalHandle, setIntervalHandle] = createSignal<NodeJS.Timeout>();
     const [servers, setServers] = createSignal<Server[]>([]);
 
@@ -40,7 +33,7 @@ export function appServerPage() {
         }
     });
 
-    function selectServer(server: Server) {
+    async function selectServer(server: Server) {
         const existing = connections
             .get()
             .find((x) => x.apiUrl === server.host);
@@ -50,10 +43,17 @@ export function appServerPage() {
             return;
         }
 
-        setConnection(getNewConnectionId(), {
+        const con = await setConnection(getNewConnectionId(), {
             name: server.name,
             apiUrl: server.host,
         });
+
+        if (!con?.profiles || con.profiles.length === 0) {
+            window.location.href = './profile';
+        } else {
+            localStorage.removeItem('settingUp');
+            window.location.href = '/';
+        }
     }
 
     return (
@@ -70,10 +70,7 @@ export function appServerPage() {
                         </div>
                         <div>
                             <button
-                                onClick={async () => {
-                                    selectServer(server);
-                                    window.location.href = '/';
-                                }}
+                                onClick={async () => await selectServer(server)}
                                 type="button"
                                 class="remove-button-styles select-button"
                             >
@@ -85,8 +82,4 @@ export function appServerPage() {
             </For>
         </div>
     );
-}
-
-export function bundledAppServerPage() {
-    return <div>todo</div>;
 }

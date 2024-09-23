@@ -1,5 +1,5 @@
 import './profile-page.css';
-import { createSignal, onMount, Show } from 'solid-js';
+import { createEffect, createSignal, on, onMount, Show } from 'solid-js';
 import {
     connection,
     connections,
@@ -8,11 +8,30 @@ import {
     setConnection,
 } from '~/services/api';
 import { htmx } from '~/middleware/htmx';
+import { config } from '~/config';
+import { clientSignal } from '~/services/util';
 
 export default function profilePage() {
     let root: HTMLDivElement;
 
+    const [$connection] = clientSignal(connection);
     const [errorMessage, setErrorMessage] = createSignal<string>();
+    const [showProfiles, setShowProfiles] = createSignal(false);
+
+    createEffect(
+        on($connection, (con) => {
+            if (con?.profiles) {
+                const newValue = con.profiles.length > 0;
+
+                if (newValue !== showProfiles()) {
+                    setShowProfiles(newValue);
+                    setTimeout(() => {
+                        htmx.process(root);
+                    }, 0);
+                }
+            }
+        }),
+    );
 
     onMount(async () => {
         htmx.process(root);
@@ -54,19 +73,71 @@ export default function profilePage() {
                     });
                     await refreshConnectionProfiles(updated);
 
-                    window.location.href = './music';
+                    nextStep();
                 }
             }
         });
+
+        root.addEventListener('select-moosicbox-profile', async (e) => {
+            if (!('detail' in e))
+                throw new Error(`Invalid create-moosicbox-profile event`);
+
+            setErrorMessage(undefined);
+
+            type SelectMoosicBoxProfile = {
+                profile: string;
+            };
+
+            const attempt = e.detail as SelectMoosicBoxProfile;
+
+            const con = connection.get();
+
+            if (con) {
+                const updated = await setConnection(con.id, {
+                    profile: attempt.profile,
+                });
+                await refreshConnectionProfiles(updated);
+            }
+        });
     });
+
+    function nextStep() {
+        if (config.bundled) {
+            window.location.href = './music';
+        } else {
+            localStorage.removeItem('settingUp');
+            window.location.href = '/';
+        }
+    }
 
     return (
         <div ref={root!}>
             <section class="setup-profile-page-local-profile">
                 <h1>Setup your profile</h1>
+                <Show when={showProfiles()}>
+                    <>
+                        <hr />
+                        <h2>Select from existing profiles:</h2>
+                        <div
+                            hx-get={`/admin/profiles/select`}
+                            hx-trigger="load"
+                            hx-swap="outerHTML"
+                        >
+                            loading...
+                        </div>
+                        <button
+                            onClick={nextStep}
+                            type="button"
+                            class="remove-button-styles moosicbox-button"
+                        >
+                            {config.bundled ? 'Next' : 'Finish'}
+                        </button>
+                        <h2>Or create a new one:</h2>
+                    </>
+                </Show>
                 <div
                     hx-get={`/admin/profiles/new`}
-                    hx-trigger="connection-updated from:body, load-new-profile from:body"
+                    hx-trigger="connection-changed from:body, load-new-profile from:body"
                 >
                     loading...
                 </div>
