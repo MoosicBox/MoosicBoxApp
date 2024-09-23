@@ -9,6 +9,7 @@ import {
     setConnection,
 } from '~/services/api';
 import { htmx } from '~/middleware/htmx';
+import { config } from '~/config';
 
 export default function musicPage() {
     let root: HTMLDivElement;
@@ -70,7 +71,7 @@ export default function musicPage() {
     onMount(async () => {
         htmx.process(root);
 
-        if (connections.get().length === 0) {
+        if (config.bundled && connections.get().length === 0) {
             await setConnection(getNewConnectionId(), {
                 name: 'Bundled',
                 apiUrl: 'http://localhost:8016',

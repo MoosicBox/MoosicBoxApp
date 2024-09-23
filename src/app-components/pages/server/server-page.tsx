@@ -39,21 +39,15 @@ export default function serverPage() {
             .find((x) => x.apiUrl === server.host);
 
         if (existing) {
-            setConnection(existing.id, existing);
-            return;
-        }
-
-        const con = await setConnection(getNewConnectionId(), {
-            name: server.name,
-            apiUrl: server.host,
-        });
-
-        if (!con?.profiles || con.profiles.length === 0) {
-            window.location.href = './profile';
+            await setConnection(existing.id, existing);
         } else {
-            localStorage.removeItem('settingUp');
-            window.location.href = '/';
+            await setConnection(getNewConnectionId(), {
+                name: server.name,
+                apiUrl: server.host,
+            });
         }
+
+        window.location.href = './profile';
     }
 
     return (

@@ -16,7 +16,9 @@ export default function profilePage() {
 
     const [$connection] = clientSignal(connection);
     const [errorMessage, setErrorMessage] = createSignal<string>();
-    const [showProfiles, setShowProfiles] = createSignal(false);
+    const [showProfiles, setShowProfiles] = createSignal(
+        ($connection()?.profiles?.length ?? 0) > 0,
+    );
 
     createEffect(
         on($connection, (con) => {
