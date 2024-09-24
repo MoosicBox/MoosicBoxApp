@@ -5,7 +5,7 @@ edition     = "2021"
 license     = ""
 name        = "moosicbox_app"
 repository  = "https://github.com/MoosicBox/MoosicBoxApp"
-version     = "0.11.0"
+version     = "0.12.0"
 
 [package.metadata.cargo-machete]
 ignored = ["strum", "tauri_build"]
