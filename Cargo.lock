@@ -2177,7 +2177,7 @@ dependencies = [
 [[package]]
 name = "free_log_client"
 version = "0.3.0"
-source = "git+https://github.com/BSteffaniak/FreeLog.git#813db45ba8a620628f1f48a8af913c5f62f00aaf"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#5263ac33be68912a5030ecdb2b6b77ce3584868e"
 dependencies = [
  "free_log_models",
  "futures-util",
@@ -2196,7 +2196,7 @@ dependencies = [
 [[package]]
 name = "free_log_models"
 version = "0.2.0"
-source = "git+https://github.com/BSteffaniak/FreeLog.git#813db45ba8a620628f1f48a8af913c5f62f00aaf"
+source = "git+https://github.com/BSteffaniak/FreeLog.git#5263ac33be68912a5030ecdb2b6b77ce3584868e"
 dependencies = [
  "log",
  "serde",
@@ -5920,9 +5920,9 @@ dependencies = [
 
 [[package]]
 name = "pkg-config"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
+checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
 
 [[package]]
 name = "plist"
@@ -7921,9 +7921,9 @@ dependencies = [
 
 [[package]]
 name = "tao"
-version = "0.30.1"
+version = "0.30.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "82e7ede56f9ef03a0bb384c7b2bed4f3985ee7f3f79ec887c50d8466eec21096"
+checksum = "06e48d7c56b3f7425d061886e8ce3b6acfab1993682ed70bef50fd133d721ee6"
 dependencies = [
  "bitflags 2.6.0",
  "cocoa",
