@@ -1,7 +1,12 @@
 import './server-page.css';
 import { createSignal, For, onCleanup, onMount } from 'solid-js';
 import { invoke } from '@tauri-apps/api/core';
-import { connections, getNewConnectionId, setConnection } from '~/services/api';
+import {
+    api,
+    connections,
+    getNewConnectionId,
+    setConnection,
+} from '~/services/api';
 
 type Server = {
     id: string;
@@ -11,6 +16,8 @@ type Server = {
 };
 
 export default function serverPage() {
+    let serverAddressInput: HTMLInputElement;
+
     const [intervalHandle, setIntervalHandle] = createSignal<NodeJS.Timeout>();
     const [servers, setServers] = createSignal<Server[]>([]);
 
@@ -50,12 +57,38 @@ export default function serverPage() {
         window.location.href = './profile';
     }
 
+    async function saveManualServerAddress() {
+        const existing = connections
+            .get()
+            .find((x) => x.apiUrl === serverAddressInput.value);
+
+        if (existing) {
+            await setConnection(existing.id, existing);
+        } else {
+            await setConnection(getNewConnectionId(), {
+                name: 'MoosicBox Server',
+                apiUrl: serverAddressInput.value,
+            });
+        }
+
+        try {
+            await api.getAlbums({ limit: 0 });
+        } catch (e) {
+            console.error('Invalid server:', e);
+            throw e;
+        }
+
+        window.location.href = './profile';
+    }
+
     return (
         <div>
+            <h1>Set up your MoosicBox server connection:</h1>
+            <hr />
             {servers().length === 0 && (
-                <p>Searching for compatible MoosicBox servers...</p>
+                <h2>Searching for compatible MoosicBox servers...</h2>
             )}
-            {servers().length > 0 && <p>Select your MoosicBox server</p>}
+            {servers().length > 0 && <h2>Select your MoosicBox server</h2>}
             <For each={servers()}>
                 {(server) => (
                     <div class="server-page-server">
@@ -74,6 +107,20 @@ export default function serverPage() {
                     </div>
                 )}
             </For>
+            <hr />
+            <h2>or specify an address manually:</h2>
+            <input
+                ref={serverAddressInput!}
+                type="text"
+                placeholder="http://localhost:8000"
+            />
+            <button
+                onClick={async () => await saveManualServerAddress()}
+                type="button"
+                class="remove-button-styles finish-button"
+            >
+                Save
+            </button>
         </div>
     );
 }
