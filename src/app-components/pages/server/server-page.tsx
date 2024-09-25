@@ -107,7 +107,6 @@ export default function serverPage() {
                     </div>
                 )}
             </For>
-            <hr />
             <h2>or specify an address manually:</h2>
             <input
                 ref={serverAddressInput!}
