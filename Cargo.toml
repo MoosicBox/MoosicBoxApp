@@ -68,9 +68,9 @@ serde-aux = "4.5.0"
 serde_json = "1.0.128"
 strum = "0.26.3"
 strum_macros = "0.26.4"
-tauri = { version = "2.0.0-rc.15", features = ["protocol-asset"] }
-tauri-build = { version = "2.0.0-rc.12", features = [] }
-tauri-plugin = { version = "2.0.0-rc.12", features = ["build"] }
+tauri = { version = "2.0.0-rc.16", features = ["protocol-asset"] }
+tauri-build = { version = "2.0.0-rc.13", features = [] }
+tauri-plugin = { version = "2.0.0-rc.13", features = ["build"] }
 tauri-plugin-dialog = "2.0.0-rc.7"
 tauri-plugin-notification = "2.0.0-rc.5"
 thiserror = "1.0.64"
